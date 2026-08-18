@@ -1,0 +1,21 @@
+.system-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: var(--blue);
+}
+
+.system-header button {
+  padding: 0.5em;
+  width: 3em;
+  text-align: center;
+}
+
+.system-header .controls {
+  display: flex;
+  align-items: center;
+}
+
+.system-header .controls select {
+  margin-left: 0.25em;
+}

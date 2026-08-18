@@ -1,0 +1,51 @@
+.turtle-properties {
+  display: flex;
+  justify-content: space-between;
+  background: var(--lightgray);
+  border-bottom: 1px solid var(--gray);
+  padding: var(--system-padding);
+}
+
+.turtle-properties button {
+  padding: 0.125em 0.5em;
+}
+
+.turtle-properties .turtle-property {
+  display: flex;
+  align-items: baseline;
+  font-size: 0.875em;
+}
+
+.turtle-properties .turtle-property .turtle-label,
+.turtle-properties .turtle-property .turtle-value {
+  padding: 0.25em 0.5em;
+  white-space: nowrap;
+}
+
+.turtle-properties .turtle-property .turtle-label {
+  display: none;
+}
+
+@media (min-width: 34.25rem) {
+  .turtle-properties .turtle-property .turtle-label {
+    display: block;
+    font-weight: bold;
+  }
+}
+
+.turtle-properties .turtle-property .turtle-value {
+  background: #fff;
+  text-align: center;
+  width: 5em;
+  overflow: hidden;
+}
+
+.turtle-properties .turtle-property .turtle-value.turtle-pen {
+  width: 3em;
+}
+
+.turtle-properties .turtle-property .turtle-value.turtle-colour {
+  width: 2em;
+  background: #000;
+  color: transparent;
+}

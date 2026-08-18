@@ -1,0 +1,28 @@
+class NestedLoops {
+  void main () {
+    thickness(4);
+    penUp();
+    // counting from 0 to 29 ...
+    for (int blotCount = 0; blotCount < 30; blotCount = blotCount + 1) {
+      // set direction, multiple of 36 degrees
+      direction(blotCount * 36);
+      // move 260 units from middle of canvas
+      forward(260);
+      // draw large black and smaller white blot
+      colour(black);
+      blot(150);
+      colour(white);
+      blot(56);
+      // set standard Turtle colour blotCount+1
+      colour(rgb(blotCount + 1));
+      // draw 19 circles, radius 56 up to 200
+      for (int circleCount = 7; circleCount < 26; circleCount = circleCount + 1) {
+        circle(circleCount * 8);
+      }
+      // reposition Turtle to canvas middle
+      back(260);
+      // pause for 1/5 second before continuing
+      pause(200);
+    }
+  }
+}

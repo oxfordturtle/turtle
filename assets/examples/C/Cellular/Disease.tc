@@ -1,0 +1,53 @@
+const int width = 100;
+const int height = 100;
+const int susceptible = lightgreen;
+const int infected = red;
+const int recovered = blue;
+const int startradius = 10;
+const int infectprob = 1;
+const int immuneprob = 2;
+const int recoverprob = 15;
+int numinfected;
+
+void infect (int x, int y) {
+  pixset(x, y, infected);
+  numinfected = numinfected + 1;
+}
+
+void main () {
+  canvas(0, 0, width, height);
+  resolution(width, height);
+  numinfected = 0;
+  noupdate();
+  for (int x = 0; x < width; x = x + 1) {
+    for (int y = 0; y < height; y = y + 1) {
+      if ((rand(100) < infectprob) && (hypot(x - width / 2, y - height / 2, 1) <= startradius)) {
+        infect(x, y);
+      } else {
+        if (rand(100) < immuneprob) {
+          pixset(x, y, recovered);
+        } else {
+          pixset(x, y, susceptible);
+        }
+      }
+    }
+  }
+  update();
+  do {
+    x = rand(width);
+    y = rand(height);
+    if (pixcol(x, y) == infected) {
+      if (rand(100) < recoverprob) {
+        pixset(x, y, recovered);
+        numinfected = numinfected - 1;
+      } else {
+        int n = rand(4) * 2 + 1;
+        x = x + n / 3 - 1;
+        y = y + n % 3 - 1;
+        if (pixcol(x, y) == susceptible) {
+          infect(x, y);
+        }
+      }
+    }
+  } while (numinfected > 0);
+}

@@ -1,0 +1,180 @@
+class Arcade {
+  final int targets = 10;
+  int faceX;
+  int faceY;
+
+  // draws a bottle at the given coordinates
+  void bottle (int x, int y) {
+    setXY(x, y);
+    colour(cyan);
+    moveXY(0, -15);
+    thickness(40);
+    drawXY(0, -50);
+    thickness(10);
+    drawXY(0, -40);
+    thickness(2);
+    moveXY(-20, 90);
+    moveXY(40, 0);
+    moveXY(0, -20);
+    moveXY(-40, 0);
+    colour(purple);
+    polygon(4);
+    moveXY(20, 35);
+  }
+
+  // draws the scene background
+  void background () {
+    blank(coffee);
+    bottle(100, 500);
+    bottle(200, 500);
+    bottle(450, 500);
+    bottle(500, 500);
+    bottle(565, 500);
+    bottle(865, 500);
+    colour(darkbrown);
+    thickness(20);
+    setXY(0, 125);
+    drawXY(1000, 0);
+    setXY(0, 325);
+    drawXY(1000, 0);
+    setXY(0, 525);
+    drawXY(1000, 0);
+    colour(brown);
+    thickness(30);
+    setXY(0, 100);
+    drawXY(1000, 0);
+    setXY(0, 300);
+    drawXY(1000, 0);
+    setXY(0, 500);
+    drawXY(1000, 0);
+  }
+
+  // draws the scene foreground
+  void foreground () {
+    colour(brown);
+    thickness(272);
+    setXY(0, 863);
+    drawXY(1000, 0);
+  }
+
+  // draws a hat
+  void hat () {
+    setXY(faceX, faceY - 80);
+    colour(darkgrey);
+    ellblot(90, 30);
+    thickness(2);
+    colour(black);
+    ellipse(90, 30);
+    moveXY(-70, 0);
+    thickness(4);
+    drawXY(35, -70);
+    drawXY(70, 0);
+    drawXY(35, 70);
+    colour(darkgrey);
+    thickness(1);
+    polygon(4);
+  }
+
+  // draws a face with a hat
+  void face () {
+    thickness(1);
+    colour(0xFF8899);
+    blot(100);
+    colour(white);
+    setXY(faceX - 20, faceY - 20);
+    blot(10);
+    colour(black);
+    blot(4);
+    thickness(4);
+    moveXY(0, -22);
+    colour(0x663300);
+    drawXY(15, 15);
+    thickness(1);
+    colour(white);
+    setXY(faceX + 20, faceY - 20);
+    blot(10);
+    colour(black);
+    blot(4);
+    thickness(4);
+    moveXY(0, -22);
+    colour(0x663300);
+    drawXY(-15, 15);
+    hat();
+    setXY(faceX, faceY + 13);
+    colour(red);
+    blot(10);
+    moveXY(0, 32);
+    ellblot(30, 6);
+    colour(white);
+    ellblot(20, 4);
+  }
+
+  // draws black crosshairs
+  void gunsight () {
+    colour(black);
+    thickness(6);
+    setXY(?mousex - 50, ?mousey);
+    drawXY(100, 0);
+    setXY(?mousex, ?mousey - 50);
+    drawXY(0, 100);
+    thickness(2);
+  }
+
+  void main () {
+    // set initial face coordinates and speed
+    faceX = -100;
+    faceY = 625;
+    int faceXspeed = 5;
+    int faceYspeed = 0;
+    // initialise hits to zero
+    int hits = 0;
+    // hide default cursor
+    cursor(0);
+    // until all targets have been hit...
+    while (hits < targets) {
+      noUpdate();
+      // draw background
+      background();
+      // draw face at current location
+      setXY(faceX, faceY);
+      face();
+      // draw one bottle for each target hit so far
+      for (int i = 0; i < hits; i = i + 1) {
+        bottle(50 * i - 35, 740);
+      }
+      // draw foreground
+      foreground();
+      // draw gunsight
+      gunsight();
+      update();
+      // move to next face position
+      faceX = faceX + faceXspeed;
+      faceY = faceY + faceYspeed;
+      // loop round at canvas edges
+      if (faceX > 1100) {
+        faceX = -100;
+      }
+      if (faceX < -100) {
+        faceX = 1100;
+      }
+      if ((faceY < 100) || (faceY > 625)) {
+        faceYspeed = faceYspeed * -1;
+      }
+      // if a mouse click is detected on the face...
+      if ((?lmouse > 0) && (((?mousex - faceX) * (?mousex - faceX)) + ((?mousey - faceY) * (?mousey - faceY)) < 10000)) {
+        // create a new target
+        faceX = -100;
+        faceXspeed = randInt(5) + 2;
+        faceYspeed = randInt(9) - 4;
+        faceY = randInt(550) + 50;
+        // increment number of hits
+        hits = hits + 1;
+      }
+    }
+    // print end of game message
+    blank(black);
+    setXY(200, 450);
+    colour(green);
+    display('  Well done!  ', 4, 75);
+  }
+}

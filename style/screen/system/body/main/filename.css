@@ -1,0 +1,24 @@
+.filename {
+  display: flex;
+  background: var(--lightgray);
+  border-bottom: 1px solid var(--gray);
+}
+
+.filename select,
+.filename input {
+  border: 0;
+  border-right: 1px solid var(--gray);
+}
+
+.filename select {
+  width: 3.5em;
+}
+
+.filename input {
+  flex: 1;
+}
+
+.filename button {
+  padding: 0.125em 0.5em;
+  margin: 0.25em;
+}

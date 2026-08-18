@@ -1,0 +1,36 @@
+// draws a coloured polygon with the given number of sides
+function poly (sides: number, colr: number): void {
+  direction(90);
+  // trace the shape with the turtle
+  for (var count: number = 0; count < sides; count = count + 1) {
+    forward(600 / sides);
+    left(360 / sides);
+  }
+  // fill with the given colour
+  colour(colr);
+  polygon(sides);
+  // draw a black outline
+  colour(black);
+  polyline(sides + 1);
+}
+
+penUp();
+thickness(4);
+// draw a blue triangle
+setXY(100, 400);
+poly(3, blue);
+// draw a red square
+setXY(400, 400);
+poly(4, red);
+// draw a yellow pentagon
+setXY(700, 400);
+poly(5, yellow);
+// draw a pink hexagon
+setXY(150, 750);
+poly(6, pink);
+// draw a green heptagon
+setXY(440, 750);
+poly(7, green);
+// draw a turquoise octagon
+setXY(740, 750);
+poly(8, turquoise);

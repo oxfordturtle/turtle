@@ -1,0 +1,93 @@
+const int sectors = 8;
+const int wavelength = 100;
+const int sourcey = 730;
+const int source1x = 275;
+const int source2x = 725;
+int lampx;
+int dist1;
+int dist2;
+int wave1;
+int wave2;
+int sectcol[sectors];
+int boundary[sectors];
+
+void colsetup () {
+  sectcol[0] = violet;
+  sectcol[1] = blue;
+  sectcol[2] = cyan;
+  sectcol[3] = lime;
+  sectcol[4] = yellow;
+  sectcol[5] = orange;
+  sectcol[6] = red;
+  sectcol[7] = violet;
+  for (int n = 0; n < sectors; n = n + 1) {
+    boundary[n] = divmult(360, sectors - 1, n);
+  }
+}
+
+int wavecolour (int n) {
+  int col2 = 0;
+  do {
+    col2 = col2 + 1;
+  } while (boundary[col2] < n);
+  int col1 = col2 - 1;
+  return mixcols(sectcol[col1], sectcol[col2], boundary[col2] - n, n - boundary[col1]);
+}
+
+void background () {
+  lampx = (source1x + source2x) / 2;
+  blank(black);
+  colour(white);
+  thickness(5);
+  setxy(0, 733);
+  drawxy(1000, 0);
+  setxy(source1x, 732);
+  for (dist1 = 1; dist1 <= 4; dist1 = dist1 + 1) {
+    colour(wavecolour(wavelength - dist1));
+    drawxy(0, 1);
+  }
+  int diagx = lampx - source1x;
+  int diag = hypot(diagx, 250, 1);
+  for (int n = 1; n <= 250; n = n + 1) {
+    dist1 = divmult(diag, 250, n);
+    wave1 = wavelength - ((dist1 + 5) % wavelength);
+    colour(wavecolour(divmult(wave1, wavelength, 360)));
+    drawxy(source1x + divmult(diagx, 250, n) - turtx, 1);
+  }
+  setxy(source2x, 732);
+  for (dist2 = 1; dist2 <= 4; dist2 = dist2 + 1) {
+    colour(wavecolour(wavelength - dist2));
+    drawxy(0, 1);
+  }
+  diagx = source2x - lampx;
+  diag = hypot(diagx, 250, 1);
+  for (n = 1; n <= 250; n = n + 1) {
+    dist2 = divmult(diag, 250, n);
+    wave2 = wavelength - ((dist2 + 5) % wavelength);
+    colour(wavecolour(divmult(wave2, wavelength, 360)));
+    drawxy(source2x - divmult(diagx, 250, n) - turtx, 1);
+  }
+  colour(yellow);
+  setxy(lampx, 984);
+  blot(10);
+}
+
+void main () {
+  colsetup();
+  background();
+  noupdate();
+  for (int y = 0; y <= sourcey; y = y + 1) {
+    int disty = sourcey - y;
+    for (int x = 0; x < 1000; x = x + 1) {
+      dist1 = hypot(x - source1x, disty, 1);
+      dist2 = hypot(x - source2x, disty, 1);
+      wave1 = dist1 % wavelength;
+      wave2 = dist2 % wavelength;
+      int waveaddi = sin(wave1 * 360, wavelength, 500) + sin(wave2 * 360, wavelength, 500);
+      int waveaddj = cos(wave1 * 360, wavelength, 500) + cos(wave2 * 360, wavelength, 500);
+      int waveadd = hypot(waveaddi, waveaddj, 1);
+      int angleadd = (atan(waveaddi, waveaddj, 1) + 360) % 360;
+      pixset(x, y, mixcols(wavecolour(angleadd), black, waveadd, 1000 - waveadd));
+    }
+  }
+}

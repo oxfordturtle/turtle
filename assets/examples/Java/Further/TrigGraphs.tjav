@@ -1,0 +1,111 @@
+class TrigGraphs {
+  final int xOrigin = 500;
+  final int yOrigin = 500;
+  final int halfWidth = 400;
+  final int yScale = 200;
+  final boolean radians = false; // make true for x-axis in radians
+
+  // draws graph axes
+  void drawAxes () {
+    thickness(3);
+    // draw y axis
+    setXY(xOrigin - halfWidth, yOrigin);
+    drawXY(halfWidth * 2, 0);
+    // draw x axis
+    setXY(xOrigin, 0);
+    drawXY(0, 1000);
+    // draw circle at origin
+    setXY(xOrigin, yOrigin);
+    circle(15);
+    // draw lines at y=1 and y=-1
+    thickness(2);
+    setXY(xOrigin - halfWidth, yOrigin - yScale);
+    drawXY(halfWidth * 2, 0);
+    setXY(xOrigin - halfWidth, yOrigin + yScale);
+    drawXY(halfWidth * 2, 0);
+    setXY(xOrigin + halfWidth + 10, yOrigin - yScale - 18);
+    display('+1', 0, 20);
+    setXY(xOrigin + halfWidth + 10, yOrigin + yScale - 18);
+    display('-1', 0, 20);
+    // print x axis labels
+    if (radians) {
+      setXY(xOrigin - halfWidth - 44, yOrigin - 4);
+      display('-p', 29, 28);
+      setXY(xOrigin - halfWidth / 2 - 2, yOrigin - 4);
+      display('-p/2', 29, 28);
+      setXY(xOrigin + halfWidth / 2 - 50, yOrigin - 4);
+      display('p/2', 29, 28);
+      setXY(xOrigin + halfWidth, yOrigin - 4);
+      display('p', 29, 28);
+    } else {
+      setXY(xOrigin - halfWidth - 64, yOrigin + 2);
+      display('-180', 0, 24);
+      setXY(xOrigin - halfWidth / 2 - 2, yOrigin + 2);
+      display('-90', 0, 24);
+      setXY(xOrigin + halfWidth / 2 - 36, yOrigin + 2);
+      display('90', 0, 24);
+      setXY(xOrigin + halfWidth, yOrigin + 2);
+      display('180', 0, 24);
+    }
+  }
+
+  // plots a sine curve
+  void plotSineCurve () {
+    for (int degrees = -180; degrees <= 180; degrees = degrees + 1) {
+      int x = xOrigin + divMult(degrees, 180, halfWidth);
+      int y = yOrigin - sin(degrees, 1, yScale);
+      setXY(x, y);
+    }
+    polyline(361);
+  }
+
+  // plots a cosine curve
+  void plotCosineCurve () {
+    for (int degrees = -180; degrees <= 180; degrees = degrees + 1) {
+      int x = xOrigin + divMult(degrees, 180, halfWidth);
+      int y = yOrigin - cos(degrees, 1, yScale);
+      setXY(x, y);
+    }
+    polyline(361);
+  }
+
+  // plots a tan curve
+  void plotTanCurve () {
+    for (int degrees = -180; degrees <= 180; degrees = degrees + 1) {
+      if (degrees == -90) {
+        polyline(90);
+      } else {
+        if (degrees == 90) {
+          polyline(179);
+        } else {
+          int x = xOrigin + divMult(degrees, 180, halfWidth);
+          int y = yOrigin - tan(degrees, 1, yScale);
+          setXY(x, y);
+        }
+      }
+    }
+    polyline(90);
+  }
+
+  void main () {
+    // draw axes
+    drawAxes();
+    noUpdate();
+    thickness(4);
+    // plot sine curve in green
+    colour(green);
+    setXY(250, 700);
+    display('sine', 16, 40);
+    plotSineCurve();
+    // plot cosine curve in red
+    colour(red);
+    setXY(30, 700);
+    display('cosine', 16, 40);
+    plotCosineCurve();
+    // plot tan curve in blue
+    colour(blue);
+    setXY(140, 920);
+    display('tangent', 16, 40);
+    plotTanCurve();
+  }
+}

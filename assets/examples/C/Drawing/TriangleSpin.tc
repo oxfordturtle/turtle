@@ -1,0 +1,11 @@
+void main () {
+  // adjust start position so pattern is central
+  movexy(30, 20);
+  // counting from 1 to 300 ...
+  for (int i = 0; i < 300; i = i + 1) {
+    // move forward by 3 times the count number
+    forward(i * 3);
+    // turn right by 121 degrees
+    right(121);
+  }
+}

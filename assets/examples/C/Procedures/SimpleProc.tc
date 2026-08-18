@@ -1,0 +1,17 @@
+// draws a single "prong" and then returns
+void prong () {
+  forward(400);
+  blot(20);
+  back(400);
+}
+
+void main () {
+  // repeatedly draw prongs in random colours ...
+  do {
+    randcol(10);
+    prong();
+    // right turn gives impression of motion
+    right(61);
+  // ... until Turtle is pointing north again
+  } while (turtd != 0);
+}

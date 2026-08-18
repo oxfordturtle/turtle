@@ -1,0 +1,19 @@
+// draws a triangle recusrively, with half-sized triangles at each point
+function triangle (size: number): void {
+  if (size > 1) {
+    forward(size);
+    triangle(size / 2);
+    right(120);
+    forward(size);
+    triangle(size / 2);
+    right(120);
+    forward(size);
+    triangle(size / 2);
+    right(120);
+  }
+}
+
+// move to the start (without drawing)
+moveXY(-100, 150);
+// draw a triangle with triangles half the size at each point
+triangle(256);

@@ -1,0 +1,70 @@
+.editor {
+  flex: 1;
+  position: relative;
+  font-family: var(--monospace);
+  font-size: 13px;
+  line-height: 1.5;
+  z-index: 4;
+  overflow: scroll;
+  background: #fff;
+}
+
+.editor textarea,
+.editor pre {
+  position: absolute;
+  top: 0;
+  left: 0;
+  min-width: 100%;
+  padding: 0 0.5em;
+  border: 0;
+  margin: 0;
+  font: inherit;
+}
+
+.editor textarea {
+  background: transparent;
+  outline: 0;
+  resize: none;
+  opacity: 0.4;
+  min-height: 100%;
+  z-index: 1;
+}
+
+.editor pre {
+  pointer-events: none;
+  z-index: 2;
+  min-height: 1.5em;
+  background: transparent;
+}
+
+.editor code {
+  font: inherit;
+}
+
+.line-numbers {
+  position: sticky;
+  left: 0;
+  z-index: 5;
+  min-height: 100%;
+  margin: 0;
+  font: inherit;
+  list-style: none;
+  padding: 0 0.5em;
+  width: 3em;
+  background: var(--lightgray);
+  /* give a buffer to allow scrolling to stay in sync with the code
+     this is needed in case the code wrapper has a scrollbar at the bottom */
+  padding-bottom: 3em;
+}
+
+.line-numbers li {
+  text-align: right;
+}
+
+.code-wrapper {
+  position: absolute;
+  top: 0;
+  left: 3em;
+  width: calc(100% - 3em);
+  min-height: 100%;
+}

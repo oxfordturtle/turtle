@@ -1,0 +1,78 @@
+.hidden {
+  display: none !important;
+}
+
+.download {
+  display: flex;
+  align-items: baseline;
+}
+
+.download h2 {
+  flex: 1;
+}
+
+.download select,
+.download .button {
+  margin-left: 1em;
+}
+
+.download .button {
+  display: inline-block;
+  padding: 0.5em 1em;
+  white-space: nowrap;
+}
+
+.download .button .icon {
+  padding-right: 0.25em;
+}
+
+.csac-examples {
+  list-style-type: none;
+  padding-left: 1em;
+}
+
+.csac-examples li {
+  margin-bottom: 0.25em;
+}
+
+.articles-list {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin: 0.5em 0;
+  padding: 0;
+  list-style-type: none;
+}
+
+.articles-list li {
+  margin: 0.5em;
+}
+
+.articles-list img {
+  height: 9em;
+  border: 1px solid silver;
+}
+
+.mugshot {
+  display: none;
+}
+
+@media (min-width: 34.25rem) {
+  .mugshot {
+    display: block;
+    float: right;
+    margin-left: 1em;
+  }
+
+  .mugshot img {
+    display: block;
+    height: 9em;
+  }
+}
+
+.email-preview {
+  height: 20em;
+  border: 1px solid var(--gray);
+  padding: 0.25em 0.5em;
+  overflow: auto;
+}

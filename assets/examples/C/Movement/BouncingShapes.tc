@@ -1,0 +1,76 @@
+bool xEdge;
+bool yEdge;
+
+// draws a polygon, and checks whether it meets the edge of the canvas
+void drawShape(int sides, int size, int colr) {
+  xEdge = false;
+  yEdge = false;
+  colour(colr);
+  for (int count = 0; count < sides; count = count + 1) {
+    forward(size);
+    if (abs(turtx - 500) > 495) {
+      xEdge = true;
+    }
+    if (abs(turty - 500) > 495) {
+      yEdge = true;
+    }
+    back(size);
+    forget(1);
+    right(360 / sides);
+  }
+  polygon(sides);
+}
+
+void main () {
+  const int minSize = 70;
+  const int maxSize = 130;
+  const int shapes = 6;
+  int x[shapes];
+  int y[shapes];
+  int d[shapes];
+  int xVelocity[shapes];
+  int yVelocity[shapes];
+  int dVelocity[shapes];
+  int sides[shapes];
+  int size[shapes];
+  int colr[shapes];
+  // set initial properties for each shape
+  for (int n = 1; n < shapes; n = n + 1) {
+    sides[n] = n + 2;
+    size[n] = minSize + rand(maxSize - minSize);
+    colr[n] = rgb(n);
+    x[n] = rand(1000 - 2 * size[n]) + size[n];
+    y[n] = rand(1000 - 2 * size[n]) + size[n];
+    d[n] = rand(360);
+    xVelocity[n] = rand(15) - 7;
+    yVelocity[n] = rand(15) - 7;
+    dVelocity[n] = rand(4) + 3;
+  }
+  while (0 < 1) {
+    noupdate();
+    // rub out previous shapes
+    blank(white);
+    // draw each shape in its next position
+    for (n = 0; n < shapes; n = n + 1) {
+      // move to next position
+      x[n] = x[n] + xVelocity[n];
+      y[n] = y[n] + yVelocity[n];
+      d[n] = (d[n] + dVelocity[n]) % 360;
+      setxy(x[n], y[n]);
+      direction(d[n]);
+      // draw shape
+      drawShape(sides[n], size[n], colr[n]);
+      // "bounce" (i.e. invert velocity) at canvas edges
+      if (xEdge) {
+        xVelocity[n] = -xVelocity[n];
+        dVelocity[n] = -dVelocity[n];
+      }
+      if (yEdge) {
+        yVelocity[n] = -yVelocity[n];
+        dVelocity[n] = -dVelocity[n];
+      }
+    }
+    update();
+    pause(5);
+  }
+}

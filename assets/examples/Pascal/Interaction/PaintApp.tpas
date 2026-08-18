@@ -1,0 +1,125 @@
+PROGRAM PaintApp;
+VAR brushWidth: integer;
+    brushColour: integer;
+
+ {sets brush width, and updates display}
+ Procedure setBrushWidth(width: integer);
+ Var count: integer;
+ Begin
+  {set brush width}
+  brushWidth:=width;
+  {update brush width display}
+  noupdate;
+  colour(black);
+  for count:=0 to 4 do
+   begin
+    setxy(625+count*50,875);
+    blot(8+count*2)
+   end;
+  colour(brushColour);
+  recolour(((brushWidth+16)*25)+25,875,lightred);
+  update
+ End;
+
+ {sets brush colour, and updates display}
+ Procedure setBrushColour(colr: integer);
+ Begin
+  {set brush colour}
+  brushColour:=colr;
+  {update brush colour display}
+  colour(colr);
+  setxy(975,875);
+  blot(16)
+ End;
+
+ {draws with the paintbrush at the given coordinates}
+ Procedure paintbrush(x: integer;y: integer);
+ Begin
+  setxy(x,y);
+  colour(brushColour);
+  blot(brushWidth)
+ End;
+
+ {fills with the paint can at the given coordinates}
+ Procedure paintcan(x: integer;y: integer);
+ Begin
+  recolour(x,y,brushColour)
+ End;
+
+ {sets up the canvas}
+ Procedure setup;
+ Var count: integer;
+
+  {draws a square of the given colour}
+  procedure square(colr: integer);
+  begin
+   movexy(50,0);
+   movexy(0,50);
+   movexy(-50,0);
+   movexy(0,-50);
+   colour(colr);
+   polygon(4)
+  end;
+
+ Begin
+  {draw clickable interface grid}
+  colour(lightred);
+  setxy(0,850);
+  drawxy(1000,0);
+  setxy(0,900);
+  drawxy(1000,0);
+  setxy(450,850);
+  drawxy(0,50);
+  setxy(850,850);
+  drawxy(0,50);
+  {print text instructions in grid}
+  colour(black);
+  setxy(10,858);
+  display('Left-click to draw, right-click to fill',0,20);
+  setxy(450+10,858);
+  display('Brush width:',0,20);
+  setxy(850+10,858);
+  display('Colour:',0,20);
+  {draw 40 different colour selection boxes}
+  setxy(0,900);
+  for count:=1 to 20 do
+   begin
+    square(rgb(count));
+    movexy(0,50);
+    square(rgb(count+30));
+    movexy(50,-50)
+   end;
+  {initialise brush colour and width, and their displays}
+  setBrushColour(black);
+  setBrushWidth(8)
+ End;
+
+BEGIN
+ {set up the canvas}
+ setup;
+ {repeatedly...}
+ repeat
+  {if left mouse button is pressed...}
+  if ?lmouse>0 then
+   begin
+    {if cursor is at bottom of canvas...}
+    if ?mousey>900 then
+     {set brush colour}
+     setBrushColour(pixcol(?mousex,?mousey))
+    else
+    {if cursor is in brush width selection area...}
+    if (?mousey>850) and ((?mousex>600) and (?mousex<850)) then
+     {set brush width}
+     setBrushWidth(((?mousex div 50)*2)-16)
+    else
+    {if cursor is in drawing area...}
+    if ?mousey<850-brushWidth then
+     {draw with the brush}
+     paintbrush(?mousex,?mousey)
+   end;
+  {if right mouse button is pressed and cursor is in drawing area...}
+  if (?rmouse>0) and (?mousey<850) then
+   {fill with the paintcan}
+   paintcan(?mousex,?mousey)
+ until false
+END.

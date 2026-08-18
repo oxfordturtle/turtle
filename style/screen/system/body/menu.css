@@ -1,0 +1,107 @@
+.system-menu {
+  position: absolute;
+  z-index: 5;
+  width: var(--menu-closed-width);
+  height: 100%;
+  background: var(--blue);
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  overflow-x: hidden;
+  transition: width 0.4s ease-in-out;
+}
+
+.system-menu.open {
+  width: var(--menu-open-width);
+}
+
+.system-sub-menu {
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.system-sub-menu a,
+.system-sub-menu label {
+  display: flex;
+  align-items: center;
+  color: #fff;
+  font-weight: normal;
+  cursor: pointer;
+  padding: 0;
+}
+
+.system-sub-menu a.open,
+.system-sub-menu a:hover,
+.system-sub-menu label.open,
+.system-sub-menu label:hover {
+  background: var(--blue-dark);
+  text-decoration: none;
+}
+
+.system-sub-menu label {
+  padding: 0 0.5em;
+}
+
+.system-sub-menu i,
+.system-sub-menu span {
+  display: block;
+  padding: 0.5em;
+}
+
+.system-sub-menu i {
+  flex-basis: var(--menu-closed-width);
+  flex-shrink: 0;
+  text-align: center;
+}
+
+.system-sub-menu span {
+  flex: 1;
+}
+
+.system-sub-menu select,
+.system-sub-menu input[type="text"],
+.system-sub-menu input[type="number"] {
+  padding: 0.25em;
+  height: 2em;
+}
+
+.system-sub-menu input[type="number"] {
+  width: 6em;
+}
+
+.system-sub-menu hr {
+  margin: 0.25em 0;
+  border: 0;
+  border-top: 1px solid #fff;
+}
+
+.system-sub-menu .system-sub-menu {
+  position: absolute;
+  z-index: 6;
+  left: var(--menu-open-width);
+  top: 0;
+  width: var(--menu-open-width-minus-closed);
+  height: 100%;
+  overflow-x: hidden;
+  overflow-y: auto;
+  background: var(--blue-dark);
+}
+
+.system-sub-menu .system-sub-menu.open {
+  left: var(--menu-closed-width);
+}
+
+.system-sub-menu .system-sub-menu a.open,
+.system-sub-menu .system-sub-menu a:hover,
+.system-sub-menu .system-sub-menu label.open,
+.system-sub-menu .system-sub-menu label:hover {
+  background: var(--red);
+}
+
+.system-sub-menu .system-sub-menu .system-sub-menu {
+  z-index: 7;
+}
+
+.system-sub-menu .system-sub-menu .system-sub-menu.open {
+  left: 0;
+}

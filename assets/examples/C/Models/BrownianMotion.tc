@@ -1,0 +1,99 @@
+const int polradius = 80;
+const int molradius = 10;
+const int hitradius = 90;
+const int molecules = 400;
+const int slowspeed = 30;
+const int highspeed = 50;
+const int speedratio = 10;
+const int polcolour = blue;
+const int molcolour = red;
+const int halocolour = 0xFFFFFE;
+const int delay = 50;
+int px;
+int py;
+int pxvel;
+int pyvel;
+int mx[molecules];
+int my[molecules];
+int ms[molecules];
+int md[molecules];
+
+void setup () {
+  penup();
+  px = 500;
+  py = 500;
+  pxvel = 0;
+  pyvel = 0;
+  setxy(px, py);
+  colour(halocolour);
+  blot(hitradius);
+  for (int n = 0; n < molecules; n = n + 1) {
+    do {
+      mx[n] = rand(1000 - 2 * molradius) + molradius;
+      my[n] = rand(1000 - 2 * molradius) + molradius;
+    } while (pixcol(mx[n], my[n]) != white);
+    ms[n] = rand(highspeed - slowspeed + 1) + slowspeed;
+    md[n] = rand(360);
+    setxy(mx[n], my[n]);
+    blot(2 * molradius);
+  }
+}
+
+void draw (bool positive) {
+  if (positive) {
+    colour(molcolour);
+    int radius = molradius;
+  } else {
+    colour(white);
+    radius = molradius + 1;
+  }
+  for (int n = 0; n < molecules; n = n + 1) {
+    setxy(mx[n], my[n]);
+    blot(radius);
+  }
+  setxy(px, py);
+  if (positive) {
+    colour(polcolour);
+    blot(polradius);
+  } else {
+    blot(polradius + 1);
+  }
+}
+
+void move (int m) {
+  setxy(mx[m], my[m]);
+  direction(md[m]);
+  forward(ms[m]);
+  if (hypot(turtx - px, turty - py, 1) <= hitradius) {
+    while (hypot(turtx - px, turty - py, 1) < hitradius) {
+      back(1);
+    }
+    turnxy(px - turtx, py - turty);
+    int degturn = turtd - md[m];
+    md[m] = (180 + (turtd + degturn)) % 360;
+    int impact = cos(degturn, 1, ms[m]);
+    pxvel = pxvel + sin(turtd, 1, impact);
+    pyvel = pyvel - cos(turtd, 1, impact);
+  }
+  mx[m] = (turtx + 1000) % 1000;
+  my[m] = (turty + 1000) % 1000;
+}
+
+void main () {
+  noupdate();
+  setup();
+  blank(white);
+  draw(true);
+  do {
+    noupdate();
+    draw(false);
+    for (int n = 0; n < molecules; n = n + 1) {
+      move(n);
+    }
+    px = px + pxvel / speedratio;
+    py = py + pyvel / speedratio;
+    draw(true);
+    update();
+    pause(delay);
+  } while ((abs(px - 500) <= 490) && (abs(py - 500) < 480));
+}

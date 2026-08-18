@@ -1,0 +1,56 @@
+/*
+ * Womble islands are real custom elements, so each one is an extra element in
+ * the DOM between its call site and the markup it renders. An unknown element
+ * is `display: inline` by default, which breaks any layout the call site
+ * relies on - `.container` expects block-level children, `.title`,
+ * `.controls`, `.system-checkboxes`, `.system-menu` and `.turtle-properties`
+ * are all flex containers whose children carry the flex properties, and so on.
+ *
+ * `display: contents` removes the wrapper from the box tree entirely while
+ * leaving the DOM untouched, so every one of this project's stylesheets keeps
+ * matching exactly what it matched before the island existed. It's only
+ * listed for the islands that wrap *existing* layout; an island whose own tag
+ * is part of the structure styles itself instead - `site-menu` does, and so
+ * does `turtle-system` (see system.css, which styles the tag directly rather
+ * than the `.system` class the old wrapper div carried).
+ *
+ * This list is now a choice rather than a workaround. Island expansion used
+ * to drop every attribute that wasn't a declared prop, so a call site
+ * couldn't put a `class` on an island tag at all; since womble-next step 3 it
+ * passes them through like any other custom element, and an island that wants
+ * to *be* a layout box can carry the class the call site gives it. Keeping
+ * `display: contents` is still the right answer for the tags below, all of
+ * which wrap markup whose own classes the surrounding stylesheets already
+ * match - moving one out of this list means giving its call site a real class
+ * and rewriting those selectors, which is worth doing per island when there's
+ * a reason, not as a sweep.
+ */
+doc-tabs,
+language-select,
+file-menu,
+edit-menu,
+view-menu,
+compile-menu,
+run-menu,
+options-menu,
+examples-menu,
+setting-checkbox,
+setting-radio,
+setting-flag,
+setting-select,
+setting-number,
+system-filename,
+system-editor,
+turtle-properties,
+system-transport,
+canvas-tab,
+output-tab,
+usage-tab,
+comments-tab,
+syntax-tab,
+variables-tab,
+pcode-tab,
+memory-tab,
+options-tab {
+  display: contents;
+}

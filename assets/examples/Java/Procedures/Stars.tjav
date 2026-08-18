@@ -1,0 +1,30 @@
+class Stars {
+  // draws a coloured star with the given number of points
+  void star (int points, int colr) {
+    // set angles to twice the number of points
+    angles(points * 2);
+    // trace out each point with the turtle
+    for (int count = 0; count < points; count = count + 1) {
+      forward(450);
+      back(450);
+      forget(1);
+      right(1);
+      forward(200);
+      back(200);
+      forget(1);
+      right(1);
+    }
+    // fill in the shape
+    colour(colr);
+    polygon(points * 2);
+  }
+
+  void main () {
+    penUp();
+    // draw 10 stars with increasing numbers of points
+    for (int n = 3; n <= 12; n = n + 1) {
+      star(n, rgb(n - 2));
+      pause(500);
+    }
+  }
+}

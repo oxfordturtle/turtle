@@ -1,0 +1,207 @@
+* {
+  box-sizing: border-box;
+  scrollbar-width: thin;
+  scrollbar-color: var(--gray) var(--lightgray);
+}
+
+*::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+*::-webkit-scrollbar-track {
+  background: var(--lightgray);
+}
+
+*::-webkit-scrollbar-thumb {
+  background: var(--gray);
+}
+
+html {
+  font-family: var(--system-font);
+  min-width: 320px;
+  min-height: 100vh;
+}
+
+body {
+  background-image: url("../images/oxford.jpg");
+  background-size: cover;
+  background-attachment: fixed;
+  background-position: center;
+  margin: 0;
+  padding-top: 3em; /* to offset the absolutely positioned nav bar at the top */
+  font-size: 16px;
+  line-height: 1.5;
+  color: var(--darkgray);
+  overflow-y: scroll;
+}
+
+h1,
+h2,
+h3,
+h4 {
+  margin-top: 0;
+  margin-bottom: 1rem;
+}
+
+h1 {
+  font-size: 1.75em;
+}
+
+h2 {
+  font-size: 1.5em;
+}
+
+h3 {
+  font-size: 1.25em;
+}
+
+h4 {
+  font-size: 1.125em;
+}
+
+p,
+blockquote {
+  text-align: justify;
+}
+
+p {
+  margin: 0 0 1em;
+}
+
+a {
+  cursor: pointer;
+  color: var(--blue);
+  text-decoration: none;
+}
+
+a:hover {
+  text-decoration: underline;
+}
+
+img {
+  max-width: 100%;
+}
+
+blockquote {
+  border-left: 3px solid var(--gray);
+  padding-left: 1em;
+  margin-left: 2em;
+}
+
+blockquote cite {
+  display: block;
+  text-align: right;
+}
+
+pre {
+  background: var(--lightgray);
+  border: 1px solid var(--gray);
+  padding: 0.5em 0.75em;
+}
+
+pre,
+code {
+  font-family: var(--monospace);
+}
+
+table {
+  border-collapse: collapse;
+  width: 100%;
+  margin: 1.5em 0;
+}
+
+tbody {
+  border-top: 1px solid var(--gray);
+  border-bottom: 1px solid var(--gray);
+}
+
+tr:not(:last-child) {
+  border-bottom: 1px solid var(--gray);
+}
+
+th {
+  text-align: left;
+  background: var(--lightgray);
+}
+
+th,
+td {
+  vertical-align: top;
+  padding: 0.25em 0.5em;
+}
+
+label {
+  display: block;
+  padding: 0.25em 0.5em;
+  cursor: pointer;
+  font-weight: bold;
+}
+
+input[type="text"],
+input[type="password"],
+input[type="email"],
+input[type="number"],
+select {
+  border: 1px solid var(--gray);
+  padding: 0.25em 0.5em;
+  font-family: inherit;
+  font-size: inherit;
+}
+
+input[type="number"] {
+  text-align: right;
+}
+
+textarea {
+  height: 20em;
+  font: inherit;
+  display: block;
+}
+
+button,
+.button {
+  padding: 0.25em 1em;
+  background: var(--blue);
+  color: #fff !important;
+  cursor: pointer;
+  font: inherit;
+  border: 0;
+}
+
+button:hover,
+.button:hover {
+  background: var(--blue-dark);
+  text-decoration: none !important;
+}
+
+button.green,
+.button.green {
+  background: var(--green);
+}
+
+button.green:hover,
+.button.green:hover {
+  background: var(--green-dark);
+}
+
+button.red,
+.button.red {
+  background: var(--red);
+}
+
+button.red:hover,
+.button.red:hover {
+  background: var(--red-dark);
+}
+
+button[disabled],
+.button[disabled] {
+  color: var(--gray) !important;
+  cursor: default;
+}
+
+button[disabled]:hover,
+.button[disabled]:hover {
+  background: var(--blue) !important;
+}

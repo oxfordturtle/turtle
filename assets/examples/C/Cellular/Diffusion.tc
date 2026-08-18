@@ -1,0 +1,146 @@
+const int width = 100;
+const int leftaxis = 21;
+const int rightaxis = 15;
+const int topmargin = 20;
+const int gap = 10;
+const int concbottom = 80;
+const int concwidth = 50;
+const int colour1 = red;
+const int colour2 = blue;
+const int edgecol = black;
+const int molcol = red;
+const int conccol = seagreen;
+
+int xorval;
+int bottom;
+int boundary;
+int num1[width];
+
+void setup () {
+  canvas(0, 0, width + leftaxis + rightaxis, width * 2 + topmargin + gap);
+  resolution(width + leftaxis + rightaxis, width * 2 + topmargin + gap);
+  bottom = width * 2 + topmargin + gap - 1;
+  boundary = divmult(width, 1000, 707);
+  xorval = colour1 | colour2;
+  colour(colour2);
+  setxy(boundary + 1 + leftaxis, bottom - boundary);
+  drawxy(0, boundary);
+  thickness(1);
+  setxy(boundary + leftaxis, bottom - boundary - 10);
+  drawxy(0, 5);
+  setxy(boundary + leftaxis, topmargin);
+  drawxy(0, 5);
+  colour(colour1);
+  setxy(boundary + leftaxis - 1, bottom - boundary - 10);
+  drawxy(0, 5);
+  setxy(boundary + leftaxis - 1, topmargin);
+  drawxy(0, 5);
+  colour(edgecol);
+  setxy(leftaxis - 1, bottom);
+  drawxy(width + 1, -width - 1);
+  colour(edgecol);
+  drawxy(0, width + 1);
+  recolour(leftaxis + 2, bottom, colour1);
+  recolour(width + leftaxis - 4, bottom, colour2);
+  for (int x = 0; x < boundary; x = x + 1) {
+    num1[x] = x + 1;
+  }
+  for (x = boundary; x < width; x = x + 1) {
+    num1[x] = 0;
+  }
+  colour(black);
+  setxy(0, 0);
+  display('Diffusion in a Tapering Tube', 2, width / 10);
+}
+
+void drawaxes () {
+  for (int n = -1; n <= concwidth; n = n + 1) {
+    pixset(leftaxis - 1, concbottom - n, black);
+  }
+  for (n = 0; n <= width; n = n + 1) {
+    pixset(leftaxis + 100, topmargin + n, black);
+  }
+  for (n = 0; n <= 100; n = n + 1) {
+    if ((n < 31) || (n % 5 == 0)) {
+      pixset(leftaxis + n, concbottom + 1, black);
+    }
+    pixset(leftaxis + n, topmargin + 101, black);
+  }
+  drawxy(0, -concwidth);
+  colour(conccol);
+  setxy(0, concbottom - concwidth - width / 15);
+  display('100%', 2, width / 15);
+  setxy(0, concbottom - width / 15);
+  display('  0%', 2, width / 15);
+  setxy(0, topmargin + width * 11 / 10);
+  display('Red concentration', 2, width / 12);
+  colour(molcol);
+  setxy(width + leftaxis + 2, topmargin + width - boundary + 1 - width / 15);
+  display(itoa(boundary - 1), 2, width / 15);
+  setxy(width + leftaxis + 2, topmargin + width - width / 15);
+  display('  0', 2, width / 15);
+  setxy(0, topmargin + width * 12 / 10);
+  display('Red molecule count', 2, width / 12);
+  colour(black);
+  setxy(0, topmargin + width * 13 / 10 + 5);
+  display('(at horizontal position', 2, width / 15);
+  setxy(0, topmargin + width * 14 / 10 + 5);
+  display('in tapering tube)', 2, width / 15);
+}
+
+void graphit (int x, bool show) {
+  if (show) {
+    pixset(x + leftaxis, topmargin + width - num1[x], molcol);
+    pixset(x + leftaxis, concbottom - divmult(num1[x], x + 1, concwidth), conccol);
+  } else {
+    pixset(x + leftaxis, topmargin + width - num1[x], white);
+    pixset(x + leftaxis, concbottom - divmult(num1[x], x + 1, concwidth), white);
+  }
+}
+
+void showswap (int x, int origcol) {
+  graphit(x, false);
+  graphit(x + 1, false);
+  if (origcol == colour1) {
+    num1[x] = num1[x] - 1;
+    num1[x + 1] = num1[x + 1] + 1;
+  } else {
+    num1[x] = num1[x] + 1;
+    num1[x + 1] = num1[x + 1] -1;
+  }
+  graphit(x, true);
+  graphit(x + 1, true);
+}
+
+void main () {
+  setup();
+  drawaxes();
+  for (int x1 = 0; x1 < width; x1 = x1 + 1) {
+    graphit(x1, true);
+  }
+  pause(2500);
+  do {
+    x1 = rand(width);
+    int y1 = rand(width);
+    if (y1 <= x1) {
+      y1 = bottom - y1;
+      int x2 = x1;
+      int y2 = y1;
+      if (rand(2) == 0) {
+        x2 = x2 + 1;
+      } else {
+        y2 = y2 - 1;
+      }
+      int temp = pixcol(x1 + leftaxis, y1);
+      if ((pixcol(x2 + leftaxis, y2) | temp) == xorval) {
+        noupdate();
+        pixset(x1 + leftaxis, y1, pixcol(x2 + leftaxis, y2));
+        pixset(x2 + leftaxis, y2, temp);
+        if (x2 != x1) {
+          showswap(x1, temp);
+        }
+        update();
+      }
+    }
+  } while (1 == 1);
+}

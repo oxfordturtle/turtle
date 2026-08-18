@@ -1,0 +1,180 @@
+const int sectors = 8;
+const int wavecol1 = red;
+const int wavecol2 = skyblue;
+const int waveaddcol = indigo;
+const int clocks = 16;
+const bool report = false;
+int sectcol[sectors];
+int boundary[sectors];
+int clockx[clocks + 1];
+int cradius;
+int hand;
+int leftx;
+int rightx;
+int dimensions;
+int wavelength1;
+int wavelength2;
+
+void colsetup () {
+  sectcol[0] = violet;
+  sectcol[1] = blue;
+  sectcol[2] = cyan;
+  sectcol[3] = lime;
+  sectcol[4] = yellow;
+  sectcol[5] = orange;
+  sectcol[6] = red;
+  sectcol[7] = violet;
+  for (int n = 0; n < sectors; n = n + 1) {
+    boundary[n] = divmult(360, sectors - 1, n);
+  }
+}
+
+int wavecolour (int n) {
+  int col2 = 0;
+  do {
+    col2 = col2 + 1;
+  } while (boundary[col2] < n);
+  int col1 = col2 - 1;
+  return mixcols(sectcol[col1], sectcol[col2], boundary[col2] - n, n - boundary[col1]);
+}
+
+void clocksetup () {
+  for (int n = 1; n <= clocks; n = n + 1) {
+    clockx[n] = divmult(1000, clocks * 2 + 2, n * 2);
+  }
+  leftx = clockx[1];
+  rightx = clockx[clocks];
+  cradius = (rightx - leftx) / (clocks - 1) / 2;
+  hand = cradius * 6 / 7;
+}
+
+void drawwave (string s, int top, int wavelength, int wavecol) {
+  if (dimensions == 1) {
+    setxy(leftx, top + 25);
+    colour(black);
+    drawxy(rightx - leftx, 0);
+    setxy(leftx, top);
+    colour(wavecol);
+  }
+  for (int n = 0; n <= rightx - leftx; n = n + 1) {
+    if (dimensions == 1) {
+      setxy(leftx + n, top + 25 - cos(divmult(n % wavelength, wavelength, 360), 1, 25));
+      polyline(2);
+    } else {
+      setxy(leftx + n, top);
+      colour(wavecolour(divmult(n % wavelength, wavelength, 360)));
+      drawxy(0, 50);
+    }
+  }
+  for (n = 1; n <= clocks; n = n + 1) {
+    setxy(clockx[n], top + 70 + cradius);
+    colour(black);
+    circle(cradius);
+    blot(5);
+    int turn = divmult((clockx[n] - leftx) % wavelength, wavelength, 360);
+    if (report) {
+      print(s + ', clock ' + itoa(n) + ': dist=' + itoa(clockx[n]) + '; turn=' + itoa(turn));
+    }
+    turnxy(sin(turn, 1, 1000), -cos(turn, 1, 1000));
+    colour(wavecol);
+    forward(hand);
+  }
+}
+
+void drawresult (int top) {
+  if (dimensions == 1) {
+    setxy(leftx, top + 50);
+    colour(black);
+    drawxy(rightx - leftx, 0);
+    setxy(leftx, top);
+    colour(waveaddcol);
+  }
+  for (int n = 0; n <= rightx - leftx; n = n + 1) {
+    int turn1 = divmult(n % wavelength1, wavelength1, 360);
+    int turn2 = divmult(n % wavelength2, wavelength2, 360);
+    int waveaddi = sin(turn1, 1, 500) + sin(turn2, 1, 500);
+    int waveaddj = cos(turn1, 1, 500) + cos(turn2, 1, 500);
+    int waveadd = hypot(waveaddi, waveaddj, 1);
+    if (dimensions == 1) {
+      setxy(leftx + n, top + 50 - divmult(waveaddj, 1000, 50));
+      polyline(2);
+    } else {
+      setxy(leftx + n, top);
+      turnxy(waveaddi, -waveaddj);
+      colour(mixcols(wavecolour(turtd), black, waveadd, 1000 - waveadd));
+      if (mixcols(wavecolour(turtd), black, waveadd, 1000 - waveadd) < 51) {
+        colour(black);
+      }
+      drawxy(0, 100);
+    }
+  }
+  for (n = 1; n <= clocks; n = n + 1) {
+    setxy(clockx[n], top + 280 + 2 * cradius - (150 * (n % 2)));
+    colour(black);
+    circle(cradius * 2);
+    blot(5);
+    turn1 = divmult((clockx[n] - leftx) % wavelength1, wavelength1, 360);
+    turn2 = divmult((clockx[n] - leftx) % wavelength2, wavelength2, 360);
+    waveaddi = sin(turn1, 1, 500) + sin(turn2, 1, 500);
+    waveaddj = cos(turn1, 1, 500) + cos(turn2, 1, 500);
+    waveadd = hypot(waveaddi, waveaddj, 1);
+    turnxy(waveaddi, -waveaddj);
+    thickness(6);
+    colour(waveaddcol);
+    forward(divmult(waveadd, 1000, hand * 2));
+    setxy(clockx[n], top + 280 + 2 * cradius - (150 * (n % 2)));
+    thickness(4);
+    direction(turn1);
+    colour(wavecol1);
+    forward(hand);
+    direction(turn2);
+    colour(wavecol2);
+    forward(hand);
+    thickness(2);
+  }
+}
+
+void randomwaves () {
+  wavelength1 = rand(30) * 10 + 200;
+  wavelength2 = rand(30) * 10 + 200;
+}
+
+void changeprompt () {
+  console(true, white);
+  print('Press "1" or "2" for the dimensionality required,');
+  printon('or press "R" to pick random new wavelengths: ');
+  do {} while ((abs(?key) != \1) && (abs(?key) != \2) && (abs(?key) != \r));
+  if (abs(?key) == \1) {
+    dimensions = 1;
+  } else {
+    if (abs(?key) == \2) {
+      dimensions = 2;
+    } else {
+      randomwaves();
+    }
+  }
+  reset(?key);
+  reset(\keybuffer);
+}
+
+void main () {
+  colsetup();
+  clocksetup();
+  dimensions = 1;
+  wavelength1 = 300;
+  wavelength2 = 420;
+  do {
+    blank(white);
+    noupdate();
+    setxy(leftx, 25);
+    colour(black);
+    display('Component waves (wavelengths ' + itoa(wavelength1) + ', ' + itoa(wavelength2) + ')', 4, 30);
+    drawwave('Wave 1', 100, wavelength1, wavecol1);
+    drawwave('Wave 2', 300, wavelength2, wavecol2);
+    setxy(leftx, 505);
+    colour(black);
+    display('Resultant wave', 4, 30);
+    drawresult(580);
+    changeprompt();
+  } while (1 == 1);
+}

@@ -1,0 +1,72 @@
+const decimals: number = 4;          // decimal places for display of values
+const denominator: number = 1000000; // denominator gives level of precision
+var a: number = randInt(900) + 100;
+var b: number = randInt(900) + 100;
+
+// Writes to the output the value of a mathematical function of a/b,
+// or - in the case of HYPOT (where OP is "," not "/") - of a and b;
+// chr(176) is the degree symbol for sin/cos/tan and their inverses.
+function show (fn: string, op: string, value: number, degrees: number): void {
+  if (degrees == 1) {
+    print(fn + '(' + toString(a) + op + toString(b) + fromCharCode(176) + ') = ' + toStringQ(value, denominator, decimals));
+  } else {
+    if (degrees == 2) {
+      print(fn + '(' + toString(a) + op + toString(b) + ') = ' + toStringQ(value, denominator, decimals) + fromCharCode(176));
+    } else {
+      print(fn + '(' + toString(a) + op + toString(b) + ') = ' + toStringQ(value, denominator, decimals));
+    }
+  }
+}
+
+// show output and display information about the program
+output(true, white, true);
+print('This program selects two random numbers a and b, in the range');
+print('100-999, and then outputs various mathematical functions of the');
+print('fraction a/b. The results are expressed to ' + toString(decimals) + ' decimal places, and a');
+print('denominator of ' + toString(denominator) + ' is used in the calculations to provide');
+print('precision, even though the Turtle functions strictly operate only');
+print('on integers and produce integer results.');
+print('');
+// display the values and quotient of a and b
+print('a = ' + toString(a) + '; b = ' + toString(b));
+print('a/b = ' + toString(a) + '/' + toString(b) + ' = ' + toStringQ(a, b, decimals));
+print('');
+// display square, square root, cube, and cube root of a/b
+show('square', '/', pow(a, b, 2, 1, denominator), 0);
+show('square root', '/', pow(a, b, 1, 2, denominator), 0);
+show('cube', '/', pow(a, b, 3, 1, denominator), 0);
+show('cube root', '/', pow(a, b, 1, 3, denominator), 0);
+print('');
+// display hypotenuse of right-angled triangle with shorter sides a and b
+show('hypot', ',', hypot(a, b, denominator), 0);
+show('calculated hypot', ',', sqrt(a * a + b * b, denominator), 0);
+print('');
+// display sin, cos, and tan of a/b, interpreted in degrees
+show('sin', '/', sin(a, b, denominator), 1);
+show('cos', '/', cos(a, b, denominator), 1);
+show('tan', '/', tan(a, b, denominator), 1);
+print('');
+// display ln, exp, log10, and antilog of a/b
+show('ln', '/', log(a, b, denominator), 0);
+if (divMult(a, b, 1000) + log(denominator, 1, 1000) > log(maxInt(), 1, 1000)) {
+  print('EXP(' + toString(a) + '/' + toString(b) + ') would give numerical overflow, because');
+  print('the result*' + toString(denominator) + ' would be greater than ' + toString(maxInt()));
+} else {
+  show('exp', '/', exp(a, b, denominator), 0);
+}
+show('log10', '/', log10(a, b, denominator), 0);
+if (divMult(a, b, 1000) + log10(denominator, 1, 1000) > log10(maxInt(), 1, 1000)) {
+  print('ANTILOG(' + toString(a) + '/' + toString(b) + ') would give numerical overflow, because');
+  print('the result*' + toString(denominator) + ' would be greater than ' + toString(maxInt()));
+} else {
+  show('antilog', '/', antilog(a, b, denominator), 0);
+}
+print('');
+// display arccos, arcsin, and arctan of a/b, in degrees
+if (a > b) {
+  print('ARCCOS and ARCSIN are not defined for ' + toString(a) + '/' + toString(b) + ' = ' + toStringQ(a, b, decimals));
+} else {
+  show('arccos', '/', acos(a, b, denominator), 2);
+  show('arcsin', '/', asin(a, b, denominator), 2);
+}
+show('arctan', '/', atan(a, b, denominator), 2);

@@ -1,0 +1,44 @@
+const delay: number = 500;
+output(true, cream, true);
+// set initial String
+var s1: string = 'Turtle TypeScript';
+// illustrate use of SLICE function ...
+var s2: string = slice(s1, 0, 6);
+print(s2 + ' is the name of a small animal.');
+pause(delay);
+var s3: string = slice(s1, 7, 4);
+print(s3 + 'writers were perfected in the 19th century.');
+pause(delay);
+// illustrate use of INSERT function ...
+var s4: string = insert(s3, 'Script', 4);
+print(s4 + ' is a typed superset of JavaScript.');
+pause(delay);
+// illustrate use of LENGTH function ...
+print('"' + s1 + '" has ' + toString(length(s1)) + ' characters.');
+pause(delay);
+// illustrate use of TOLOWERCASE and TOUPPERCASE functions ...
+print('In lower case it is "' + toLowerCase(s1) + '".');
+print('In upper case it is "' + toUpperCase(s1) + '".');
+pause(delay);
+// illustrate use of INDEXOF function ...
+var posn: number = indexOf(s1, s3);
+if (posn > 0) {
+  print('"' + s3 + '" occurs within "' + s1 + '" at position ' + toString(posn) + '.');
+}
+pause(delay);
+// illustrate use of PARSEINTQ function, converting a decimal String to an integer ...
+var s5: string = '3.14159';
+print(s5 + ' times 100000 = ' + toString(parseIntQ(s5, 100000, -1)) + '.');
+pause(delay);
+var n: number = parseIntQ(s5, 100000, -1);
+print(toString(n) + ' divided by 100000 = ' + toStringQ(n, 100000, 5) + '.');
+print('');
+pause(delay * 5);
+// illustrate use of OUTPUT and CONSOLE commands ...
+print('Now back to the Canvas and Console ...');
+output(false, peach, true);
+pause(delay * 5);
+output(false, lightred, false);
+pause(delay * 5);
+console(true, lightblue);
+print('You will see this on a clear light blue Console');

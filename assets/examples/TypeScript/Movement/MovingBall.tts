@@ -1,0 +1,18 @@
+// set starting point
+var x: number = 100;
+var y: number = 700;
+for (var count: number = 0; count < 100; count = count + 1) {
+  noUpdate();
+  // rub out previous ball
+  colour(white);
+  blot(51);
+  // move to next point
+  x = x + 8;
+  y = y - 4;
+  setXY(x, y);
+  // draw new ball
+  colour(red);
+  blot(50);
+  update();
+  pause(10);
+}

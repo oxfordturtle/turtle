@@ -1,0 +1,50 @@
+const int width = 100;
+const int height = 100;
+int cellcol[2];
+int nextstate[8];
+
+void setup (int rulecode) {
+  for (int nhood = 0; nhood < 8; nhood = nhood + 1) {
+    nextstate[nhood] = rulecode % 2;
+    rulecode = rulecode div 2;
+  }
+}
+
+void nextgen (int g) {
+  int n1 = 0;
+  int n2 = 0;
+  for (int x = -1; x <= width; x = x + 1) {
+    int xmod = (x + width) % width;
+    int thispix = pixcol(xmod, g - 1) & 1;
+    int n3 = n2 * 2 + thispix;
+    n2 = n1 * 2 + thispix;
+    n1 = thispix;
+    if (x > 0) {
+      pixset(x - 1, g, cellcol[nextstate[n3]]);
+    }
+  }
+}
+
+void main () {
+  canvas(0, 0, width, height);
+  resolution(width, height);
+  cellcol[0] = 0xFFFFFE;
+  cellcol[1] = 0x000001;
+  for (int n = 4; n < 46; n = n + 1) {
+    int rule = n * 4 + 2;
+    setup(rule);
+    noupdate();
+    blank(white);
+    for (int x = 0; x < width; x = x + 1) {
+      pixset(x, 0, cellcol[rand(2)]);
+    }
+    for (int generation = 1; generation < height; generation = generation + 1) {
+      nextgen(generation);
+    }
+    setxy(0, height - 15);
+    box(25 + strlen(itoa(rule)) * 7, 14, cream, false);
+    display('Rule ' + itoa(rule), 4, 8);
+    update();
+    pause(500);
+  }
+}

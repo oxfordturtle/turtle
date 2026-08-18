@@ -1,0 +1,27 @@
+.option {
+  flex: 1;
+  background: var(--lightgray);
+  font-size: 0.875em;
+  padding: 0.5em;
+}
+
+.option:not(:last-child) {
+  border-bottom: 1px solid var(--gray);
+}
+
+.option label {
+  padding: 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 0.5em;
+}
+
+.option input {
+  padding: 0 0.25em;
+  margin-left: 0.25em;
+}
+
+.option p {
+  margin: 0;
+}

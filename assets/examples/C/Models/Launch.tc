@@ -1,0 +1,114 @@
+const int earthradius = 6371000;
+const int earthgm = 398600442;
+const int initdirection = 2000;
+const int initthrust = 20000;
+const int thrusttime = 500;
+const int angleprecision = 1296000;
+int x;
+int y;
+int d;
+int xvel;
+int yvel;
+int thrust;
+int xthrust;
+int ythrust;
+int gravity;
+int xgravity;
+int ygravity;
+int xacc;
+int yacc;
+int dist;
+int t;
+
+void drawrocket () {
+  noupdate();
+  blank(black);
+  colour(teal);
+  setxy(0, 0);
+  blot(earthradius / 1000);
+  setxy(x / 1000, y / 1000);
+  direction(d);
+  thickness(4);
+  colour(silver);
+  forward(200);
+  back(200);
+  if (thrust > 0) {
+    thickness(8);
+    colour(yellow);
+    back(200);
+    forward(200);
+  }
+  update();
+}
+
+void report () {
+  print('');
+  print('TIME = ' + itoa(t));
+  print(' Xposition = ' + itoa(x) + ' metres');
+  print(' Yposition = ' + itoa(y) + ' metres');
+  print(' Height = ' + qitoa(dist - earthradius, 1000, 2) + ' km');
+  print(' Direction = ' + qitoa(d, 3600, 1) + ' degrees');
+  print(' Thrust = ' + qitoa(thrust, 1000, 1) + ' newtons per kg');
+  print('  Xthrust = ' + qitoa(xthrust, 1000, 1) + ' newtons per kg');
+  print('  Ythrust = ' + qitoa(ythrust, 1000, 1) + ' newtons per kg');
+  print(' Gravity = ' + qitoa(gravity, 1000, 1) + ' newtons per kg');
+  print('  Xgravity = ' + qitoa(xgravity, 1000, 1) + ' newtons per kg');
+  print('  Ygravity = ' + qitoa(ygravity, 1000, 1) + ' newtons per kg');
+  print(' Xvelocity = ' + qitoa(xvel, 1000, 1) + ' metres per s');
+  print(' Yvelocity = ' + qitoa(yvel, 1000, 1) + ' metres per s');
+}
+
+void main () {
+  canvas(-20000, -20000, 40000, 40000);
+  angles(angleprecision);
+  x = 0;
+  y = -earthradius;
+  xvel = 0;
+  yvel = 0;
+  d = initdirection;
+  t = 0;
+  int prevdiff = 1;
+  thrust = initthrust;
+  xthrust = 0;
+  ythrust = 0;
+  gravity = 0;
+  xgravity = 0;
+  ygravity = 0;
+  dist = 0;
+  do {
+    drawrocket();
+    int prevdist = dist;
+    dist = hypot(x, y ,1);
+    if ((dist - prevdist) * prevdiff <= 0) {
+      report();
+    }
+    prevdiff = dist - prevdist;
+    gravity = divmult(earthgm, divmult(dist, 1000000, dist), 1000);
+    xgravity = divmult(gravity, dist, -x);
+    ygravity = divmult(gravity, dist, -y);
+    xthrust = sin(d, 1, thrust);
+    ythrust = -cos(d, 1, thrust);
+    xvel = xvel + xgravity + xthrust;
+    yvel = yvel + ygravity + ythrust;
+    x = x + xvel / 1000;
+    y = y + yvel / 1000;
+    if (yvel > 0) {
+      d = angleprecision / 2 - atan(xvel, yvel, 1);
+    } else {
+      d = atan(xvel, -yvel, 1);
+    }
+    t = t + 1;
+    if (t == thrusttime) {
+      thrust = 0;
+    }
+  } while ((dist >= earthradius) && (dist <= 40000000));
+  if (dist < earthradius) {
+    colour(yellow);
+    for (int explosion = 100; explosion <= 200; explosion = explosion + 1) {
+      blot(explosion);
+      pause(3);
+    }
+    colour(black);
+    blot(200);
+  }
+}

@@ -1,0 +1,67 @@
+.canvas {
+  display: flex;
+}
+
+.canvas .canvas-coords {
+  flex: 1;
+  display: flex;
+  justify-content: space-between;
+}
+
+.canvas .canvas-coords span {
+  display: block;
+  font-size: 10px;
+  padding: var(--system-padding);
+  width: var(--canvas-coords-width);
+  overflow: hidden;
+  color: var(--green-dark-5);
+  text-align: right;
+}
+
+.canvas .canvas-left {
+  display: flex;
+  flex-direction: column;
+}
+
+.canvas .canvas-left .canvas-coords {
+  flex-direction: column;
+  text-align: right;
+  margin-top: 18px;
+}
+
+.canvas .canvas-right {
+  flex: 1;
+}
+
+.canvas .canvas-right .canvas-coords span:nth-child(1),
+.canvas .canvas-right .canvas-coords span:nth-child(2) {
+  text-align: left;
+}
+
+.canvas .canvas-right .canvas-coords span:nth-child(3) {
+  text-align: center;
+}
+
+.canvas .canvas-right .canvas-wrapper {
+  border: 1px solid var(--gray);
+  border-right: 0;
+  border-bottom: 0;
+}
+
+.canvas .canvas-right .canvas-wrapper canvas {
+  display: block;
+  width: var(--canvas-width);
+  height: var(--canvas-width);
+}
+
+.console {
+  flex: 1;
+  overflow: auto;
+  border: 0;
+  border-top: 1px solid var(--gray);
+  margin: 0;
+  padding: var(--system-padding);
+  font-family: var(--monospace);
+  font-size: 13px;
+  background: #fff;
+}

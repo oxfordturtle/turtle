@@ -1,0 +1,78 @@
+class BouncingShapes {
+  boolean xEdge;
+  boolean yEdge;
+
+  // draws a polygon, and checks whether it meets the edge of the canvas
+  void drawShape(int sides, int size, int colr) {
+    xEdge = false;
+    yEdge = false;
+    colour(colr);
+    for (int count = 0; count < sides; count = count + 1) {
+      forward(size);
+      if (abs(turtx - 500) > 495) {
+        xEdge = true;
+      }
+      if (abs(turty - 500) > 495) {
+        yEdge = true;
+      }
+      back(size);
+      forget(1);
+      right(360 / sides);
+    }
+    polygon(sides);
+  }
+
+  void main () {
+    final int minSize = 70;
+    final int maxSize = 130;
+    final int shapes = 6;
+    int[shapes] x;
+    int[shapes] y;
+    int[shapes] d;
+    int[shapes] xVelocity;
+    int[shapes] yVelocity;
+    int[shapes] dVelocity;
+    int[shapes] sides;
+    int[shapes] size;
+    int[shapes] colr;
+    // set initial properties for each shape
+    for (int n = 1; n < shapes; n = n + 1) {
+      sides[n] = n + 2;
+      size[n] = minSize + randInt(maxSize - minSize);
+      colr[n] = rgb(n);
+      x[n] = randInt(1000 - 2 * size[n]) + size[n];
+      y[n] = randInt(1000 - 2 * size[n]) + size[n];
+      d[n] = randInt(360);
+      xVelocity[n] = randInt(15) - 7;
+      yVelocity[n] = randInt(15) - 7;
+      dVelocity[n] = randInt(4) + 3;
+    }
+    while (0 < 1) {
+      noUpdate();
+      // rub out previous shapes
+      blank(white);
+      // draw each shape in its next position
+      for (n = 0; n < shapes; n = n + 1) {
+        // move to next position
+        x[n] = x[n] + xVelocity[n];
+        y[n] = y[n] + yVelocity[n];
+        d[n] = (d[n] + dVelocity[n]) % 360;
+        setXY(x[n], y[n]);
+        direction(d[n]);
+        // draw shape
+        drawShape(sides[n], size[n], colr[n]);
+        // "bounce" (i.e. invert velocity) at canvas edges
+        if (xEdge) {
+          xVelocity[n] = -xVelocity[n];
+          dVelocity[n] = -dVelocity[n];
+        }
+        if (yEdge) {
+          yVelocity[n] = -yVelocity[n];
+          dVelocity[n] = -dVelocity[n];
+        }
+      }
+      update();
+      pause(5);
+    }
+  }
+}

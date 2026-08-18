@@ -1,0 +1,56 @@
+@import "system/header.css";
+@import "system/body.css";
+
+.index .container .header,
+.index .container .footer {
+  display: none;
+}
+
+.index .container .main {
+  background: transparent;
+  padding: 0;
+  height: var(--system-default-height);
+}
+
+.index.fullscreen {
+  margin: 0;
+  padding: 0;
+  height: 100vh;
+  overflow: hidden;
+  font-size: 16px;
+  line-height: 1.5;
+  color: var(--darkgray);
+}
+
+.index.fullscreen .site-nav {
+  display: none;
+}
+
+.index.fullscreen .wrapper {
+  padding: 0 !important;
+  height: 100% !important;
+}
+
+.index.fullscreen .container {
+  max-width: none !important;
+  height: 100% !important;
+  box-shadow: none !important;
+}
+
+.index.fullscreen .container .main {
+  height: 100%;
+}
+
+/*
+ * `<turtle-system>` is the app's own root component, so its tag is styled
+ * directly rather than through a class: island expansion only emits a
+ * component's declared props as attributes, so the `class="system"` the old
+ * wrapper div carried couldn't survive on it anyway.
+ */
+turtle-system {
+  min-height: var(--system-default-height);
+  height: 100%;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  background: var(--darkgray-transparent);
+}

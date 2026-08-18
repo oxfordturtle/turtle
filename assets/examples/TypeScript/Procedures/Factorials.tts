@@ -1,0 +1,15 @@
+// calculates n! recursively
+function factorial (n: number): number {
+  if (n == 0) {
+    return 1;
+  } else {
+    return n * factorial(n - 1);
+  }
+}
+
+// set up and show the output
+output(true, cream, true);
+// calculate and display n! for n = 1 to 10
+for (var n: number = 1; n <= 10; n = n + 1) {
+  print(toString(n) + '! = ' + toString(factorial(n)));
+}

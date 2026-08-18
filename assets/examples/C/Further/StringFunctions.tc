@@ -1,0 +1,46 @@
+void main () {
+  const int delay = 500;
+  output(true, cream, true);
+  // set initial string
+  string s1 = 'Turtle C';
+  // illustrate use of STRCPY function ...
+  string s2 = strcpy(s1, 0, 6);
+  print(s2 + ' is the name of a small animal.');
+  pause(delay);
+  string s3 = strcpy(s1, 7, 1);
+  print('\'' + s3 + '\' is the third letter of the alphabet.');
+  pause(delay);
+  // illustrate use of STRINS function ...
+  string s4 = strins(s3, '++', 1);
+  print(s4 + ' is an extension of the C programming language.');
+  pause(delay);
+  // illustrate use of STRLEN function ...
+  print('"' + s1 + '" has ' + itoa(strlen(s1)) + ' characters.');
+  pause(delay);
+  // illustrate use of STRLWR and STRUPR functions ...
+  print('In lower case it is "' + strlwr(s1) + '".');
+  print('In upper case it is "' + strupr(s1) + '".');
+  pause(delay);
+  // illustrate use of STRPOS function ...
+  int posn = strpos(s1, s3);
+  if (posn > 0) {
+    print('"' + s3 + '" occurs within "' + s1 + '" at position ' + itoa(posn) + '.');
+  }
+  pause(delay);
+  // illustrate use of QATOI function, converting a decimal string to an integer ...
+  string s5 = '3.14159';
+  print(s5 + ' times 100000 = ' + itoa(qatoi(s5, 100000, -1)) + '.');
+  pause(delay);
+  int n = qatoi(s5, 100000, -1);
+  print(itoa(n) + ' divided by 100000 = ' + qitoa(n, 100000, 5) + '.');
+  print('');
+  pause(delay * 5);
+  // illustrate use of OUTPUT and CONSOLE commands ...
+  print('Now back to the Canvas and Console ...');
+  output(false, peach, true);
+  pause(delay * 5);
+  output(false, lightred, false);
+  pause(delay * 5);
+  console(true, lightblue);
+  print('You will see this on a clear light blue Console');
+}

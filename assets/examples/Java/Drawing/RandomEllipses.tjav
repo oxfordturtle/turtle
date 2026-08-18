@@ -1,0 +1,20 @@
+class RandomEllipses {
+  void main () {
+    // draw 10 random ellipses
+    for (int count = 0; count < 10; count = count + 1) {
+      setXY(randInt(1500) - 250, randInt(1500) - 250);
+      ellipse(randInt(500) + 500, randInt(500) + 500);
+    }
+    // try to fill all the ellipses with colours
+    for (count = 0; count < 10000; count = count + 1) {
+      // pick a random point
+      int x = randInt(1000);
+      int y = randInt(1000);
+      // if it's white, set the next colour and fill the shape with it
+      if (pixCol(x, y) == white) {
+        int nextColour = (nextColour % 20) + 1;
+        recolour(x, y, rgb(nextColour));
+      }
+    }
+  }
+}

@@ -1,0 +1,55 @@
+const size: number = 100;
+var x: number = 300;
+var y: number = 700;
+var d: number = 0;
+var xEdge: boolean;
+var yEdge: boolean;
+
+// draws a triangle, and checks whether it meets the edge of the canvas
+function triangle (colr: number): void {
+  xEdge = false;
+  yEdge = false;
+  setXY(x, y);
+  direction(d);
+  colour(colr);
+  for (var count: number = 0; count < 3; count = count + 1) {
+    forward(size);
+    if (abs(turtx - 500) > 495) {
+      xEdge = true;
+    }
+    if (abs(turty - 500) > 495) {
+      yEdge = true;
+    }
+    back(size);
+    forget(1);
+    right(120)
+  }
+  polygon(3);
+}
+
+// set starting velocity
+var xVelocity: number = 8;
+var yVelocity: number = -4;
+var dVelocity: number = 5;
+while (0 < 1) {
+  noUpdate();
+  // rub out existing triangle
+  blank(white);
+  // move to next location
+  x = x + xVelocity;
+  y = y + yVelocity;
+  d = (d + dVelocity) % 360;
+  // draw new triangle
+  triangle(red);
+  update();
+  pause(10);
+  // "bounce" (i.e. invert velocity) at canvas edges
+  if (xEdge) {
+    xVelocity = -xVelocity;
+    dVelocity = -dVelocity;
+  }
+  if (yEdge) {
+    yVelocity = -yVelocity;
+    dVelocity = -dVelocity;
+  }
+}

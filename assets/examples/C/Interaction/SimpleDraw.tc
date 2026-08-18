@@ -1,0 +1,37 @@
+// draws the palette of colours
+void palette () {
+  for (int colr = 1; colr <= 10; colr = colr + 1) {
+    setxy(colr * 100 - 50, 950);
+    colour(rgb(colr));
+    blot(50);
+  }
+}
+
+void main () {
+  // draw palette
+  palette();
+  // return turtle to centre of canvas
+  home();
+  thickness(10);
+  blot(2);
+  // repeatedly...
+  do {
+    // wait for left or right mouse click...
+    do {} while ((?lmouse <= 0) && (?rmouse <= 0));
+    // if cursor is within the palette area...
+    if (?mousey > 900) {
+      // set the colour
+      colour(rgb(?mousex / 100 + 1));
+    } else {
+      // if left button pressed...
+      if (?lmouse > 0) {
+        // move the turtle (drawing) to the cursor's location
+        drawxy(?mousex - turtx, ?mousey - turty);
+      } else {
+        // otherwise (i.e. right button pressed)...
+        // move the turtle (not drawing) the the cursor's location
+        setxy(?mousex, ?mousey);
+      }
+    }
+  } while (true);
+}

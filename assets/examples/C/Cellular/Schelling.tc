@@ -1,0 +1,60 @@
+const int width = 50;
+const int height = 50;
+const int empty = green;
+
+bool happy (int x, int y, int c) {
+  int like = 0;
+  int unlike = 0;
+  for (int i = -1; i <= 1; i = i + 1) {
+    for (int j = -1; j <= 1; j = j + 1) {
+      if ((i != 0) || (j != 0)) {
+        int neighbour = pixcol(x + i, y + j);
+        if (neighbour != empty) {
+          if (neighbour == c) {
+            like = like + 1;
+          } else {
+            unlike = unlike + 1;
+          }
+        }
+      }
+    }
+  }
+  return (like >= unlike - 1);
+}
+
+void main () {
+  canvas(-1, -1, width + 2, height + 2);
+  resolution(width + 2, height + 2);
+  noupdate();
+  blank(empty);
+  for (int i = 0; i < width; i = i + 1) {
+    for (int j = 0; j < height; j = j + 1) {
+      int test = rand(25);
+      if (test == 0) {
+        pixset(i, j, empty);
+      } else {
+        if ((i + j) % 2 == 0) {
+          pixset(i, j, red);
+        } else {
+          pixset(i, j, blue);
+        }
+      }
+    }
+  }
+  pause(2000);
+  while (?key != \escape) {
+    noupdate();
+    do {
+      int tryi = rand(width);
+      int tryj = rand(height);
+      int this = pixcol(tryi, tryj);
+    } while ((this == empty) || happy(tryi, tryj, this));
+    pixset(tryi, tryj, empty);
+    do {
+      tryi = rand(width);
+      tryj = rand(height);
+    } while ((pixcol(tryi, tryj) != empty) || !happy(tryi, tryj, this));
+    pixset(tryi, tryj, this);
+    update();
+  }
+}

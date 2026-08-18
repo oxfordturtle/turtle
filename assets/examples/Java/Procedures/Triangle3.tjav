@@ -1,0 +1,20 @@
+class Triangle3 {
+  // draws a triangle of the given size, only if size > 1
+  void triangle (int size) {
+    if (size > 1) {
+      forward(size);
+      right(120);
+      forward(size);
+      right(120);
+      forward(size);
+      right(120);
+    }
+  }
+
+  void main () {
+    // move to the start (without drawing)
+    moveXY(-100, 150);
+    // draw a triangle of size 256
+    triangle(256);
+  }
+}

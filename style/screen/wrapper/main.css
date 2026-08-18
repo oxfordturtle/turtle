@@ -1,0 +1,31 @@
+@import "main/code.css";
+@import "main/notice.css";
+@import "main/dashboard.css";
+@import "main/forms.css";
+@import "main/misc.css";
+@import "main/tabs.css";
+@import "main/reference.css";
+
+.main {
+  background: #fff;
+  min-height: 30rem;
+  padding: 1em;
+}
+
+@media (min-width: 34.25rem) {
+  .main {
+    padding: 1em 2em;
+  }
+}
+
+@media (min-width: 49.125rem) {
+  .main {
+    padding: 1em 7em;
+  }
+}
+
+@media (min-width: 64rem) {
+  .main {
+    padding: 2em 10em;
+  }
+}

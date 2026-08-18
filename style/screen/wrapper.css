@@ -1,0 +1,21 @@
+@import "wrapper/header.css";
+@import "wrapper/main.css";
+@import "wrapper/footer.css";
+
+@media (min-width: 64rem) {
+  .wrapper {
+    padding: 3em 0;
+  }
+}
+
+.container {
+  background: #fff;
+  margin: 0 auto;
+}
+
+@media (min-width: 64rem) {
+  .container {
+    max-width: var(--break2);
+    box-shadow: var(--box-shadow);
+  }
+}

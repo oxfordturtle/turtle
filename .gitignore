@@ -1,0 +1,8 @@
+/.vscode
+!/assets/build/.gitkeep
+/assets/build/*.css
+/assets/build/*.js
+/assets/build/webfonts/
+/coverage/
+/scratch/
+.DS_Store

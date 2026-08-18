@@ -1,0 +1,82 @@
+const boardSize: number = 30;
+const snakeColour: number = purple;
+const appleColour: number = green;
+
+// draws a new apple
+function newApple (): void {
+  // choose a random point where the snake isn't
+  do {
+    var x: number = randInt(boardSize);
+    var y: number = randInt(boardSize);
+  } while (pixCol(x, y) == snakeColour);
+  // draw an apple at that point
+  pixSet(x, y, appleColour);
+}
+
+// set canvas and resolution
+canvas(0, 0, boardSize, boardSize);
+resolution(boardSize, boardSize);
+// set angles to 4, because only four directions are needed
+angles(4);
+// blank canvas and hide cursor
+blank(lightblue);
+cursor(0);
+colour(snakeColour);
+thickness(1);
+penUp();
+forward(1);
+var snakeLength: number = 2;
+// place the first apple
+newApple();
+// initialise crash variable to false
+var crash: boolean = false;
+// until the snake crashes...
+do {
+  noUpdate();
+  // turn snake in response to arrow key press
+  if ((abs(?key) == \up) && (turtd != 2)) {
+    direction(0);
+  }
+  if ((abs(?key) == \right) && (turtd != 3)) {
+    direction(1);
+  }
+  if ((abs(?key) == \down) && (turtd != 0)) {
+    direction(2);
+  }
+  if ((abs(?key) == \left) && (turtd != 1)) {
+    direction(3);
+  }
+  // move snake forward
+  forward(1);
+  // crash if snake reaches edge of canvas
+  if ((turtx < 0) || (turtx >= boardSize) || (turty < 0) || (turty >= boardSize)) {
+    crash = true;
+  }
+  // crash if snake hits itself
+  if (pixCol(turtx, turty) == snakeColour) {
+    crash = true;
+  }
+  // if snake reaches an apple...
+  if (pixCol(turtx, turty) == appleColour) {
+    // increase snake length
+    snakeLength = snakeLength + 1;
+    // "eat" the apple
+    pixSet(turtx, turty, snakeColour);
+    // place a new apple
+    newApple();
+  }
+  // rub out the previous snake
+  colour(lightblue);
+  polyline(snakeLength + 2);
+  // draw the snake in its new position
+  colour(snakeColour);
+  polyline(snakeLength);
+  update();
+  // pause less for longer snakes (increasing speed with each apple)
+  pause(250 - (snakeLength * 3));
+} while (!crash);
+// print const score
+resolution(1000, 1000);
+blank(lilac);
+setXY(boardSize / 4, 2 * boardSize / 5);
+display('Score ' + toString(snakeLength - 2), 20, 100);

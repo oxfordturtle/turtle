@@ -1,0 +1,87 @@
+half=100
+crystal=cyan
+molecule=white
+solution=teal
+initrandomradius=10
+maxdistance=75
+cyclemod=5
+moddelay=0
+
+def attached(x,y):
+    global numattached
+    global maxsofar
+    result=False
+    if (pixcol(x-1,y)==crystal) or (pixcol(x+1,y)==crystal) or (pixcol(x,y-1)==crystal) or (pixcol(x,y+1)==crystal):
+        result=True
+        pixset(x,y,crystal)
+        numattached+=1
+        if hypot(x,y,1)>=maxsofar:
+            maxsofar=hypot(x,y,1)
+    return result
+
+def randomwalk():
+    flag=True
+    while flag:
+        n=randrange(4)*2+1
+        turtx=turtx+n//3-1
+        turty=turty+n%3-1
+        if pixcol(turtx,turty)==black:
+            turtx=turtx-2*(n//3-1)
+            turty=turty-2*(n%3-1)
+        flag=(pixcol(turtx,turty)!=solution)
+
+def biasedwalk():
+    turnxy(-turtx,-turty)
+    distance=hypot(turtx,turty,1)
+    if distance<randomradius:
+        direction(randrange(360))
+    else:
+        trange=divmult(half-distance,half-randomradius,180)
+        turn=randint(-trange,trange)
+        right(turn)
+    forward(1)
+    while pixcol(turtx,turty)!=solution:
+        forward(1)
+
+whole=half*2+3
+canvas(-half,-half,whole,whole)
+resolution(whole,whole)
+penup()
+setxy(-half,-half)
+box(whole,whole,solution,True)
+randomradius=initrandomradius
+print('Initial randomradius = '+str(randomradius))
+pixset(0,0,crystal)
+numattached=1
+print('Counting molecules within growing crystal:')
+print('1 ', end="")
+maxsofar=1
+timeset(0)
+flag=True
+while flag:
+    home()
+    direction(randrange(360))
+    forward(half)
+    if pixcol(turtx,turty)!=solution:
+        randomwalk()
+    cycle=0
+    while not(attached(turtx,turty)):
+        pixset(turtx,turty,molecule)
+        if cycle%cyclemod==0:
+            update()
+            if moddelay>0:
+                pause(moddelay)
+            noupdate()
+        cycle+=1
+        pixset(turtx,turty,solution)
+        biasedwalk()
+    if numattached%10==0:
+        print(str(numattached))
+    else:
+        print(str(numattached)+' ', end="")
+    if maxsofar>randomradius:
+        randomradius=maxsofar
+        print()
+        print('randomradius = '+str(randomradius))
+    flag=(maxsofar<maxdistance)
+print('Simulation finished ('+qstr(time(),1000,2)+' seconds)')

@@ -1,0 +1,15 @@
+// draws a prong of the given size
+void prong (int size) {
+  forward(size);
+  blot(size / 20);
+  back(size);
+}
+
+void main () {
+  // draw 360 prongs of decreasing size
+  for (int count = 360; count > 0; count = count - 1) {
+    randcol(10);
+    prong(count + 100);
+    right(61);
+  }
+}

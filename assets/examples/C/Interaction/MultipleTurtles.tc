@@ -1,0 +1,88 @@
+const int numTurtles = 5;
+const int x = 0;
+const int y = 1;
+const int d = 2;
+const int a = 3;
+const int t = 4;
+const int c = 5;
+int turtles[numTurtles][c + 1];
+
+// set initial values for each turtle
+void setupTurtles () {
+  for (int i = 0; i < numTurtles; i = i + 1) {
+    turtles[i][x] = 10000;
+    turtles[i][y] = 70000;
+    turtles[i][d] = 35 + (i + 1) * 10;
+    turtles[i][a] = 360;
+    turtles[i][t] = 6 + i;
+    turtles[i][c] = rgb(i + 1);
+  }
+}
+
+// draw menu (i.e. coloured blot for selecting each turtle)
+void menu () {
+  for (int i = 1; i <= numTurtles; i = i + 1) {
+    setxy(5000, i * 10000);
+    colour(rgb(i));
+    blot(5000);
+  }
+}
+
+// handle a mouse click
+void handleClick () {
+  // select turtle based on canvas colour at mouse location
+  int thisTurtle = -1;
+  for (int i = 0; i < numTurtles; i = i + 1) {
+    if (pixcol(?mousex, ?mousey) == rgb(i + 1)) {
+      thisTurtle = i;
+    }
+  }
+  if (thisTurtle > -1) {
+    // select this turtle
+    newturtle(turtles[thisTurtle]);
+    // start logging the change in the console
+    printon('Turtle ' + itoa(thisTurtle + 1) + ' changing direction,');
+    printon('  from ' + itoa(turtles[thisTurtle][d]) + '/' + itoa(turtles[thisTurtle][a]));
+    // change angles, which will set direction to the closest possible angle
+    angles(rand(46) + 45);
+    // finish logging the change
+    print('  to ' + itoa(turtles[thisTurtle][d]) + '/' + itoa(turtles[thisTurtle][a]));
+    pause(200);
+  }
+}
+
+void main () {
+  canvas(0, 0, 100000, 100000);
+  // print instructions
+  setxy(2500, 80000);
+  display('Click on a circle to alter the ANGLES setting', 0, 36);
+  setxy(2500, 86000);
+  display('of the corresponding turtle. Its direction will', 0, 36);
+  setxy(2500, 92000);
+  display('then change to the closest possible angle.', 0, 36);
+  // draw initial paths for each turtle
+  for (int i = 1; i <= numTurtles; i = i + 1) {
+    setxy(10000, 70000);
+    direction(35 + i * 10);
+    forward(110000);
+  }
+  // draw the menu
+  menu();
+  // initialise the turtles
+  setupTurtles();
+  // repeatedly...
+  do {
+    // move each turtle forward
+    for (i = 0; i < numTurtles; i = i + 1) {
+      // select this turtle
+      newturtle(turtles[i]);
+      // move forward 100
+      forward(100);
+    }
+    pause(50);
+    // check for mouse click
+    if (?click > 128) {
+      handleClick();
+    }
+  } while (?key != \escape);
+}

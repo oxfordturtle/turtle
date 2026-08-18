@@ -1,0 +1,27 @@
+.system-body table {
+  border-collapse: collapse;
+  font-size: 0.875em;
+  width: calc(100% + 2px);
+  margin: -1px;
+}
+
+.system-body thead th {
+  background: var(--lightgray);
+}
+
+.system-body th {
+  font-weight: bold;
+}
+
+.system-body th,
+.system-body td {
+  vertical-align: top;
+  text-align: center;
+  border: 1px solid var(--gray);
+  padding: 0.25em 0.5em;
+}
+
+.system-body th.wide,
+.system-body td.wide {
+  width: 50%;
+}

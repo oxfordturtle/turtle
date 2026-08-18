@@ -1,0 +1,33 @@
+// draws circle or blot at Turtle position
+function drawit (doblot: boolean): void {
+  // doblot is equal to either true or false
+  if (doblot) {
+    // draw a randomly coloured blot
+    // without erasing any circle
+    randCol(10);
+    blot(25);
+  } else {
+    // erase any previous blot
+    colour(black);
+    blot(25);
+    // draw randomly coloured circle
+    randCol(10);
+    circle(30);
+  }
+}
+
+// blacken the entire canvas
+blank(black);
+// set thickness for drawing circles
+thickness(10);
+// repeatedly draw circles or blots in a grid
+do {
+  // randInt(8) returns a value between 0 and 7
+  // fix x coordinate from 111 to 888
+  setX((randInt(8) + 1) * 111);
+  // fix y coordinate from 111 to 888
+  setY((randInt(8) + 1) * 111);
+  // call drawit(true) if randInt(2) returns 1
+  // or drawit(false) if randInt(2) returns 0 }
+  drawit(randInt(2) == 1);
+} while (true);

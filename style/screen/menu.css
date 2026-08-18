@@ -1,0 +1,101 @@
+.site-nav {
+  position: fixed;
+  z-index: 10;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3em;
+  display: flex;
+  justify-content: space-between;
+  background: var(--blue);
+  color: #fff;
+}
+
+.site-nav a {
+  display: flex;
+  padding: 0.75em 1em;
+  white-space: nowrap;
+  color: inherit;
+}
+
+.site-nav a:hover,
+.site-nav a.active,
+.site-nav a.open {
+  background: var(--blue-dark);
+  text-decoration: none;
+}
+
+.site-nav .icon {
+  width: 2em;
+  text-align: center;
+}
+
+.site-nav .icon:first-child {
+  margin-left: -0.75em;
+}
+
+.site-nav .icon:last-child {
+  margin-right: -0.75em;
+}
+
+.site-nav .logo img {
+  height: 22px;
+  margin-bottom: -5px;
+}
+
+.site-nav-right {
+  display: flex;
+}
+
+.site-nav-right .site-menu .site-sub-menu.open {
+  right: 0;
+}
+
+/*
+ * `site-menu` (the element-type selector) targets the <site-menu> custom
+ * element from src/islands/site-menu.ts, which is the outer wrapper of the
+ * site logo dropdown - it has no `class="site-menu"` of its own to select
+ * (a call-site tag's static attributes are validated against its Womble
+ * `state` schema, so an arbitrary `class` attribute would just be dropped).
+ * The nested documentation dropdown one level in is still a plain
+ * `<div class="site-menu">`, part of that island's own rendered markup, so
+ * the class selector still matches it too.
+ */
+.site-menu,
+site-menu {
+  position: relative;
+}
+
+.site-menu .site-sub-menu,
+site-menu .site-sub-menu {
+  display: none;
+}
+
+.site-menu .site-sub-menu.open,
+site-menu .site-sub-menu.open {
+  display: block;
+  position: absolute;
+  background: var(--blue);
+  box-shadow: var(--box-shadow);
+}
+
+@media (min-width: 64rem) {
+  .site-nav {
+    box-shadow: var(--box-shadow);
+  }
+
+  .site-nav-left > .site-menu > a,
+  .site-nav-left > site-menu > a {
+    display: none;
+  }
+
+  .site-nav-left > .site-menu > .site-sub-menu,
+  .site-nav-left > site-menu > .site-sub-menu {
+    display: flex;
+  }
+
+  .site-nav-left > .site-menu > .site-sub-menu.open,
+  .site-nav-left > site-menu > .site-sub-menu.open {
+    box-shadow: none;
+  }
+}

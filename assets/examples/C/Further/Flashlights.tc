@@ -1,0 +1,35 @@
+// draws circle or blot at Turtle position
+void drawit (bool doblot) {
+  // doblot is equal to either true or false
+  if (doblot) {
+    // draw a randomly coloured blot
+    // without erasing any circle
+    randcol(10);
+    blot(25);
+  } else {
+    // erase any previous blot
+    colour(black);
+    blot(25);
+    // draw randomly coloured circle
+    randcol(10);
+    circle(30);
+  }
+}
+
+void main () {
+  // blacken the entire canvas
+  blank(black);
+  // set thickness for drawing circles
+  thickness(10);
+  // repeatedly draw circles or blots in a grid
+  do {
+    // rand(8) returns a value between 0 and 7
+    // fix x coordinate from 111 to 888
+    setx((rand(8) + 1) * 111);
+    // fix y coordinate from 111 to 888
+    sety((rand(8) + 1) * 111);
+    // call drawit(true) if rand(2) returns 1
+    // or drawit(false) if rand(2) returns 0 }
+    drawit(rand(2) == 1);
+  } while (true);
+}

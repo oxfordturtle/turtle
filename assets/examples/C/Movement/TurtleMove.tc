@@ -1,0 +1,17 @@
+void main () {
+  // set starting point
+  setxy(100, 700);
+  for (int count = 0; count < 100; count = count + 1) {
+    noupdate();
+    // rub out previous ball
+    colour(white);
+    blot(51);
+    // move to next point
+    movexy(8, -4);
+    // draw new ball
+    colour(red);
+    blot(50);
+    update();
+    pause(10);
+  }
+}

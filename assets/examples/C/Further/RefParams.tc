@@ -1,0 +1,37 @@
+void lines (int *turtleProperty, bool isColour) {
+  // draw 8 short lines, modifying passed-in Turtle property each time
+  for (int n = 1; n <= 8; n = n + 1) {
+    if (isColour) {
+      // set property value to nth standard Turtle colour
+      turtleProperty = rgb(n);
+    } else {
+      // set property value to n
+      turtleProperty = n;
+    }
+    forward(50);
+    pause(100);
+  }
+}
+
+void dots (int *turtleProperty) {
+  // draw 8 blots, modifying passed-in Turtle property each time
+  for (int n = 1; n <= 8; n = n + 1) {
+    // increment property value by 100
+    turtleProperty = turtleProperty + 100;
+    blot(40);
+    pause(100);
+  }
+}
+
+void main () {
+  // set initial position
+  setxy(100, 900);
+  // draw lines of varying thickness - TURTT property is modified
+  lines(&turtt, false);
+  // draw lines of varying colour - TURTC property is modified
+  lines(&turtc, true);
+  // draw dots with different x coordinates - TURTX property is modified
+  dots(&turtx);
+  // draw dots with different y coordinates - TURTY property is modified
+  dots(&turty);
+}

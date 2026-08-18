@@ -1,0 +1,29 @@
+void main () {
+  // set starting point and velocity
+  int x = 100;
+  int y = 700;
+  int xVelocity = 8;
+  int yVelocity = -4;
+  while (0 < 1) {
+    noupdate();
+    // rub out existing ball
+    colour(white);
+    blot(51);
+    // move to next location
+    x = x + xVelocity;
+    y = y + yVelocity;
+    setxy(x, y);
+    // draw new ball
+    colour(red);
+    blot(50);
+    update();
+    pause(10);
+    // "bounce" (i.e. invert velocity) at canvas edges
+    if ((x < 50) || (x > 949)) {
+      xVelocity = -xVelocity;
+    }
+    if ((y < 50) || (y > 949)) {
+      yVelocity = -yVelocity;
+    }
+  }
+}

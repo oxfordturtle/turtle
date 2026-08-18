@@ -1,0 +1,38 @@
+{
+  "minimumDependencyAge": "0",
+  "tasks": {
+    "start": "deno run --watch --allow-read --allow-net app.ts",
+    "fmt": "deno run -A npm:prettier@3.4.2 --write .",
+    "fmt:check": "deno run -A npm:prettier@3.4.2 --check .",
+    "test": "deno test --allow-read --allow-env test/core/ test/ui/ssr/ test/ui/dom/",
+    "test:core": "deno test --allow-read test/core/",
+    "test:ui": "deno test --allow-read --allow-env test/ui/ssr/ test/ui/dom/",
+    "test:ui:browser": "deno test -A test/ui/browser/",
+    "test:examples": "deno test --allow-read test/examples/",
+    "test:core:coverage": "deno test --allow-read --coverage=coverage/ test/core/",
+    "coverage:report": "deno coverage coverage/ --lcov --output=coverage/lcov.info",
+    "coverage:html": "deno coverage coverage/ --html",
+    "build": "deno run --allow-read --allow-write --allow-net --allow-env --allow-run --unstable-raw-imports build.ts",
+    "run": "deno run --allow-read --allow-net app.ts"
+  },
+  "imports": {
+    "@/core/": "./src/core/",
+    "@/client/": "./src/client/",
+    "@/pages/": "./src/pages/",
+    "@/islands/": "./src/islands/",
+    "@merivale/womble": "jsr:@merivale/womble@^0.1.0",
+    "@merivale/womble/testing": "jsr:@merivale/womble@^0.1.0/testing",
+    "@luca/esbuild-deno-loader": "jsr:@luca/esbuild-deno-loader@^0.11.1",
+    "@std/assert": "jsr:@std/assert@^1.0.19",
+    "@std/testing": "jsr:@std/testing@^1.0.20",
+    "media_types": "https://deno.land/std@0.215.0/media_types/mod.ts",
+    "path": "https://deno.land/std@0.215.0/path/mod.ts",
+    "esbuild": "npm:esbuild@0.24.0",
+    "jsdom": "npm:jsdom@25",
+    "playwright-core": "npm:playwright-core@1.49",
+    "@fortawesome/fontawesome-free/": "npm:/@fortawesome/fontawesome-free@6.7.2/"
+  },
+  "compilerOptions": {
+    "lib": ["deno.window", "dom", "dom.iterable"]
+  }
+}

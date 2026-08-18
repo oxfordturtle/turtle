@@ -1,0 +1,15 @@
+// draws a single "prong" and then returns
+function prong (): void {
+  forward(400);
+  blot(20);
+  back(400);
+}
+
+// repeatedly draw prongs in randInt colours ...
+do {
+  randCol(10);
+  prong();
+  // right turn gives impression of motion
+  right(61);
+// ... until Turtle is pointing north again
+} while (turtd != 0);

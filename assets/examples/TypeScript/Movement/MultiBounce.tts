@@ -1,0 +1,42 @@
+const minSize: number = 70;
+const maxSize: number = 130;
+const balls: number = 10;
+var x: number[balls];
+var y: number[balls];
+var xVelocity: number[balls];
+var yVelocity: number[balls];
+var size: number[balls];
+var colr: number[balls];
+// set initial properties for each ball
+for (var n: number = 0; n < balls; n = n + 1) {
+  size[n] = minSize + randInt(maxSize - minSize);
+  colr[n] = rgb(n + 1);
+  x[n] = randInt(1000 - 2 * size[n]) + size[n];
+  y[n] = randInt(1000 - 2 * size[n]) + size[n];
+  xVelocity[n] = randInt(15) - 7;
+  yVelocity[n] = randInt(15) - 7;
+}
+do {
+  noUpdate();
+  // rub out previous balls
+  blank(white);
+  // draw each ball in its next position
+  for (n = 0; n < balls; n = n + 1) {
+    // move to next position
+    x[n] = x[n] + xVelocity[n];
+    y[n] = y[n] + yVelocity[n];
+    setXY(x[n], y[n]);
+    // draw ball
+    colour(colr[n]);
+    blot(size[n]);
+    // "bounce" (i.e. invert velocity) at canvas edges
+    if ((x[n] < size[n]) || (x[n] > 1000 - size[n])) {
+      xVelocity[n] = -xVelocity[n];
+    }
+    if ((y[n] < size[n]) || (y[n] > 1000 - size[n])) {
+      yVelocity[n] = -yVelocity[n];
+    }
+  }
+  update();
+  pause(5);
+} while (1 == 1);

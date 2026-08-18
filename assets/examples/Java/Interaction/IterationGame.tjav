@@ -1,0 +1,69 @@
+class IterationGame {
+  void main () {
+    // disable key output in the console
+    keyEcho(false);
+    // repeatedly...
+    do {
+      // rub out previous frame
+      blank(white);
+      setXY(50, 20);
+      colour(blue);
+      display('Type in a starting integer (>1):', 4, 36);
+      setXY(800, 20);
+      colour(black);
+      // while waiting for input of integer greater than 1...
+      do {
+        // empty the keybuffer
+        reset(\keybuffer);
+        // print contents of keybuffer on canvas
+        do {
+          box(200, 60, white, false);
+          display(read(0), 4, 36);
+          pause(100);
+        } while (abs(?key) != \return);
+        // read value of keybuffer into String
+        String s = readLine();
+        // try to convert s to integer
+        int first = parseIntDef(s, -1);
+        // reset key input value
+        reset(?key);
+      } while (first <= 1);
+      // set latest number to user's input
+      int latest = first;
+      // initialise count variable
+      int count = 0;
+      // print first number in blue
+      colour(blue);
+      // until the sequence reaches 1...
+      do {
+        // print the latest number
+        setXY((count % 10) * 100 + 20, (count div 10) * 45 + 300);
+        display(toString(latest), 4, 24);
+        // move to the next number in the sequence
+        if (latest % 2 == 0) {
+          latest = latest / 2;
+        } else {
+          latest = 3 * latest + 1;
+        }
+        // increment the count variable
+        count = count + 1;
+        // print subsequent numbers in green
+        colour(green);
+      } while (latest != 1);
+      // print final number (1) in red
+      setXY((count % 10) * 100 + 20, (count div 10) * 45 + 300);
+      colour(red);
+      display(toString(latest), 4, 24);
+      // print length of sequence
+      setXY(100, 100);
+      display('That took ' + toString(count) + ' iterations to reach 1', 4, 36);
+      colour(black);
+      setXY(250, 200);
+      // wait for key press to start again
+      display('[Press a key to continue]', 4, 30);
+      do {} while (?key <= 0);
+      // reset key input value
+      reset(?key);
+    } while (true);
+  }
+}

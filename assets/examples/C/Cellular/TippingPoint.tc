@@ -1,0 +1,72 @@
+const int width = 100;
+const int height = 100;
+const int susceptible = lightgreen;
+const int infected = red;
+const int recovered = blue;
+const int startradius = 10;
+const int infectprob = 2;
+const int contacts = 50;
+const bool report = false;
+int numinfected;
+int numinfectious;
+
+void infect (int x, int y) {
+  pixset(x, y, infected);
+  numinfected = numinfected + 1;
+  numinfectious = numinfectious + 1;
+  if (report) {
+    print('Infected: ' + strpad(itoa(numinfected), ' ', 4) + '      Infectious: ' + strpad(itoa(numinfectious), ' ', 4));
+  }
+}
+
+void main () {
+  canvas(0, 0, width, height);
+  resolution(width, height);
+  print('Contacts per person:       ' + itoa(contacts));
+  print('Transmission probability:  ' + itoa(infectprob) + '%');
+  print('R0 (reproduction number):  ' + qitoa(contacts * infectprob, 100, 2));
+  if (report) {
+    print('');
+  }
+  int n = srand(3);
+  timeset(0);
+  int numimmune = 0;
+  numinfected = 0;
+  numinfectious = 0;
+  noupdate();
+  for (int x = 0; x < width; x = x + 1) {
+    for (int y = 0; y < height; y = y + 1) {
+      if ((rand(100) < infectprob) && (hypot(x - width / 2, y - height / 2, 1) <= startradius)) {
+        infect(x, y);
+      } else {
+        pixset(x, y, susceptible);
+      }
+    }
+  }
+  update();
+  do {
+    x = rand(width);
+    y = rand(height);
+    if (pixcol(x, y) == infected) {
+      for (n = 0; n < contacts; n = n + 1) {
+        if (rand(100) < infectprob) {
+          int i = rand(width);
+          int j = rand(height);
+          if (pixcol(i, j) == susceptible) {
+            infect(i, j);
+          }
+        }
+      }
+      pixset(x, y, recovered);
+      numinfectious = numinfectious - 1;
+      if (report) {
+        print('                    Infectious: ' + strpad(itoa(numinfectious), ' ', 4));
+      }
+    }
+  } while (numinfectious != 0);
+  if (report) {
+    print('');
+  }
+  print('Total infected overall:    ' + itoa(numinfected) + ' (' + qitoa(time(), 1000, 2) + ' sec)');
+  print('Proportion infected:       ' + qitoa(numinfected * 100, width * height - numimmune, 2) + '%');
+}

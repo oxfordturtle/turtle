@@ -1,0 +1,22 @@
+@import "header/title.css";
+@import "header/paragraph.css";
+
+.header {
+  padding: 1em;
+  background: var(--darkgray);
+  color: #fff;
+}
+
+@media (min-width: 34.25rem) {
+  .header {
+    padding: 1.5em 2em;
+  }
+}
+
+@media (min-width: 64rem) {
+  .header {
+    margin-top: 3em;
+    max-width: var(--break2);
+    opacity: 0.95;
+  }
+}

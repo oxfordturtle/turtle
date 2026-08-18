@@ -1,0 +1,9 @@
+.memory-container {
+  flex: 1;
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+
+.memory-container:not(:last-child) {
+  border-bottom: 1px solid var(--gray);
+}

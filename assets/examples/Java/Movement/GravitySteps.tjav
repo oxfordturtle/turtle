@@ -1,0 +1,52 @@
+class GravitySteps {
+  // draws n steps
+  void steps (int n) {
+    int size = 1000 / n;
+    setXY(0, 1000);
+    thickness(1);
+    for (int count = 1; count < n * 2; count = count + 1) {
+      if (count % 2 == 0) {
+        moveXY(0, -size);
+      } else {
+        moveXY(size, 0);
+      }
+    }
+    moveXY(0, n * size);
+    moveXY(-n * size, 0);
+    colour(blue);
+    polygon(n * 2 + 2);
+  }
+
+  // simulates the movement of a ball with the effect of gravity
+  void throwBall (int xVelocity, int yVelocity, int gravity, int floor) {
+    do {
+      colour(white);
+      blot(25);
+      moveXY(xVelocity, yVelocity);
+      yVelocity = yVelocity + gravity;
+      if (turty > floor) {
+        turty = floor;
+      }
+      colour(red);
+      blot(24);
+      update();
+      pause(10);
+      noUpdate();
+    } while (turty != floor);
+  }
+
+  void main () {
+    // draw steps
+    steps(10);
+    // set starting point
+    setXY(950, 75);
+    // throw ball down each step
+    do {
+      throwBall(-2, -22, 1, turty + 100);
+    } while (turtx >= 75);
+    // bounce ball on the ground
+    for (int count = 1; count <= 10; count = count + 1) {
+      throwBall(0, count * 2 - 20, 1, turty);
+    }
+  }
+}

@@ -1,0 +1,19 @@
+.notice {
+  color: #fff;
+  padding: 1em;
+  background: var(--blue);
+}
+
+@media (min-width: 34.25rem) {
+  .notice {
+    padding: 1em 2em;
+  }
+}
+
+.notice.success {
+  background: var(--green);
+}
+
+.notice.error {
+  background: var(--red);
+}

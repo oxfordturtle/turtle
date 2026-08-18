@@ -1,0 +1,25 @@
+@import "tabs/canvas.css";
+@import "tabs/comments.css";
+@import "tabs/memory.css";
+@import "tabs/output.css";
+@import "tabs/pcode.css";
+@import "tabs/settings.css";
+@import "tabs/syntax.css";
+@import "tabs/usage.css";
+@import "tabs/variables.css";
+
+.system-tabs {
+  overflow-y: auto;
+}
+
+.system-tab-pane {
+  display: none;
+}
+
+.system-tab-pane.active {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: #fff;
+  overflow: auto;
+}

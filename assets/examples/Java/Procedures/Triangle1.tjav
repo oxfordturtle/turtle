@@ -1,0 +1,15 @@
+class Triangle1 {
+  void main () {
+    // move to the start (without drawing)
+    moveXY(-100, 150);
+    // draw the first side
+    forward(256);
+    right(120);
+    // draw the second side
+    forward(256);
+    right(120);
+    // draw the third side
+    forward(256);
+    right(120);
+  }
+}

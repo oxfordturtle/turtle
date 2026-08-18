@@ -1,0 +1,10 @@
+.output {
+  flex: 1;
+  overflow: auto;
+  padding: var(--system-padding);
+  font-family: var(--monospace);
+  font-size: 13px;
+  margin: 0;
+  background: #fff;
+  border: 0;
+}

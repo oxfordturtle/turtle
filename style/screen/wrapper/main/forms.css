@@ -1,0 +1,80 @@
+.form-group {
+  margin-bottom: 1em;
+}
+
+.form-group label {
+  background: var(--blue);
+  color: #fff;
+  font-weight: normal;
+  border-top-left-radius: 5px;
+  border-top-right-radius: 5px;
+  padding: 0.25em 0.75em;
+}
+
+.form-group input[type="text"],
+.form-group input[type="email"],
+.form-group input[type="password"],
+.form-group select,
+.form-group textarea {
+  width: 100%;
+  border-top: 0;
+  border-bottom-left-radius: 5px;
+  border-bottom-right-radius: 5px;
+  padding: 0.35em 0.75em;
+}
+
+.form-group input[type="text"]:focus,
+.form-group input[type="email"]:focus,
+.form-group input[type="password"]:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+  border: 1px solid var(--blue);
+  border-top: 0;
+  outline: 0;
+}
+
+.form-group.has-errors label {
+  background: var(--red);
+}
+
+.form-group.has-errors input[type="text"],
+.form-group.has-errors input[type="email"],
+.form-group.has-errors input[type="password"],
+.form-group.has-errors select,
+.form-group.has-errors textarea {
+  border-bottom: 0;
+  border-radius: 0;
+  border-color: var(--red);
+}
+
+.form-group.has-errors input[type="text"]:focus,
+.form-group.has-errors input[type="email"]:focus,
+.form-group.has-errors input[type="password"]:focus,
+.form-group.has-errors select:focus,
+.form-group.has-errors textarea:focus {
+  border-color: var(--red);
+}
+
+.form-group.has-errors ul {
+  margin: 0;
+  padding: 0.25em 0.75em;
+  background: var(--red);
+  color: #fff;
+  border-bottom-left-radius: 5px;
+  border-bottom-right-radius: 5px;
+}
+
+.form-buttons {
+  display: flex;
+  align-items: baseline;
+  justify-content: flex-end;
+}
+
+.form-buttons a {
+  padding: 0 1em;
+}
+
+.form-buttons button {
+  padding: 0.5em 1em;
+  border-radius: 5px;
+}

@@ -1,0 +1,23 @@
+void main () {
+  // draw 30 random lines
+  for (int count = 0; count < 30; count = count + 1) {
+    // pick a random point and angle
+    int x = rand(1000);
+    int y = rand(1000);
+    setxy(x, y);
+    turtd = rand(360);
+    // draw a black line through that point, at that angle
+    forward(1500);
+    back(3000);
+  }
+  // try to fill all the resulting shapes
+  for (count = 0; count < 10000; count = count + 1) {
+    // pick a random point
+    x = rand(1000);
+    y = rand(1000);
+    // if it's white, fill the surrounding shape with a random colour
+    if (pixcol(x, y) == white) {
+      recolour(x, y, rgb(rand(20) + 1));
+    }
+  }
+}

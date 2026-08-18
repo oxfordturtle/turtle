@@ -1,0 +1,38 @@
+// draws a coloured polygon with the given number of sides
+void poly (int sides, int colr) {
+  direction(90);
+  // trace the shape with the turtle
+  for (int count = 0; count < sides; count = count + 1) {
+    forward(600 / sides);
+    left(360 / sides);
+  }
+  // fill with the given colour
+  colour(colr);
+  polygon(sides);
+  // draw a black outline
+  colour(black);
+  polyline(sides + 1);
+}
+
+void main () {
+  penup();
+  thickness(4);
+  // draw a blue triangle
+  setxy(100, 400);
+  poly(3, blue);
+  // draw a red square
+  setxy(400, 400);
+  poly(4, red);
+  // draw a yellow pentagon
+  setxy(700, 400);
+  poly(5, yellow);
+  // draw a pink hexagon
+  setxy(150, 750);
+  poly(6, pink);
+  // draw a green heptagon
+  setxy(440, 750);
+  poly(7, green);
+  // draw a turquoise octagon
+  setxy(740, 750);
+  poly(8, turquoise);
+}

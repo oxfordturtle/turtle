@@ -1,0 +1,120 @@
+PROGRAM ReadCSV;
+CONST cols=10;
+      rows=10;
+      fname='SaveCSV.csv';
+VAR value: array[1..cols,1..rows] of integer;
+    colwidth,rowheight: integer;
+    xmargin,ymargin: integer;
+    fontsize: integer;
+
+ Procedure setup; {calculate relevant sizes}
+ Begin
+  colwidth:=1000 div (cols+1);
+  rowheight:=900 div (rows+1);
+  xmargin:=colwidth*3/7;
+  ymargin:=rowheight/3;
+  fontsize:=colwidth/4
+ End;
+
+ Procedure drawgrid; {draw the grid lines}
+ Var i,j: integer;
+ Begin
+  for i:=0 to cols+1 do
+   begin
+    if (i=0) or (i=1) or (i=cols+1) then
+     thickness(10)
+    else
+     thickness(2);
+    setxy(5+i*colwidth,5);
+    drawxy(0,890)
+   end;
+  for j:=0 to rows+1 do
+   begin
+    if (j=0) or (j=1) or (j=rows+1) then
+     thickness(10)
+    else
+     thickness(2);
+    setxy(5,5+j*rowheight);
+    drawxy(995,0)
+   end
+ End;
+
+ Procedure labelgrid; {add the grid headings}
+ Var i,j: integer;
+ Begin
+  setxy(colwidth-25,5);
+  display('x',0,30);
+  setxy(20,rowheight-45);
+  display('y',0,30);
+  setxy(300,925);
+  display('Table read from file',0,40);
+  for i:=1 to cols do
+   begin
+    setxy(i*colwidth+xmargin,ymargin);
+    display(str(i),0,fontsize)
+   end;
+  for j:=1 to rows do
+   begin
+    setxy(xmargin,j*rowheight+ymargin);
+    display(str(j),0,fontsize)
+   end
+ End;
+
+ Procedure show; {put array values in grid}
+ Var i,j: integer;
+ Begin
+  for i:=1 to cols do
+   for j:=1 to rows do
+    begin
+     setxy(i*colwidth+xmargin,j*rowheight+ymargin);
+     display(str(value[i,j]),0,fontsize)
+    end
+ End;
+
+ Procedure readdata; {read data from file}
+ Var handle,i,j: integer;
+     thisline,thisbit: string[64];
+
+  function nextbit(var s: string): string;
+  var posn: integer;
+  begin
+   posn:=pos(',',s);
+   if posn=0 then
+    begin
+     result:=s;
+     s:=''
+    end
+   else
+    begin
+     result:=copy(s,1,posn-1);
+     s:=delete(s,1,posn)
+    end
+  end;
+
+ Begin
+  i:=0;
+  handle:=openfile(fname,1);
+  while not(eof(handle)) do
+   begin
+    inc(i);
+    thisline:=freadln(handle);
+    j:=0;
+    while thisline<>'' do
+     begin
+      inc(j);
+      thisbit:=nextbit(thisline);
+      value[i,j]:=val(thisbit)
+     end
+   end;
+  closefile(handle)
+ End;
+
+BEGIN
+ setup;
+ drawgrid;
+ labelgrid;
+ readdata;
+ show;
+ pause(2000);
+ writeln('File '+fname+' has been read')
+END.

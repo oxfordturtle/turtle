@@ -1,0 +1,11 @@
+void main () {
+  // printon question to console
+  printon('What is your name?  ');
+  // read characters from keybuffer until ENTER key is pressed
+  string name = gets();
+  // printon a greeting (on a new line)
+  print('');
+  printon('Hello, ' + name + ', ...  ');
+  pause(500);
+  print('How are you?');
+}

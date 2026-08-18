@@ -1,0 +1,17 @@
+// calculates n! recursively
+int factorial (int n) {
+  if (n == 0) {
+    return 1;
+  } else {
+    return n * factorial(n - 1);
+  }
+}
+
+void main () {
+  // set up and show the output
+  output(true, cream, true);
+  // calculate and display n! for n = 1 to 10
+  for (int n = 1; n <= 10; n = n + 1) {
+    print(itoa(n) + '! = ' + itoa(factorial(n)));
+  }
+}

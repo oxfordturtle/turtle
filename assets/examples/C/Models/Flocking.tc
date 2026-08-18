@@ -1,0 +1,125 @@
+const int numboids = 30;
+const int boidradius = 20;
+const int maxspeed = 50;
+const int boidcolour = lightbrown;
+const int halocolour = 0xFFFFFE;
+const int delay = 50;
+const int posfactor = 50;
+const int velfactor = 50;
+const int neard = 200;
+const int nearfactor = 10;
+const int tgtradius = 2000;
+int boidx[numboids];
+int boidy[numboids];
+int boidvx[numboids];
+int boidvy[numboids];
+int avgx;
+int avgy;
+int avgvx;
+int avgvy;
+int tgtx;
+int tgty;
+int tgtangvel;
+int cycle;
+
+void setup () {
+  penup();
+  colour(halocolour);
+  for (int n = 0; n < numboids; n = n + 1) {
+    do {
+      boidx[n] = rand(5000 - 2 * boidradius) + boidradius;
+      boidy[n] = rand(5000 - 2 * boidradius) + boidradius;
+    } while (pixcol(boidx[n], boidy[n]) != white);
+    boidvx[n] = rand(maxspeed * 2 + 1) - maxspeed;
+    boidvy[n] = rand(maxspeed * 2 + 1) - maxspeed;
+    setxy(boidx[n], boidy[n]);
+    blot(2 * boidradius);
+  }
+}
+
+void draw (bool positive) {
+  if (positive) {
+    colour(boidcolour);
+    int radius = boidradius;
+  } else {
+    colour(white);
+    radius = boidradius + 10;
+  }
+  for (int n = 0; n < numboids; n = n + 1) {
+    setxy(boidx[n], boidy[n]);
+    blot(radius);
+  }
+}
+
+void averages () {
+  int totalx = 0;
+  int totaly = 0;
+  int totalvx = 0;
+  int totalvy = 0;
+  for (int n = 0; n < numboids; n = n + 1) {
+    totalx = totalx + boidx[n];
+    totaly = totaly + boidy[n];
+    totalvx = totalvx + boidvx[n];
+    totalvy = totalvy + boidvy[n];
+  }
+  avgx = totalx / numboids;
+  avgy = totaly / numboids;
+  avgvx = totalvx / numboids;
+  avgvy = totalvy / numboids;
+}
+
+void settarget () {
+  if (cycle % 100 == 0) {
+    tgtangvel = rand(7) - 3;
+  }
+  tgtx = divmult(sin(cycle * tgtangvel, 1, 1000), 1000, tgtradius);
+  tgty = -divmult(cos(cycle * tgtangvel, 1, 1000), 1000, tgtradius);
+  cycle = cycle + 1;
+}
+
+void move (int b) {
+  boidvx[b] = boidvx[b] + (avgx - boidx[b]) / posfactor + (avgvx - boidvx[b]) / velfactor;
+  boidvy[b] = boidvy[b] + (avgy - boidy[b]) / posfactor + (avgvy - boidvy[b]) / velfactor;
+  for (int n = 0; n < numboids; n = n + 1) {
+    if (n != b) {
+      int distx = boidx[n] - boidx[b];
+      int disty = boidy[n] - boidy[b];
+      if (hypot(distx, disty, 1) < neard) {
+        boidvx[b] = boidvx[b] - sign(distx) * (neard - abs(distx)) / nearfactor;
+        boidvy[b] = boidvy[b] - sign(disty) * (neard - abs(disty)) / nearfactor;
+      }
+    }
+  }
+  if (rand(10) == 0) {
+    boidvx[b] = tgtx - boidx[b];
+    boidvy[b] = tgty - boidy[b];
+  }
+  int speed = hypot(boidvx[b], boidvy[b], 1);
+  if (speed > maxspeed) {
+    boidvx[b] = divmult(boidvx[b], speed, maxspeed);
+    boidvy[b] = divmult(boidvy[b], speed, maxspeed);
+  }
+  boidx[b] = boidx[b] + boidvx[b];
+  boidy[b] = boidy[b] + boidvy[b];
+}
+
+void main () {
+  canvas(-2500, -2500, 5000, 5000);
+  noupdate();
+  setup();
+  blank(white);
+  draw(true);
+  cycle = 0;
+  do {
+    averages();
+    settarget();
+    noupdate();
+    draw(false);
+    for (int n = 0; n < numboids; n = n + 1) {
+      move(n);
+    }
+    draw(true);
+    update();
+    pause(delay);
+  } while (1 == 1);
+}

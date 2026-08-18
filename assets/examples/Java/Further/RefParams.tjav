@@ -1,0 +1,39 @@
+class RefParams {
+  void lines(int addr, boolean isColour) {
+    // draw 8 short lines, modifying passed-in Turtle property each time
+    for (int n = 1; n <= 8; n = n + 1) {
+      if (isColour) {
+        // set property value to nth standard Turtle colour
+        poke(addr, rgb(n));
+      } else {
+        // set property value to n
+        poke(addr, n);
+      }
+      forward(50);
+      pause(100);
+    }
+  }
+
+  void dots(int addr) {
+    // draw 8 blots, modifying passed-in Turtle property each time
+    for (int n = 1; n <= 8; n = n + 1) {
+      // increment property value by 100
+      poke(addr, peek(addr) + 100);
+      blot(40);
+      pause(100);
+    }
+  }
+
+  void main () {
+    // set initial position
+    setXY(100, 900);
+    // draw lines of varying thickness - TURTT property is modified
+    lines(address(turtt), false);
+    // draw lines of varying colour - TURTC property is modified
+    lines(address(turtc), true);
+    // draw dots with different x coordinates - TURTX property is modified
+    dots(address(turtx));
+    // draw dots with different y coordinates - TURTY property is modified
+    dots(address(turty));
+  }
+}

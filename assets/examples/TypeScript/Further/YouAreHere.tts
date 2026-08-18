@@ -1,0 +1,25 @@
+// draw red blot
+colour(red);
+blot(20);
+// print violet text, font style 4, size 36
+colour(violet);
+display('You are here', 4, 36);
+// draw blue multi-part "curve"
+colour(blue);
+setXY(790, 530);
+drawXY(40, 0);
+drawXY(28, -28);
+drawXY(0, -40);
+drawXY(-28, -28);
+drawXY(-40, 0);
+// position Turtle in centre of blot
+setXY(500, 500);
+// draw line connecting two last points
+polyline(2);
+// visit other points of triangle head
+setXY(530, 480);
+setXY(535, 505);
+// fill triangle of last three points
+polygon(3);
+// for neatness, end up in centre
+setXY(500, 500);

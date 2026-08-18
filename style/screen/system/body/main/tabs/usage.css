@@ -1,0 +1,19 @@
+.usage {
+  flex: 1;
+  overflow-x: hidden;
+}
+
+.usage .usage-table td:first-child,
+.usage .usage-table td:last-child,
+.usage .usage-table th:first-child,
+.usage .usage-table th:last-child {
+  text-align: left;
+}
+
+.usage .usage-table .category-heading th {
+  background: var(--green);
+  color: white;
+  font-style: italic;
+  font-weight: bold;
+  text-align: right;
+}

@@ -1,0 +1,28 @@
+class TurtleBounce {
+  void main () {
+    // set starting point and velocity
+    setXY(100, 700);
+    int xVelocity = 8;
+    int yVelocity = -4;
+    while (0 < 1) {
+      noUpdate();
+      // rub out existing ball
+      colour(white);
+      blot(51);
+      // move to next location
+      moveXY(xVelocity, yVelocity);
+      // draw new ball
+      colour(red);
+      blot(50);
+      update();
+      pause(10);
+      // "bounce" (i.e. invert velocity) at canvas edges
+      if ((turtx < 50) || (turtx > 949)) {
+        xVelocity = -xVelocity;
+      }
+      if ((turty < 50) || (turty > 949)) {
+        yVelocity = -yVelocity;
+      }
+    }
+  }
+}

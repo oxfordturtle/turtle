@@ -1,0 +1,3 @@
+.fa {
+  line-height: inherit; /* overwrite font awesome default of 1 */
+}

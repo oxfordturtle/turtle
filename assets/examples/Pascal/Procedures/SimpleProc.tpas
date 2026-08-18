@@ -1,0 +1,20 @@
+PROGRAM SimpleProc;
+
+ {draws a single "prong" and then returns}
+ Procedure prong;
+ Begin
+  forward(400);
+  blot(20);
+  back(400)
+ End;
+
+BEGIN
+ {repeatedly draws prongs in random colours}
+ repeat
+  randcol(10);
+  prong;
+  {right turn gives impression of motion}
+  right(61)
+ {until Turtle is pointing north again}
+ until turtd=0
+END.

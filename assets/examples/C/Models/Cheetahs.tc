@@ -1,0 +1,244 @@
+const int maxanimals = 500;
+const int mingazelles = 10;
+const int startcheetahs = 50;
+const int startgazelles = 50;
+const int maxspeed = 1000;
+const int startslow = 30;
+const int startfast = 70;
+const int randmarginc = 10;
+const int randmarging = 10;
+const int huntingtries = 100;
+const int catchmargin = 5;
+const int cfoodadd = 40;
+const int cbreedfood = 10;
+const int cmatingratio = 2;
+const int gmatingratio = 1;
+const int chuntingratio = 1;
+const int slowage = 100;
+const int agefactor = 0;
+const int graphleft = 60;
+const int graphwidth = 900;
+const int graphheight = 400;
+const int cgraphbase = 450;
+const int ggraphbase = 950;
+const int ymax = 20;
+int gen;
+int cnum;
+int gnum;
+int cspeed[maxanimals];
+int gspeed[maxanimals];
+int cgenspeed[maxanimals];
+int ggenspeed[maxanimals];
+int cage[maxanimals];
+int gage[maxanimals];
+int cfood[maxanimals];
+int cspeednum[maxspeed];
+int gspeednum[maxspeed];
+
+void setup () {
+  for (int n = 0; n < maxspeed; n = n + 1) {
+    cspeednum[n] = 0;
+    gspeednum[n] = 0;
+  }
+  cnum = startcheetahs;
+  gnum = startgazelles;
+  for (n = 0; n < cnum; n = n + 1) {
+    cgenspeed[n] = rand(startfast + 1 - startslow) + startslow;
+    cspeed[n] = cgenspeed[n];
+    cage[n] = rand(slowage);
+    cfood[n] = rand(cfoodadd) + 1;
+    cspeednum[cspeed[n]] = cspeednum[cspeed[n]] + 1;
+  }
+  for (n = cnum; n < maxanimals; n = n + 1) {
+    cspeed[n] = 0;
+  }
+  for (n = 0; n < gnum; n = n + 1) {
+    ggenspeed[n] = rand(startfast + 1 - startslow) + startslow;
+    gspeed[n] = ggenspeed[n];
+    gage[n] = rand(slowage);
+    gspeednum[gspeed[n]] = gspeednum[gspeed[n]] + 1;
+  }
+  for (n = gnum; n < maxanimals; n = n + 1) {
+    gspeed[n] = 0;
+  }
+}
+
+void axes (int graphbase) {
+  colour(black);
+  setxy(graphleft, graphbase - graphheight);
+  drawxy(0, graphheight);
+  drawxy(graphwidth, 0);
+  for (int n = 0; n <= 10; n = n + 1) {
+    setxy(20, graphbase - n * graphheight / 10 - 19);
+    display(itoa(n * ymax / 10), 0, 20);
+  }
+  for (n = 1; n <= 10; n = n + 1) {
+    setxy(graphleft + n * graphwidth / 10 - 20, graphbase);
+    display(itoa(n * maxspeed / 10), 0, 20);
+  }
+}
+
+void graph () {
+  noupdate();
+  blank(white);
+  axes(450);
+  axes(950);
+  setxy(200, 20);
+  colour(red);
+  display('Speed Distribution of Cheetahs', 4, 25);
+  setxy(750, 20);
+  display(itoa(cnum), 4, 25);
+  int ctotal = 0;
+  for (int n = 0; n < maxspeed; n = n + 1) {
+    setxy(graphleft + n * graphwidth / maxspeed, 450);
+    drawxy(0, -graphheight * cspeednum[n] / ymax);
+    ctotal = ctotal + n * cspeednum[n];
+  }
+  setxy(200, 520);
+  colour(green);
+  display('Speed Distribution of Gazelles', 4, 25);
+  setxy(750, 520);
+  display(itoa(gnum), 4, 25);
+  int gtotal = 0;
+  for (n = 0; n < maxspeed; n = n + 1) {
+    setxy(graphleft + n * graphwidth / maxspeed, 950);
+    drawxy(0, -graphheight * gspeednum[n] / ymax);
+    gtotal = gtotal + n * gspeednum[n];
+  }
+  setxy(850, 20);
+  if (cnum < 1) {
+    setxy(150, 200);
+    colour(magenta);
+    display('All Cheetahs Have Died', 4, 50);
+    exit();
+  }
+  display(qitoa(ctotal, cnum, 2), 4, 25);
+  setxy(850, 520);
+  display(qitoa(gtotal, gnum, 2), 4, 25);
+  update();
+  printon(itoa(gen));
+  printon(' - c=');
+  printon(itoa(cnum));
+  printon(' (av=');
+  printon(qitoa(ctotal, cnum, 2));
+  print(')');
+  update();
+  noupdate();
+  printon('     g=');
+  printon(itoa(gnum));
+  printon(' (av=');
+  printon(qitoa(gtotal, gnum, 2));
+  print(')');
+}
+
+void deadcheetah (int c) {
+  cspeednum[cspeed[c]] = cspeednum[cspeed[c]] - 1;
+  cspeed[c] = 0;
+  cnum = cnum - 1;
+}
+
+void deadgazelle (int g) {
+  gspeednum[gspeed[g]] = gspeednum[gspeed[g]] - 1;
+  gspeed[g] = 0;
+  gnum = gnum - 1;
+}
+
+void babycheetah (int speed) {
+  int b = -1;
+  do {
+    b = b + 1;
+  } while ((cspeed[b] != 0) && (b != maxanimals - 1));
+  if (cspeed[b] == 0) {
+    cnum = cnum + 1;
+    cgenspeed[b] = speed + rand(2 * randmarginc + 1) - randmarginc;
+    cgenspeed[b] = max(1, min(maxspeed, cgenspeed[b]));
+    cspeed[b] = cgenspeed[b];
+    cage[b] = 0;
+    cfood[b] = cfoodadd;
+    cspeednum[cspeed[b]] = cspeednum[cspeed[b]] + 1;
+  }
+}
+
+void babygazelle (int speed) {
+  int b = -1;
+  do {
+    b = b + 1;
+  } while ((gspeed[b] != 0) && (b != maxanimals - 1));
+  if (gspeed[b] == 0) {
+    gnum = gnum + 1;
+    ggenspeed[b] = speed + rand(2 * randmarging + 1) - randmarging;
+    ggenspeed[b] = max(1, min(maxspeed, ggenspeed[b]));
+    gspeed[b] = ggenspeed[b];
+    gage[b] = 0;
+    gspeednum[gspeed[b]] = gspeednum[gspeed[b]] + 1;
+  }
+}
+
+void generation () {
+  for (int c = 0; c < cnum / chuntingratio; c = c + 1) {
+    c = rand(maxanimals);
+    if ((cspeed[c] > 0) && (gnum > mingazelles)) {
+      int tries = 0;
+      do {
+        tries = tries + 1;
+        int g = rand(maxanimals);
+      } while ((gspeed[g] == 0) && (tries != huntingtries));
+      if ((gspeed[g] > 0) && (cspeed[c] >= gspeed[g] + catchmargin)) {
+        deadgazelle(g);
+        cfood[c] = cfood[c] + cfoodadd;
+      }
+    }
+  }
+  for (int n = 0; n < cnum / cmatingratio; n = n + 1) {
+    c = rand(maxanimals);
+    if ((cnum < maxanimals) && (cspeed[c] > 0) && (cfood[c] >= cbreedfood)) {
+      babycheetah(cgenspeed[c]);
+      cfood[c] = cfood[c] - cbreedfood;
+    }
+  }
+  for (n = 0; n < gnum / gmatingratio; n = n + 1) {
+    g = rand(maxanimals);
+    if ((gnum < maxanimals) && (gspeed[g] > 0)) {
+      babygazelle(ggenspeed[g]);
+    }
+  }
+  for (n = 0; n < maxanimals; n = n + 1) {
+    if (cspeed[n] > 0) {
+      cage[n] = cage[n] + 1;
+      if (cage[n] > slowage) {
+        cspeednum[cspeed[n]] = cspeednum[cspeed[n]] - 1;
+        cspeed[n] = cspeed[n] * agefactor / 100;
+        cspeednum[cspeed[n]] = cspeednum[cspeed[n]] + 1;
+        if (cspeed[n] == 0) {
+          deadcheetah(n);
+        }
+      }
+      cfood[n] = cfood[n] - 1;
+      if (cfood[n] < 0) {
+        deadcheetah(n);
+      }
+    }
+    if (gspeed[n] > 0) {
+      gage[n] = gage[n] + 1;
+      if (gage[n] > slowage) {
+        gspeednum[gspeed[n]] = gspeednum[gspeed[n]] - 1;
+        gspeed[n] = gspeed[n] * agefactor / 100;
+        gspeednum[gspeed[n]] = gspeednum[gspeed[n]] + 1;
+        if (gspeed[n] == 0) {
+          deadgazelle(n);
+        }
+      }
+    }
+  }
+}
+
+void main () {
+  setup();
+  graph();
+  gen = 0;
+  do {
+    gen = gen + 1;
+    generation();
+    graph();
+  } while (1 == 1);
+}

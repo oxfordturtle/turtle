@@ -1,0 +1,31 @@
+class PolygonRings {
+  // draws a multi-coloured annulus (a ring shape)
+  void annulus (int inner, int width, int angle) {
+    for (int count = 0; count < (360 / angle); count = count + 1) {
+      forward(inner + width);
+      back(width);
+      back(inner);
+      forget(1);
+      right(angle);
+      forward(inner);
+      forward(width);
+      colour(rgb(count % 20 + 1));
+      polygon(4);
+      back(inner + width);
+    }
+  }
+
+  void main () {
+    penUp();
+    // draw a black blot
+    blot(500);
+    // start with a random colour
+    randCol(6);
+    // draw multi-coloured annuli within the blot
+    annulus(410, 80, 2);
+    annulus(310, 80, 3);
+    annulus(210, 80, 5);
+    annulus(110, 80, 7);
+    annulus(10, 80, 1);
+  }
+}

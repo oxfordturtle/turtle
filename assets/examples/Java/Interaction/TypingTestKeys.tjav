@@ -1,0 +1,68 @@
+class TypingTestKeys {
+  void main () {
+    // show instructions
+    blank(cream);
+    setXY(15, 200);
+    display('In this typing test, you will be shown the', 4, 36);
+    setXY(20, 270);
+    display('letters of the alphabet in a random order,', 4, 36);
+    setXY(20, 340);
+    display('and in a mixture of upper- and lower-case.', 4, 36);
+    setXY(20, 410);
+    display('Type them as fast as you can, and see how', 4, 36);
+    setXY(20, 480);
+    display('quickly you can finish the entire alphabet.', 4, 36);
+    setXY(100, 620);
+    display('Now press the "Esc" key to start ...', 4, 36);
+    // disable key echo in console
+    keyEcho(false);
+    // wait for escape key to be pressed
+    do {} while (abs(?key) != \escape);
+    // create a String containing all letters of the alphabet
+    String letters = '';
+    for (int c = 65; c <= 90; c = c + 1) {
+      letters = letters + (char) c;
+    }
+    // randomize the order of the letters
+    for (int count = 0; count < 50; count = count + 1) {
+    int m = randInt(26);
+    int n = randInt(26);
+    if (m != n) {
+      char temp = letters[m];
+      letters[m] = letters[n];
+      letters[n] = temp;
+    }
+    }
+    // set timer to zero
+    timeSet(0);
+    // for each letter in turn...
+    for (count = 0; count < 26; count = count + 1) {
+      // read character code of that letter
+      c = (int) letters[count];
+      // select case at random
+      boolean lowerCase = (randInt(2) == 0);
+      // rub out previous letter
+      blank(black);
+      // print letter at random coordinates
+      setXY(100 + randInt(300), randInt(250));
+      colour(yellow);
+      // print in either lowercase or uppercase
+      if (lowerCase) {
+        display((char) (c + 32), 3, 450);
+      } else {
+        display((char) c, 3, 450);
+      }
+      // wait for user to type that letter, with shift down for uppercase
+      do {
+        boolean shiftOk = (((abs(?kshift) & 8) > 0) ^ lowerCase);
+      } while ((abs(?key) != c) || !shiftOk);
+      // reset kshift value
+      reset(?kshift);
+    }
+    // show time taken
+    blank(lightblue);
+    setXY(60, 460);
+    colour(lightred);
+    display('Your time was ' + toStringQ(time(), 1000, 2) + ' seconds', 4, 50);
+  }
+}

@@ -1,0 +1,70 @@
+// draws a face of the given radius
+// N.B. copied from the Resizable face example
+function face (radius: number): void {
+  // draws an eye sized relative to the face
+  function eye (): void {
+    colour(white);
+    ellblot(radius * 3 / 20, radius / 10);
+    colour(emerald);
+    blot(radius * 9 / 100);
+    colour(black);
+    blot(radius / 25);
+  }
+
+  direction(0);
+  // draw head
+  colour(peach);
+  blot(radius);
+  // draw mouth
+  colour(darkred);
+  blot(radius * 7 / 10);
+  forward(radius * 3 / 20);
+  colour(peach);
+  blot(radius * 3 / 4);
+  // draw nose
+  back(radius * 3 / 10);
+  colour(royal);
+  blot(radius * 3 / 20);
+  // move to left eye position (without drawing)
+  penUp();
+  forward(radius * 9 / 20);
+  left(90);
+  forward(radius * 2 / 5);
+  // draw left eye
+  eye();
+  // move to right eye position (without drawing)
+  back(radius * 4 / 5);
+  // draw right eye
+  eye();
+}
+
+// set face size
+var faceRadius: number = 100;
+// set starting point and velocity
+var x: number = 300;
+var y: number = 700;
+var xVelocity: number = 8;
+var yVelocity: number = -4;
+while (0 < 1) {
+  noUpdate();
+  // rub out existing face
+  colour(white);
+  blot(faceRadius + 1);
+  // move to next location
+  x = x + xVelocity;
+  y = y + yVelocity;
+  setXY(x, y);
+  // draw new face
+  face(faceRadius);
+  // reset x and y after face drawing
+  setXY(x, y);
+  update();
+  pause(10);
+  // "bounce" (i.e. invert velocity) at canvas edges
+  if ((x < faceRadius) || (x > 999 - faceRadius)) {
+    xVelocity = -xVelocity;
+  }
+  if ((y < faceRadius) || (y > 999 - faceRadius)) {
+    yVelocity = -yVelocity;
+  }
+}

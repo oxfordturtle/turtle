@@ -1,0 +1,28 @@
+int lineLength;
+
+// draws a line and turns right 60 degrees
+void lineTurn () {
+  forward(lineLength);
+  right(60);
+}
+
+void main () {
+  // make canvas black
+  blank(black);
+  // position Turtle so pattern fits neatly
+  forward(15);
+  // set line thickness and initial length
+  thickness(27);
+  lineLength = 20;
+  // repeatedly ...
+  do {
+    // choose one of the first 40 Turtle colours
+    randcol(40);
+    // call lineTurn procedure, then pause
+    lineTurn();
+    pause(50);
+    // increment lineLength value
+    lineLength = lineLength + 10;
+  // stop looping when lineLength gets to 510
+  } while (lineLength <= 500);
+}

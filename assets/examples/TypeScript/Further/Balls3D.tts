@@ -1,0 +1,28 @@
+// draw a 3d-style coloured ball
+function ball3d (colr: number, step: number): void {
+  // start with specified colour code
+  colour(colr);
+  // draw 40 progressively smaller blots
+  for (var count: number = 40; count > 0; count = count - 1) {
+    blot(count * 6);
+    // moving their centre by 3 each time
+    forward(3);
+    // and making the colour lighter
+    turtc = turtc + step;
+  }
+}
+
+// turn so brightest point is up and right
+right(60);
+// draw a cyan ball at top left
+setXY(250, 250);
+ball3d(0x00FFFF, 0x50000);
+// draw a chocolate brown ball at top right
+setXY(750, 250);
+ball3d(0xD2691E, 0x10102);
+// draw a dark red ball at bottom left
+setXY(250, 750);
+ball3d(0xA90000, 0x20202);
+// draw a yellow ball at bottom right
+setXY(750, 750);
+ball3d(0xFFD800, 0x101);

@@ -1,0 +1,118 @@
+class PaintApp {
+  int brushWidth;
+  int brushColour;
+
+  // sets brush width, and updates display
+  void setBrushWidth (int width) {
+    // set brush width
+    brushWidth = width;
+    // update brush width display
+    noUpdate();
+    colour(black);
+    for (int count = 0; count < 5; count = count + 1) {
+      setXY(625 + count * 50, 875);
+      blot(8 + count * 2);
+    }
+    colour(brushColour);
+    recolour(((brushWidth + 16) * 25) + 25, 875, lightred);
+    update();
+  }
+
+  // sets brush colour, and updates display
+  void setBrushColour (int colr) {
+    // set brush colour
+    brushColour = colr;
+    // update brush colour display
+    colour(colr);
+    setXY(975, 875);
+    blot(16);
+  }
+
+  // draws with the paintbrush at the given coordinates
+  void paintbrush (int x, int y) {
+    setXY(x, y);
+    colour(brushColour);
+    blot(brushWidth);
+  }
+
+  // fills with the paint can at the given coordinates
+  void paintcan (int x, int y) {
+    recolour(x, y, brushColour);
+  }
+
+  // draws a square of the given colour
+  void square (int colr) {
+    moveXY(50, 0);
+    moveXY(0, 50);
+    moveXY(-50, 0);
+    moveXY(0, -50);
+    colour(colr);
+    polygon(4);
+  }
+
+  // sets up the canvas
+  void setup () {
+    // draw clickable interface grid
+    colour(lightred);
+    setXY(0, 850);
+    drawXY(1000, 0);
+    setXY(0, 900);
+    drawXY(1000, 0);
+    setXY(450, 850);
+    drawXY(0, 50);
+    setXY(850, 850);
+    drawXY(0, 50);
+    // print text instructions in grid
+    colour(black);
+    setXY(10, 858);
+    display('Left-click to draw, right-click to fill', 0, 20);
+    setXY(450 + 10, 858);
+    display('Brush width:', 0, 20);
+    setXY(850 + 10, 858);
+    display('Colour:', 0, 20);
+    // draw 40 different colour selection boxes
+    setXY(0, 900);
+    for (int count = 1; count <= 20; count = count + 1) {
+      square(rgb(count));
+      moveXY(0, 50);
+      square(rgb(count + 30));
+      moveXY(50, -50);
+    }
+    // initialise brush colour and width, and their displays
+    setBrushColour(black);
+    setBrushWidth(8);
+  }
+
+  void main () {
+    // set up the canvas
+    setup();
+    // repeatedly...
+    do {
+      // if left mouse button is pressed...
+      if (?lmouse > 0) {
+        // if cursor is at bottom of canvas...
+        if (?mousey > 900) {
+          // set brush colour
+          setBrushColour(pixCol(?mousex, ?mousey));
+        } else {
+          // if cursor is in brush width selection area...
+          if ((?mousey > 850) && (?mousex > 600) && (?mousex < 850)) {
+            // set brush width
+            setBrushWidth(((?mousex / 50) * 2) - 16);
+          } else {
+            // if cursor is in drawing area...
+            if (?mousey < 850 - brushWidth) {
+              // draw with the brush
+              paintbrush(?mousex, ?mousey);
+            }
+          }
+        }
+      }
+      // if right mouse button is pressed and cursor is in drawing area...
+      if ((?rmouse > 0) && (?mousey < 850)) {
+        // fill with the paintcan
+        paintcan(?mousex, ?mousey);
+      }
+    } while (true);
+  }
+}

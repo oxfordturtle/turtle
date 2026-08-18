@@ -1,0 +1,43 @@
+export type RequestParams = {
+  method: string;
+  url: URL;
+  sections: [string, ...string[]];
+  page: string;
+  formData?: FormData;
+};
+
+export type SystemSettings = {
+  language: string;
+  mode: string;
+  editorFontFamily: string;
+  editorFontSize: number;
+  outputFontFamily: string;
+  outputFontSize: number;
+  includeCommentsInExamples: boolean;
+  loadCorrespondingExample: boolean;
+  assembler: boolean;
+  decimal: boolean;
+  autoCompileOnLoad: boolean;
+  autoRunOnLoad: boolean;
+  autoFormatOnLoad: boolean;
+  alwaysSaveSettings: boolean;
+  showCanvasOnRun: boolean;
+  showOutputOnWrite: boolean;
+  showMemoryOnDump: boolean;
+  drawCountMax: number;
+  codeCountMax: number;
+  smallSize: number;
+  stackSize: number;
+  traceOnRun: boolean;
+  activateHCLR: boolean;
+  preventStackCollision: boolean;
+  rangeCheckArrays: boolean;
+  canvasStartSize: number;
+  setupDefaultKeyBuffer: boolean;
+  turtleAttributesAsGlobals: boolean;
+  initialiseLocals: boolean;
+  allowCSTR: boolean;
+  separateReturnStack: boolean;
+  separateMemoryControlStack: boolean;
+  separateSubroutineRegisterStack: boolean;
+};

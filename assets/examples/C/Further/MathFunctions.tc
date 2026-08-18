@@ -1,0 +1,74 @@
+const int decimals = 4;          // decimal places for display of values
+const int denominator = 1000000; // denominator gives level of precision
+int a = rand(900) + 100;
+int b = rand(900) + 100;
+
+// Writes to the output the value of a mathematical function of a/b,
+// or - in the case of HYPOT (where OP is "," not "/") - of a and b;
+// chr(176) is the degree symbol for sin/cos/tan and their inverses.
+void show (string fn, char op, int value, int degrees) {
+  if (degrees == 1) {
+    print(fn + '(' + itoa(a) + op + itoa(b) + ((char) 176) + ') = ' + qitoa(value, denominator, decimals));
+  } else {
+    if (degrees == 2) {
+      print(fn + '(' + itoa(a) + op + itoa(b) + ') = ' + qitoa(value, denominator, decimals) + ((char) 176));
+    } else {
+      print(fn + '(' + itoa(a) + op + itoa(b) + ') = ' + qitoa(value, denominator, decimals));
+    }
+  }
+}
+
+void main () {
+  // show output and display information about the program
+  output(true, white, true);
+  print('This program selects two random numbers a and b, in the range');
+  print('100-999, and then outputs various mathematical functions of the');
+  print('fraction a/b. The results are expressed to ' + itoa(decimals) + ' decimal places, and a');
+  print('denominator of ' + itoa(denominator) + ' is used in the calculations to provide');
+  print('precision, even though the Turtle functions strictly operate only');
+  print('on integers and produce integer results.');
+  print('');
+  // display the values and quotient of a and b
+  print('a = ' + itoa(a) + '; b = ' + itoa(b));
+  print('a/b = ' + itoa(a) + '/' + itoa(b) + ' = ' + qitoa(a, b, decimals));
+  print('');
+  // display square, square root, cube, and cube root of a/b
+  show('square', '/', pow(a, b, 2, 1, denominator), 0);
+  show('square root', '/', pow(a, b, 1, 2, denominator), 0);
+  show('cube', '/', pow(a, b, 3, 1, denominator), 0);
+  show('cube root', '/', pow(a, b, 1, 3, denominator), 0);
+  print('');
+  // display hypotenuse of right-angled triangle with shorter sides a and b
+  show('hypot', ',', hypot(a, b, denominator), 0);
+  show('calculated hypot', ',', sqrt(a * a + b * b, denominator), 0);
+  print('');
+  // display sin, cos, and tan of a/b, interpreted in degrees
+  show('sin', '/', sin(a, b, denominator), 1);
+  show('cos', '/', cos(a, b, denominator), 1);
+  show('tan', '/', tan(a, b, denominator), 1);
+  print('');
+  // display ln, exp, log10, and antilog of a/b
+  show('ln', '/', log(a, b, denominator), 0);
+  if (divmult(a, b, 1000) + log(denominator, 1, 1000) > log(maxint(), 1, 1000)) {
+    print('EXP(' + itoa(a) + '/' + itoa(b) + ') would give numerical overflow, because');
+    print('the result*' + itoa(denominator) + ' would be greater than ' + itoa(maxint()));
+  } else {
+    show('exp', '/', exp(a, b, denominator), 0);
+  }
+  show('log10', '/', log10(a, b, denominator), 0);
+  if (divmult(a, b, 1000) + log10(denominator, 1, 1000) > log10(maxint(), 1, 1000)) {
+    print('ANTILOG(' + itoa(a) + '/' + itoa(b) + ') would give numerical overflow, because');
+    print('the result*' + itoa(denominator) + ' would be greater than ' + itoa(maxint()));
+  } else {
+    show('antilog', '/', antilog(a, b, denominator), 0);
+  }
+  print('');
+  // display arccos, arcsin, and arctan of a/b, in degrees
+  if (a > b) {
+    print('ARCCOS and ARCSIN are not defined for ' + itoa(a) + '/' + itoa(b) + ' = ' + qitoa(a, b, decimals));
+  } else {
+    show('arccos', '/', acos(a, b, denominator), 2);
+    show('arcsin', '/', asin(a, b, denominator), 2);
+  }
+  show('arctan', '/', atan(a, b, denominator), 2);
+}

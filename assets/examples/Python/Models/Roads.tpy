@@ -1,0 +1,101 @@
+MAXNODES=500
+SUFFNODES=400
+MAXEDGES=1000
+MINDISTANCE=40
+NODERADIUS=6
+ROADRADIUS=4
+NORMALROAD=black
+LINKROAD=blue
+nodex=[1]*(MAXNODES+1)
+nodey=[1]*(MAXNODES+1)
+nodedist=[1]*(MAXNODES+1)
+edge1=[1]*(MAXEDGES+1)
+edge2=[1]*(MAXEDGES+1)
+edgelen=[1]*(MAXEDGES+1)
+
+def closest(n: int) -> int:
+    result=0
+    lowest=maxint()
+    # the node lists are used from index 1 up, so count 1 to numnodes
+    for i in range(1,numnodes+1):
+        if i!=n:
+            d=hypot(nodex[n]-nodex[i],nodey[n]-nodey[i],1)
+            if d<lowest:
+                lowest=d
+                result=i
+    if lowest<MINDISTANCE:
+        result=-1
+    return result
+
+def marknode(n: int,col: int,rad: int):
+    setxy(nodex[n],nodey[n])
+    colour(col)
+    blot(rad)
+
+def makeedge(nodea: int,nodeb: int,col: int):
+    global numedges
+    numedges+=1
+    edge1[numedges]=nodea
+    edge2[numedges]=nodeb
+    edgelen[numedges]=hypot(nodex[nodea]-nodex[nodeb],nodey[nodea]-nodey[nodeb],1)
+    setxy(nodex[nodea],nodey[nodea])
+    colour(col)
+    setxy(nodex[nodeb],nodey[nodeb])
+    polyline(2)
+
+def linkup(nodea: int,nodeb: int):
+    global numnodes
+    if hypot(nodex[nodea]-nodex[nodeb],nodey[nodea]-nodey[nodeb],1)<MINDISTANCE*2:
+        makeedge(nodea,nodeb,NORMALROAD)
+    else:
+        numnodes+=1
+        nodex[numnodes]=(nodex[nodea]+nodex[nodeb])/2
+        nodey[numnodes]=(nodey[nodea]+nodey[nodeb])/2
+        marknode(numnodes,cyan,ROADRADIUS)
+        linkup(nodea,numnodes)
+        linkup(numnodes,nodeb)
+
+def joinup(thisnode: int):
+    # the node lists are used from index 1 up
+    for i in range(1,numnodes+1):
+        nodedist[i]=maxint()
+    nodedist[thisnode]=0
+    cont=True
+    while cont:
+        cont=False
+        for i in range(1,numedges+1):
+            if nodedist[edge1[i]]<maxint():
+                if nodedist[edge1[i]]+edgelen[i]<nodedist[edge2[i]]:
+                    nodedist[edge2[i]]=nodedist[edge1[i]]+edgelen[i]
+                    cont=True
+            if nodedist[edge2[i]]<maxint():
+                if nodedist[edge2[i]]+edgelen[i]<nodedist[edge1[i]]:
+                    nodedist[edge1[i]]=nodedist[edge2[i]]+edgelen[i]
+                    cont=True
+    i=0
+    cont=True
+    while (i<numnodes) and cont:
+        i+=1
+        dist=hypot(nodex[i]-nodex[thisnode],nodey[i]-nodey[thisnode],1)
+        if (i!=thisnode) and (nodedist[i]>1000) and (dist<MINDISTANCE*2):
+            makeedge(thisnode,i,LINKROAD)
+            cont=False
+
+thickness(6)
+numnodes=0
+numedges=0
+while numnodes<SUFFNODES:
+    numnodes+=1
+    nodex[numnodes]=randrange(1000)
+    nodey[numnodes]=randrange(1000)
+    m=closest(numnodes)
+    while m<0:
+        nodex[numnodes]=randrange(1000)
+        nodey[numnodes]=randrange(1000)
+        m=closest(numnodes)
+    marknode(numnodes,red,NODERADIUS)
+    if m>0:
+        linkup(m,numnodes)
+# the node lists are used from index 1 up
+for m in range(1,numnodes+1):
+    joinup(m)

@@ -1,0 +1,17 @@
+// draws a triangle of the given size
+function triangle (size: number): void {
+  // draw the first side
+  forward(size);
+  right(120);
+  // draw the second side
+  forward(size);
+  right(120);
+  // draw the third side
+  forward(size);
+  right(120);
+}
+
+// move to the start (without drawing)
+moveXY(-100, 150);
+// draw a triangle of size 256
+triangle(256);

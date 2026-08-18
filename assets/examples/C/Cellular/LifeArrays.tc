@@ -1,0 +1,44 @@
+void main () {
+  const int width = 32;
+  const int height = 32;
+  bool thisgen[width][height];
+  bool nextgen[width][height];
+  canvas(0, 0, width, height);
+  resolution(width, height);
+  for (int x = 0; x < width; x = x + 1) {
+    for (int y = 0; y < height; y = y + 1) {
+      nextgen[x][y] = (rand(7) == 0);
+    }
+  }
+  while (?key != \escape) {
+    noupdate();
+    for (x = 0; x < width; x = x + 1) {
+      for (y = 0; y < height; y = y + 1) {
+        thisgen[x][y] = nextgen[x][y];
+        if (thisgen[x][y]) {
+          pixset(x, y, maroon);
+        } else {
+          pixset(x, y, lightgreen);
+        }
+      }
+    }
+    update();
+    for (x = 0; x < width; x = x + 1) {
+      for (y = 0; y < height; y = y + 1) {
+        int livenb = 0;
+        for (int i = -1; i <= 1; i = i + 1) {
+          for (int j = -1; j <= 1; j = j + 1) {
+            if (thisgen[(x + i + width) % width][(y + j + height) % height]) {
+              livenb = livenb + 1;
+            }
+          }
+        }
+        if (thisgen[x][y]) {
+          nextgen[x][y] = ((livenb == 3) || (livenb == 4));
+        } else {
+          nextgen[x][y] = (livenb == 3);
+        }
+      }
+    }
+  }
+}

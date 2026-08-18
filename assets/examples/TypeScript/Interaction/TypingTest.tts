@@ -1,0 +1,56 @@
+// show instructions
+blank(cream);
+setXY(15, 200);
+display('In this typing test,  you will be shown the', 4, 36);
+setXY(20, 270);
+display('letters of the alphabet in a random order,', 4, 36);
+setXY(20, 340);
+display('and in a mixture of upper- and lower-case.', 4, 36);
+setXY(20, 410);
+display('Type them as fast as you can, and see how', 4, 36);
+setXY(20, 480);
+display('quickly you can finish the entire alphabet.', 4, 36);
+setXY(100, 620);
+display('Now press the "Esc" key to start ...', 4, 36);
+// disable key echo in console
+keyEcho(false);
+// wait for escape key to be pressed
+do {} while (abs(?key) != \escape);
+// create a String containing all letters of the alphabet
+var letters: number[26];
+for (var i: number = 0; i < 26; i = i + 1) {
+  // randomly select upper or lower case
+  if (randInt(2) == 0) {
+    letters[i] = i + 65;
+  } else {
+    letters[i] = i + 97;
+  }
+}
+// randomize the order of the letters
+for (var count: number = 0; count < 50; count = count + 1) {
+  var m: number = randInt(26);
+  var n: number = randInt(26);
+  if (m != n) {
+    var temp: number = letters[m];
+    letters[m] = letters[n];
+    letters[n] = temp;
+  }
+}
+// set timer to zero
+timeSet(0);
+// for each letter in turn...
+for (count = 0; count < 26; count = count + 1) {
+  // rub out previous letter
+  blank(black);
+  // print letter at random coordinates
+  setXY(100 + randInt(300), randInt(250));
+  colour(yellow);
+  display(fromCharCode(letters[count]), 3, 450);
+  // wait for user to type that letter
+  do {} while (read(1) != fromCharCode(letters[count]));
+}
+// show time taken
+blank(lightblue);
+setXY(60, 460);
+colour(lightred);
+display('Your time was ' + toStringQ(time(), 1000, 2) + ' seconds', 4, 50);

@@ -1,0 +1,15 @@
+.notice {
+  color: #fff;
+  font-weight: normal;
+  border-radius: 5px;
+  padding: 0.25em 0.75em;
+  margin-bottom: 1em;
+}
+
+.notice.success {
+  background: var(--green);
+}
+
+.notice.error {
+  background: var(--red);
+}

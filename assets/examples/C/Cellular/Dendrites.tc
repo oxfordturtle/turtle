@@ -1,0 +1,105 @@
+const int half = 100;
+const int crystal = cyan;
+const int molecule = white;
+const int solution = teal;
+const int initrandomradius = 10;
+const int maxdistance = 75;
+const int cyclemod = 5;
+const int moddelay = 0;
+
+int numattached;
+int maxsofar;
+int randomradius;
+
+bool attached (int x, int y) {
+  bool result = false;
+  if ((pixcol(x - 1, y) == crystal)
+    || (pixcol(x + 1, y) == crystal)
+    || (pixcol(x, y - 1) == crystal)
+    || (pixcol(x, y + 1) == crystal)) {
+      result = true;
+      pixset(x, y, crystal);
+      numattached = numattached + 1;
+      if (hypot(x, y, 1) >= maxsofar) {
+        maxsofar = hypot(x, y, 1);
+      }
+  }
+  return result;
+}
+
+void randomwalk () {
+  do {
+    int n = rand(4) * 2 + 1;
+    turtx = turtx + n div 3 - 1;
+    turty = turty + n % 3 - 1;
+    if (pixcol(turtx, turty) == black) {
+      turtx = turtx - 2 * (n div 3 - 1);
+      turty = turty - 2 * (n % 3 - 1);
+    }
+  } while (pixcol(turtx, turty) != solution);
+}
+
+void biasedwalk () {
+  turnxy(-turtx, -turty);
+  int distance = hypot(turtx, turty, 1);
+  if (distance < randomradius) {
+    direction(rand(360));
+  } else {
+    int range = divmult(half - distance, half - randomradius, 180);
+    int turn = rand(range * 2) - range;
+    right(turn);
+  }
+  do {
+    forward(1);
+  } while (pixcol(turtx, turty) != solution);
+}
+
+void main () {
+  int whole = half * 2 + 3;
+  canvas(-half, -half, whole, whole);
+  resolution(whole, whole);
+  penup();
+  setxy(-half, -half);
+  box(whole, whole, solution, true);
+  randomradius = initrandomradius;
+  print('Initial randomradius = ' + itoa(randomradius));
+  pixset(0, 0, crystal);
+  numattached = 1;
+  print('Counting molecules within growing crystal:');
+  printon('1 ');
+  maxsofar = 1;
+  timeset(0);
+  do {
+    home();
+    direction(rand(360));
+    forward(half);
+    if (pixcol(turtx, turty) != solution) {
+      randomwalk();
+    }
+    int cycle = 0;
+    while (!attached(turtx, turty)) {
+      pixset(turtx, turty, molecule);
+      if (cycle % cyclemod == 0) {
+        update();
+        if (moddelay > 0) {
+          pause(moddelay);
+        }
+        noupdate();
+      }
+      cycle = cycle + 1;
+      pixset(turtx, turty, solution);
+      biasedwalk();
+    }
+    if (numattached % 10 == 0) {
+      print(itoa(numattached));
+    } else {
+      printon(itoa(numattached) + ' ');
+    }
+    if (maxsofar > randomradius) {
+      randomradius = maxsofar;
+      print('');
+      print('randomradius = ' + itoa(randomradius));
+    }
+  } while (maxsofar < maxdistance);
+  print('Simulation finished (' + qitoa(time(), 1000, 2) + ' seconds)');
+}

@@ -1,0 +1,57 @@
+const int size = 100;
+int x = 300;
+int y = 700;
+int d = 0;
+bool xEdge;
+bool yEdge;
+
+// draws a triangle, and checks whether it meets the edge of the canvas
+void triangle (int colr) {
+  xEdge = false;
+  yEdge = false;
+  setxy(x, y);
+  direction(d);
+  colour(colr);
+  for (int count = 0; count < 3; count = count + 1) {
+    forward(size);
+    if (abs(turtx - 500) > 495) {
+      xEdge = true;
+    }
+    if (abs(turty - 500) > 495) {
+      yEdge = true;
+    }
+    back(size);
+    forget(1);
+    right(120);
+  }
+  polygon(3);
+}
+
+void main () {
+  // set starting velocity
+  int xVelocity = 8;
+  int yVelocity = -4;
+  int dVelocity = 5;
+  while (0 < 1) {
+    noupdate();
+    // rub out existing triangle
+    blank(white);
+    // move to next location
+    x = x + xVelocity;
+    y = y + yVelocity;
+    d = (d + dVelocity) % 360;
+    // draw new triangle
+    triangle(red);
+    update();
+    pause(10);
+    // "bounce" (i.e. invert velocity) at canvas edges
+    if (xEdge) {
+      xVelocity = -xVelocity;
+      dVelocity = -dVelocity;
+    }
+    if (yEdge) {
+      yVelocity = -yVelocity;
+      dVelocity = -dVelocity;
+    }
+  }
+}
