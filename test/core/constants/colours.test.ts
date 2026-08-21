@@ -1,5 +1,5 @@
 import { describe, it } from "@std/testing/bdd";
-import { assertEquals, assertMatch } from "@std/assert";
+import { assert, assertEquals, assertMatch } from "@std/assert";
 import { colours, languages } from "@/core/constants.ts";
 
 describe("colours", () => {
@@ -28,11 +28,7 @@ describe("colours", () => {
       for (const language of languages) {
         const name = colour.names[language];
         assertEquals(typeof name, "string");
-        assertEquals(
-          name.length > 0,
-          true,
-          `${colour.hex} has no ${language} name`,
-        );
+        assert(name.length > 0, `${colour.hex} has no ${language} name`);
       }
     }
   });

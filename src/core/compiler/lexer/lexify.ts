@@ -64,11 +64,21 @@ export default (tokens: Token[], language: Language): Lexeme[] => {
               lexemes.push(dedentLexeme(tokens[index + 1] || tokens[index]));
             }
             if (indent !== indents[indents.length - 1]) {
+              // deno-coverage-ignore-start -- the "|| tokens[index]" fallback
+              // is unreachable: a mismatch needs indent > 0, which requires a
+              // truthy "spaces" token at tokens[index + 1] (with no next token
+              // indent is 0, which always sits at the bottom of the indents
+              // stack - seeded as [0], never popped past it - so it cannot
+              // mismatch). The throw itself is live and tested; it sits
+              // inside this range only because a branch cannot be excluded
+              // mid-expression. The identical fallback in the dedent push
+              // above *is* reachable and covered.
               throw new CompilerError(
                 `Inconsistent indentation at line ${
                   (tokens[index + 1] || tokens[index]).line
                 }.`,
               );
+              // deno-coverage-ignore-stop
             }
           }
         }

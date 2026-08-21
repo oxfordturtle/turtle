@@ -1,5 +1,5 @@
 import { describe, it } from "@std/testing/bdd";
-import { assertEquals, assertExists, assertThrows } from "@std/assert";
+import { assert, assertEquals, assertExists, assertThrows } from "@std/assert";
 import type {
   Constant,
   IfStatement,
@@ -9,7 +9,7 @@ import type {
   Subroutine,
   VariableAssignment,
 } from "@/core/compiler.ts";
-import { parseProgram } from "./_programs.ts";
+import { parseProgram } from "./lib/programs.ts";
 
 /**
  * TypeScript-specific parser tests: syntax too divergent for the shared
@@ -32,9 +32,8 @@ describe("parse: TypeScript", () => {
       const assignment = program.statements[1] as VariableAssignment;
       assertEquals(assignment.statementType, "variableAssignment");
       assertEquals(assignment.variable.name, "x");
-      assertEquals(
+      assert(
         program.variables.some((v) => v.name === "x" && v.type === "integer"),
-        true,
       );
     });
 
@@ -323,7 +322,8 @@ describe("parse: TypeScript", () => {
     // Every other expression type that survives the integer typeCheck
     // (integer literals, boolint constants, boolean-as-integer) evaluates
     // to a number. Not force-tested, since it would require fabricating a
-    // Program by hand rather than going through parseProgram().
+    // Program by hand rather than going through parseProgram(); the guard
+    // carries a justified deno-coverage-ignore in type.ts instead.
   });
 
   describe("function definitions", () => {
@@ -335,14 +335,10 @@ describe("parse: TypeScript", () => {
       assertEquals(program.subroutines.length, 1);
       const sub = program.subroutines[0] as Subroutine;
       assertEquals(sub.name, "double");
-      assertEquals(
-        sub.variables.some((v) => v.name === "n" && v.isParameter),
-        true,
-      );
+      assert(sub.variables.some((v) => v.name === "n" && v.isParameter));
       // functions get an implicit "!result" variable carrying the return type
-      assertEquals(
+      assert(
         sub.variables.some((v) => v.name === "!result" && v.type === "integer"),
-        true,
       );
       const returnStatement = sub.statements.find(
         (s) => s.statementType === "returnStatement",

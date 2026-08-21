@@ -1,17 +1,15 @@
 import { describe, it } from "@std/testing/bdd";
-import { assertEquals, assertThrows } from "@std/assert";
-import { encode, lexify, parse, tokenize } from "@/core/compiler.ts";
+import { assert, assertEquals, assertFalse } from "@std/assert";
+import { lexify, parse, tokenize } from "@/core/compiler.ts";
 import type { Expression, IfStatement } from "@/core/compiler.ts";
 import { type Language, PCode, pcodeArgs } from "@/core/constants.ts";
-import { defaultMachineOptions, run } from "@/core/machine.ts";
 import {
-  fakeCanvas,
-  fakeFiles,
-  fakeOutput,
-  fakeTimers,
-} from "../machine/_fakes.ts";
-import { bodyStatements } from "./parser/_programs.ts";
-import { LANGUAGES } from "./_languages.ts";
+  assertCompilerError,
+  runSourceToText,
+} from "../machine/lib/helpers.ts";
+import { compileAndEncode } from "./encoder/lib/helpers.ts";
+import { bodyStatements } from "./parser/lib/programs.ts";
+import { LANGUAGES } from "./lib/languages.ts";
 
 /**
  * The logical operators "and"/"or" ("&&"/"||"), across all six languages. Two
@@ -34,17 +32,9 @@ import { LANGUAGES } from "./_languages.ts";
  * the right answer for some inputs.
  */
 
-const compile = (language: Language, code: string): number[][] =>
-  encode(parse(lexify(tokenize(code, language), language), language));
-
-const runProgram = (language: Language, code: string): string => {
-  const pcode = compile(language, code);
-  const output = fakeOutput();
-  const timers = fakeTimers();
-  run(pcode, defaultMachineOptions, timers, output, fakeCanvas(), fakeFiles());
-  timers.flush(); // console writes are queued, not immediate
-  return output.outputText.trim();
-};
+/** This file's assertions never care about surrounding whitespace. */
+const runProgram = (language: Language, code: string): string =>
+  runSourceToText(language, code).trim();
 
 /**
  * Per-language boilerplate for "declare a=1, b=1, c=2, d=2, then print
@@ -294,9 +284,9 @@ describe("compiler: logical operator precedence", () => {
       // real Pascal binds "and" tighter than "=" too, so this is correct
       // behaviour and not a limitation - pinned so a later refactor can't
       // quietly "fix" it
-      assertThrows(
-        () => compile("Pascal", conditionProgram.Pascal("a = b and c = d")),
-        Error,
+      assertCompilerError(
+        "Pascal",
+        conditionProgram.Pascal("a = b and c = d"),
         "Type error",
       );
     });
@@ -750,17 +740,15 @@ describe("compiler: jump targets survive encoding", () => {
    * number.
    */
   const assertJumpsResolved = (label: string, pcode: number[][]): void => {
-    assertEquals(
+    assertFalse(
       looksLikeUnresolvedJump(pcode),
-      false,
       `${label}: a jump target was left unresolved (negative)`,
     );
     for (const { line, target } of jumpTargets(pcode)) {
       // targets are one-based (runtime.ts jumps to `target - 1`), so the
       // valid range is 1 to the number of lines
-      assertEquals(
+      assert(
         target >= 1 && target <= pcode.length,
-        true,
         `${label}: jump on line ${line} targets line ${target}, outside 1..${pcode.length}`,
       );
     }
@@ -779,7 +767,10 @@ describe("compiler: jump targets survive encoding", () => {
       it(language, () => {
         assertJumpsResolved(
           language,
-          compile(language, conditionProgram[language](conditions[language])),
+          compileAndEncode(
+            language,
+            conditionProgram[language](conditions[language]),
+          ),
         );
       });
     }
@@ -799,7 +790,7 @@ describe("compiler: jump targets survive encoding", () => {
     for (const [name, body] of Object.entries(bodies)) {
       it(name, () => {
         const shell = countingProgram.C as (body: string) => string;
-        assertJumpsResolved(name, compile("C", shell(body)));
+        assertJumpsResolved(name, compileAndEncode("C", shell(body)));
       });
     }
   });

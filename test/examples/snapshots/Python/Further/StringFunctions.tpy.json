@@ -1,0 +1,39 @@
+{
+  "schemaVersion": 1,
+  "runMode": "bounded",
+  "pcode": {
+    "lines": 43,
+    "hash": "bf2e8fcb30279a8c"
+  },
+  "hitIterationCap": false,
+  "consoleText": "You will see this on a clear light blue Console\n",
+  "outputText": "Turtle is the name of a small animal.\nPython is a large snake.\n'Ponty Mython' is a silly name.\n\"Turtle Python\" has 13 characters.\nIn lower case it is \"turtle python\".\nIn upper case it is \"TURTLE PYTHON\".\n\"Python\" occurs within \"Turtle Python\" at position 7.\n3.14159 times 100000 = 314159.\n314159 divided by 100000 = 3.14159.\n\nNow back to the Canvas and Console ...\nYou will see this on a clear light blue Console\n",
+  "runtimeErrors": [],
+  "turtle": {
+    "x": 500,
+    "y": 500,
+    "d": 0,
+    "a": 360,
+    "t": 2,
+    "c": "#000"
+  },
+  "canvas": {
+    "callCount": 6,
+    "byMethod": {
+      "setResolution": 2,
+      "setVirtualCanvas": 2,
+      "clear": 1,
+      "setCursor": 1
+    },
+    "logHash": "d982706e7ecfaa0e",
+    "head": [
+      "setResolution([1000,1000,false])",
+      "setVirtualCanvas([0,0,1000,1000])",
+      "setResolution([1000,1000,false])",
+      "clear([\"#FFFFFF\"])",
+      "setVirtualCanvas([0,0,1000,1000])",
+      "setCursor([1])"
+    ],
+    "tail": []
+  }
+}

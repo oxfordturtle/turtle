@@ -1,5 +1,5 @@
 import { describe, it } from "@std/testing/bdd";
-import { assertEquals, assertThrows } from "@std/assert";
+import { assert, assertEquals, assertFalse, assertThrows } from "@std/assert";
 import {
   defaultMachineOptions,
   halt,
@@ -9,8 +9,8 @@ import {
   run,
   setPorts,
 } from "@/core/machine.ts";
-import { fakeCanvas, fakeFiles, fakeOutput, fakeTimers } from "./_fakes.ts";
-import { PCode } from "./_helpers.ts";
+import { fakeCanvas, fakeFiles, fakeOutput, fakeTimers } from "./lib/fakes.ts";
+import { PCode } from "./lib/helpers.ts";
 
 /**
  * Coverage for `src/core/machine/runtime.ts`'s standalone control functions:
@@ -23,7 +23,7 @@ describe("machine/control", () => {
     // earlier test in the same run left the machine running - every other
     // test in this suite halts (or errors, which also halts) before
     // finishing, so this is safe as the first assertion here
-    assertEquals(isRunning(), false);
+    assertFalse(isRunning());
   });
 
   // state.ts used to carry a full set of no-op `ports` stubs as a default,
@@ -49,15 +49,14 @@ describe("machine/control", () => {
     reset();
 
     // the setup calls landed on the ports we installed, not on any default
-    assertEquals(
+    assert(
       canvas.calls.some(
         (c) => c.method === "setResolution" && c.args[0] === 1000,
       ),
-      true,
     );
     assertEquals(output.turtleProperties.x, 500);
     assertEquals(output.turtleProperties.y, 500);
-    assertEquals(isRunning(), false);
+    assertFalse(isRunning());
   });
 
   it("isRunning is true once run(), false again after it halts", () => {
@@ -66,7 +65,7 @@ describe("machine/control", () => {
     const canvas = fakeCanvas();
     const files = fakeFiles();
     run([[PCode.halt]], defaultMachineOptions, timers, output, canvas, files);
-    assertEquals(isRunning(), false);
+    assertFalse(isRunning());
   });
 
   it("isRunning stays true while paused mid-program (not yet halted)", () => {
@@ -82,9 +81,9 @@ describe("machine/control", () => {
       canvas,
       files,
     );
-    assertEquals(isRunning(), true);
+    assert(isRunning());
     timers.flush();
-    assertEquals(isRunning(), false);
+    assertFalse(isRunning());
   });
 
   describe("halt", () => {
@@ -101,13 +100,12 @@ describe("machine/control", () => {
         canvas,
         files,
       );
-      assertEquals(isRunning(), true);
+      assert(isRunning());
       halt();
-      assertEquals(isRunning(), false);
+      assertFalse(isRunning());
       assertEquals(output.stateChanges.at(-1), "halted");
-      assertEquals(
+      assert(
         canvas.calls.some((c) => c.method === "setCursor" && c.args[0] === 1),
-        true,
       );
     });
 
@@ -145,7 +143,7 @@ describe("machine/control", () => {
       );
       playOrPause();
       assertEquals(output.stateChanges.at(-1), "paused");
-      assertEquals(isRunning(), true); // paused, not halted
+      assert(isRunning()); // paused, not halted
 
       playOrPause();
       assertEquals(output.stateChanges.at(-1), "unpaused");
@@ -207,13 +205,12 @@ describe("machine/control", () => {
 
       reset();
 
-      assertEquals(canvas.calls.length > canvasCallsBefore, true);
-      assertEquals(output.calls.length > outputCallsBefore, true);
-      assertEquals(
+      assert(canvas.calls.length > canvasCallsBefore);
+      assert(output.calls.length > outputCallsBefore);
+      assert(
         canvas.calls.some(
           (c) => c.method === "setResolution" && c.args[0] === 1000,
         ),
-        true,
       );
       assertEquals(output.turtleProperties.x, 500);
       assertEquals(output.turtleProperties.y, 500);

@@ -56,12 +56,16 @@ export default function program(lexemes: Lexemes): Program {
   }
 
   // closing curly bracket
+  // deno-coverage-ignore-start -- unreachable: lexemes[length - 1] is only
+  // undefined when the lexeme array is empty, in which case `keyword` was
+  // undefined too and the "class" check above has already thrown
   if (!closingBracket) {
     throw new CompilerError(
       'Program must end with a closing bracket "}".',
       lexemes.lexemes[lexemes.lexemes.length - 1],
     );
   }
+  // deno-coverage-ignore-stop
   if (closingBracket.content !== "}") {
     throw new CompilerError(
       'Program must end with a closing bracket "}".',

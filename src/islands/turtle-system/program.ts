@@ -65,10 +65,12 @@ type Program = {
 // below, and nothing displays it - the Variables tab, which would, is still a
 // placeholder.
 
-// A one-shot re-entry guard for `initialise`, deliberately not a store field:
-// no component reads it, and a field would mean an extra commit or a value that
-// must never be seeded.
-let initialised = false;
+// `initialise`'s re-entry guard is the store itself: `restore` always leaves at
+// least one file, and nothing below ever empties the list again, so an empty
+// list is exactly "not yet initialised". A module-level flag would say the same
+// thing today, but would outlive a test harness's `resetStore` - the store
+// resets, the flag doesn't, and `initialise` would refuse to restore what a
+// fresh page load restores.
 
 /**
  * Uncoalesced, unlike ./machine.ts's: the writers below are driven by the user,
@@ -253,7 +255,11 @@ export const programStore = store("program", {
     /** The file-level half of a language change - see `applyLanguage` below. */
     adoptLanguage: (state, language: Language) => {
       const file = state.files[state.currentFileIndex];
+      // deno-coverage-ignore-start -- unreachable: the only dispatcher is
+      // `applyLanguage` below, which has already returned if there is no
+      // current file. Kept because every other action carries the same guard.
       if (!file) return undefined;
+      // deno-coverage-ignore-stop
       file.compiled = false;
       save("files", state.files);
       return {
@@ -313,8 +319,7 @@ export const getPcode = (): number[][] => programStore.get("pcode");
 
 /** Reads the file memory back out of `sessionStorage`. Idempotent, and called once from the client entry. */
 export const initialise = (): void => {
-  if (initialised) return;
-  initialised = true;
+  if (programStore.get("files").length > 0) return;
   programStore.dispatch("restore", {
     restored: (load("files") as unknown[]).map(restoreFile),
     storedIndex: load("currentFileIndex") as number,
@@ -398,6 +403,17 @@ export const openRemoteFile = (_url: string): void => {
   showError(new SystemError("Feature not yet available."));
 };
 
+// What the example loaders below call instead of the global `fetch`: the jsdom
+// test layer has no network, so it installs a fetcher that serves
+// `assets/examples/` from disk. A wrapper rather than a bare alias, so the real
+// `fetch` keeps its own `this`.
+let fetcher: typeof fetch = (input, init) => fetch(input, init);
+
+/** Test seam: replaces the `fetch` the example loaders use. */
+export const setFetcher = (replacement: typeof fetch): void => {
+  fetcher = replacement;
+};
+
 export const openExampleFile = (exampleId: string): void => {
   const example = examples.find((x) => x.id === exampleId);
   if (!example) {
@@ -407,7 +423,7 @@ export const openExampleFile = (exampleId: string): void => {
   const language = currentLanguage();
   const filename = `${example.id}.${extension[language]}`;
   const path = `/examples/${language}/${example.groupId}/${filename}`;
-  fetch(path).then((response) => {
+  fetcher(path).then((response) => {
     if (!response.ok) {
       showError(
         new SystemError(
@@ -458,7 +474,7 @@ export const outputAllExamples = async (): Promise<void> => {
   let text = "";
   for (const example of examples) {
     const filename = `${example.id}.${extension[language]}`;
-    const response = await fetch(
+    const response = await fetcher(
       `/examples/${language}/${example.groupId}/${filename}`,
     );
     text += `Example ${example.id}:\n----------\n${await response.text()}\n\n\n`;

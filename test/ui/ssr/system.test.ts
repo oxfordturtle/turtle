@@ -1,10 +1,15 @@
-import { assertEquals, assertStringIncludes } from "@std/assert";
+import {
+  assert,
+  assertEquals,
+  assertFalse,
+  assertStringIncludes,
+} from "@std/assert";
 import { describe, it } from "@std/testing/bdd";
 import { html } from "@merivale/womble";
 import modes from "@/client/constants/modes.ts";
 import { getSettings } from "@/islands/settings.ts";
 import "@/islands/turtle-system/index.ts";
-import { customTags, renderIslands, renderRoute } from "./_render.ts";
+import { customTags, renderIslands, renderRoute } from "./lib/render.ts";
 
 // What the `/` route sends. `src/pages/index.ts` renders one tag, so
 // everything below is `<turtle-system>`'s own render and the subtree it
@@ -46,7 +51,7 @@ describe("the system page", () => {
   for (const tag of [...PANES, ...MENUS, "system-editor", "system-filename"]) {
     it(`renders <${tag}>`, async () => {
       const { markup } = await renderRoute("/");
-      assertEquals(customTags(markup).has(tag), true);
+      assert(customTags(markup).has(tag));
     });
   }
 
@@ -88,7 +93,7 @@ describe("the system page", () => {
       linked.markup.indexOf("<turtle-system"),
       linked.markup.indexOf(">", linked.markup.indexOf("<turtle-system")),
     );
-    assertEquals(/url/i.test(tag), false);
+    assertFalse(/url/i.test(tag));
   });
 });
 
@@ -113,7 +118,7 @@ describe("the system page, seeded from the link's ?l=", () => {
       markup,
       '<script type="application/json" data-womble-stores>{}</script>',
     );
-    assertEquals(markup.includes('<option value="Cobol"'), false);
+    assertFalse(markup.includes('<option value="Cobol"'));
   });
 
   // What the scope is *for*. A module-level store is process-global on a
@@ -124,7 +129,7 @@ describe("the system page, seeded from the link's ?l=", () => {
     const plain = await renderRoute("/");
     const fresh = await renderRoute("/");
 
-    assertEquals(seeded.markup === plain.markup, false);
+    assertFalse(seeded.markup === plain.markup);
     assertEquals(plain.markup, fresh.markup);
     assertEquals(getSettings().language, "Python");
   });
@@ -144,7 +149,7 @@ describe("the system page, seeded from the link's ?l=", () => {
 
 // The mode is a setting, and the server always renders every page at their
 // defaults (the stored mode is a browser fact) - so the modes are routed over
-// by seeding the settings store around the render. See _render.ts's
+// by seeding the settings store around the render. See lib/render.ts's
 // `renderIslands`.
 describe("the system page, by mode", () => {
   // which tabs the header's <select> offers, per src/islands/turtle-system.ts

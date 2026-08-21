@@ -25,12 +25,16 @@ const parseForStatement = (
   lexemes.next();
 
   const firstInitialisationLexeme = lexemes.get();
+  // deno-coverage-ignore-start -- unreachable: the last consumed lexeme is
+  // "(", which can never be the program's final lexeme (program.ts guarantees
+  // that's "}"), so the stream cannot be dry here
   if (!firstInitialisationLexeme) {
     throw new CompilerError(
       '"for" conditions must begin with a variable assignment.',
       lexemes.get(-1),
     );
   }
+  // deno-coverage-ignore-stop
   if (
     firstInitialisationLexeme.type !== "identifier" &&
     firstInitialisationLexeme.type !== "type"
@@ -56,23 +60,31 @@ const parseForStatement = (
   }
   eosCheck(lexemes);
 
+  // deno-coverage-ignore-start -- unreachable: eosCheck() has just consumed a
+  // ";", which can never be the program's final lexeme (program.ts guarantees
+  // that's "}"), so the stream cannot be dry here
   if (!lexemes.get()) {
     throw new CompilerError(
       '"for (...;" must be followed by a loop condition.',
       lexemes.get(-1),
     );
   }
+  // deno-coverage-ignore-stop
   let condition = parseExpression(lexemes, routine);
   condition = typeCheck(routine.language, condition, "boolean");
   eosCheck(lexemes);
 
   const firstChangeLexeme = lexemes.get();
+  // deno-coverage-ignore-start -- unreachable: eosCheck() has just consumed a
+  // ";", which can never be the program's final lexeme (program.ts guarantees
+  // that's "}"), so the stream cannot be dry here
   if (!firstChangeLexeme) {
     throw new CompilerError(
       '"for" conditions must begin with a variable assignment.',
       lexemes.get(-1),
     );
   }
+  // deno-coverage-ignore-stop
   if (
     firstChangeLexeme.type !== "identifier" &&
     firstChangeLexeme.type !== "type"

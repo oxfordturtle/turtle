@@ -3,6 +3,7 @@
   "specifiers": {
     "jsr:@luca/esbuild-deno-loader@~0.11.1": "0.11.1",
     "jsr:@merivale/womble@0.1": "0.1.0",
+    "jsr:@merivale/womble@0.1.0": "0.1.0",
     "jsr:@std/assert@^1.0.19": "1.0.19",
     "jsr:@std/async@^1.5.0": "1.5.0",
     "jsr:@std/bytes@^1.0.2": "1.0.6",
@@ -14,11 +15,13 @@
     "jsr:@std/path@^1.0.6": "1.1.6",
     "jsr:@std/path@^1.1.5": "1.1.6",
     "jsr:@std/path@^1.1.6": "1.1.6",
+    "jsr:@std/testing@1.0.20": "1.0.20",
     "jsr:@std/testing@^1.0.20": "1.0.20",
     "npm:@fortawesome/fontawesome-free@6.7.2": "6.7.2",
     "npm:esbuild@0.24.0": "0.24.0",
     "npm:jsdom@25": "25.0.1",
-    "npm:playwright-core@1.49": "1.49.1"
+    "npm:playwright-core@1.49": "1.49.1",
+    "npm:prettier@3.4.2": "3.4.2"
   },
   "jsr": {
     "@luca/esbuild-deno-loader@0.11.1": {
@@ -487,6 +490,10 @@
     },
     "playwright-core@1.49.1": {
       "integrity": "sha512-BzmpVcs4kE2CH15rWfzpjzVGhWERJfmnXmniSyKeRZUs9Ws65m+RGIi7mjJK/euCegfn3i7jvqWeWyHe9y3Vgg==",
+      "bin": true
+    },
+    "prettier@3.4.2": {
+      "integrity": "sha512-e9MewbtFo+Fevyuxn/4rrcDAaq0IYxPGLvObpQjiZBMAzB9IGmzlnG9RZy3FFas+eBMu2vA0CszMeduow5dIuQ==",
       "bin": true
     },
     "punycode@2.3.1": {

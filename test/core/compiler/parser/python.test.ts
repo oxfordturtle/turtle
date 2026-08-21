@@ -1,5 +1,11 @@
 import { describe, it } from "@std/testing/bdd";
-import { assertEquals, assertExists, assertThrows } from "@std/assert";
+import {
+  assert,
+  assertEquals,
+  assertExists,
+  assertFalse,
+  assertThrows,
+} from "@std/assert";
 import type {
   Constant,
   ForStatement,
@@ -9,7 +15,7 @@ import type {
   VariableAssignment,
   WhileStatement,
 } from "@/core/compiler.ts";
-import { parseProgram } from "./_programs.ts";
+import { parseProgram } from "./lib/programs.ts";
 
 /**
  * Python-specific parser tests: syntax too divergent for the shared
@@ -531,7 +537,7 @@ describe("parse: Python", () => {
       );
       const n = program.subroutines[0].variables.find((v) => v.name === "n");
       assertEquals(n?.type, "integer");
-      assertEquals(n?.typeIsCertain, true);
+      assert(n?.typeIsCertain);
     });
 
     it("throws if the loop variable already has a non-integer type", () => {
@@ -786,7 +792,7 @@ describe("parse: Python", () => {
       const variable = program.variables.find((v) => v.name === "element");
       assertExists(variable);
       assertEquals(variable?.type, "integer");
-      assertEquals(variable?.typeIsCertain, true);
+      assert(variable?.typeIsCertain);
     });
 
     it("pins a hint-less loop variable's type from a string list", () => {
@@ -856,7 +862,7 @@ describe("parse: Python", () => {
       const variable = program.variables.find((v) => v.name === "c");
       assertExists(variable);
       assertEquals(variable?.type, "string");
-      assertEquals(variable?.typeIsCertain, true);
+      assert(variable?.typeIsCertain);
     });
 
     it("throws if the loop variable's existing type isn't 'string'", () => {
@@ -1011,10 +1017,7 @@ describe("parse: Python", () => {
       );
       const sub = program.subroutines[0];
       assertEquals(sub.name, "double");
-      assertEquals(
-        sub.variables.some((v) => v.isParameter && v.name === "n"),
-        true,
-      );
+      assert(sub.variables.some((v) => v.isParameter && v.name === "n"));
       const returnStatement = sub.statements.find(
         (s) => s.statementType === "returnStatement",
       ) as ReturnStatement;
@@ -1027,7 +1030,7 @@ describe("parse: Python", () => {
         "y = double(2)\ndef double(n):\n    return n * 2",
       );
       const sub = program.subroutines[0];
-      assertEquals(sub.typeIsCertain, true);
+      assert(sub.typeIsCertain);
     });
 
     it("supports nested function definitions", () => {
@@ -1060,7 +1063,7 @@ describe("parse: Python", () => {
         assertExists(outerVariable);
         assertExists(innerVariable);
         // two distinct Variable objects, not the same one shared by alias
-        assertEquals(outerVariable === innerVariable, false);
+        assertFalse(outerVariable === innerVariable);
       });
 
       it("a nested subroutine's own 'for' loop variable is likewise a distinct local", () => {
@@ -1073,7 +1076,7 @@ describe("parse: Python", () => {
         const innerVariable = inner.variables.find((v) => v.name === "i");
         assertExists(outerVariable);
         assertExists(innerVariable);
-        assertEquals(outerVariable === innerVariable, false);
+        assertFalse(outerVariable === innerVariable);
       });
 
       it("a nested subroutine can still read an ancestor-scope variable without declaring it global/nonlocal", () => {
@@ -1149,7 +1152,7 @@ describe("parse: Python", () => {
         const programVariable = program.variables.find((v) => v.name === "m");
         assertExists(subVariable);
         assertExists(programVariable);
-        assertEquals(subVariable === programVariable, false);
+        assertFalse(subVariable === programVariable);
       });
 
       it("a plain top-level subroutine's assignment still writes through with an explicit 'global' declaration", () => {
@@ -1403,7 +1406,7 @@ describe("parse: Python", () => {
         "y = f(True)\ndef f(b):\n    if b:\n        return 1\n    else:\n        return 2",
       );
       const sub = program.subroutines[0];
-      assertEquals(sub.typeIsCertain, true);
+      assert(sub.typeIsCertain);
     });
 
     it("infers the result type from a return statement when nothing else has pinned it yet", () => {
@@ -1414,7 +1417,7 @@ describe("parse: Python", () => {
       const sub = program.subroutines[0];
       const result = sub.variables.find((v) => v.name === "!result");
       assertEquals(result?.type, "integer");
-      assertEquals(sub.typeIsCertain, true);
+      assert(sub.typeIsCertain);
     });
   });
 
@@ -1426,7 +1429,7 @@ describe("parse: Python", () => {
       ) as VariableAssignment;
       assertExists(assignment);
       assertEquals(assignment.variable.type, "integer");
-      assertEquals(assignment.variable.typeIsCertain, true);
+      assert(assignment.variable.typeIsCertain);
     });
 
     it("declares a variable with a type hint and no initial value", () => {
@@ -1463,17 +1466,17 @@ describe("parse: Python", () => {
       const program = parseProgram("Python", "arr: List[int]");
       const variable = program.variables.find((v) => v.name === "arr");
       assertExists(variable);
-      assertEquals(variable?.isList, true);
+      assert(variable?.isList);
       assertEquals(variable?.listElementKind, "integer");
       assertEquals(variable?.arrayDimensions, []);
-      assertEquals(variable?.typeIsCertain, true);
+      assert(variable?.typeIsCertain);
     });
 
     it("declares a list-of-strings variable with a 'List[T]' hint", () => {
       const program = parseProgram("Python", "arr: List[str]");
       const variable = program.variables.find((v) => v.name === "arr");
       assertExists(variable);
-      assertEquals(variable?.isList, true);
+      assert(variable?.isList);
       assertEquals(variable?.listElementKind, "string");
     });
 
@@ -1487,9 +1490,9 @@ describe("parse: Python", () => {
       const program = parseProgram("Python", "x = [1, 2, 3]");
       const variable = program.variables.find((v) => v.name === "x");
       assertExists(variable);
-      assertEquals(variable?.isList, true);
+      assert(variable?.isList);
       assertEquals(variable?.listElementKind, "integer");
-      assertEquals(variable?.typeIsCertain, true);
+      assert(variable?.typeIsCertain);
     });
 
     it("infers a hint-less list variable's element kind from a string list literal", () => {
@@ -1539,7 +1542,7 @@ describe("parse: Python", () => {
       assertExists(assignment);
       assertEquals(assignment.value.expressionType, "compound");
       const variable = program.variables.find((v) => v.name === "x");
-      assertEquals(variable?.isList, true);
+      assert(variable?.isList);
       assertEquals(variable?.listElementKind, "integer");
     });
 
@@ -1575,7 +1578,7 @@ describe("parse: Python", () => {
     it("assigning one list variable to another aliases rather than copies (no type error)", () => {
       const program = parseProgram("Python", "x = [1, 2, 3]\ny = x");
       const y = program.variables.find((v) => v.name === "y");
-      assertEquals(y?.isList, true);
+      assert(y?.isList);
       assertEquals(y?.listElementKind, "integer");
     });
 
@@ -1628,9 +1631,9 @@ describe("parse: Python", () => {
     it("infers a hint-less, never-literal-assigned list's element kind from its first indexed write", () => {
       const program = parseProgram("Python", "x = []\nx[0] = 9");
       const variable = program.variables.find((v) => v.name === "x");
-      assertEquals(variable?.isList, true);
+      assert(variable?.isList);
       assertEquals(variable?.listElementKind, "integer");
-      assertEquals(variable?.typeIsCertain, true);
+      assert(variable?.typeIsCertain);
     });
 
     it("throws a type error writing the wrong element kind into a known-kind list", () => {
@@ -1652,7 +1655,7 @@ describe("parse: Python", () => {
     it("infers the element kind of a hint-less empty list from a later append", () => {
       const program = parseProgram("Python", "x = []\nx.append(1)");
       const variable = program.variables.find((v) => v.name === "x");
-      assertEquals(variable?.isList, true);
+      assert(variable?.isList);
       assertEquals(variable?.listElementKind, "integer");
     });
 
@@ -1667,9 +1670,9 @@ describe("parse: Python", () => {
     it("still allows a later list assignment to resolve an empty list's element kind", () => {
       const program = parseProgram("Python", "x = []\nx = [1, 2]");
       const variable = program.variables.find((v) => v.name === "x");
-      assertEquals(variable?.isList, true);
+      assert(variable?.isList);
       assertEquals(variable?.listElementKind, "integer");
-      assertEquals(variable?.typeIsCertain, true);
+      assert(variable?.typeIsCertain);
     });
 
     it("throws if a list index has no closing bracket", () => {
@@ -1696,7 +1699,7 @@ describe("parse: Python", () => {
         assertEquals(assignment.indexes.length, 2);
         assertEquals(assignment.value.expressionType, "integer");
         const variable = program.variables.find((v) => v.name === "a");
-        assertEquals(variable?.isListOfLists, true);
+        assert(variable?.isListOfLists);
         assertEquals(variable?.listElementKind, "integer");
         assertEquals(variable?.innerListElementKind, "integer");
       });
@@ -1714,16 +1717,16 @@ describe("parse: Python", () => {
         // this write is the first thing that reveals it
         const program = parseProgram("Python", "a = [[]]\na[0][0] = 5");
         const variable = program.variables.find((v) => v.name === "a");
-        assertEquals(variable?.isListOfLists, true);
+        assert(variable?.isListOfLists);
         assertEquals(variable?.innerListElementKind, "integer");
-        assertEquals(variable?.typeIsCertain, true);
+        assert(variable?.typeIsCertain);
       });
 
       it("pins a not-yet-known inner element kind from the first fully-indexed write (string)", () => {
         const program = parseProgram("Python", 'a = [[]]\na[0][0] = "x"');
         const variable = program.variables.find((v) => v.name === "a");
         assertEquals(variable?.innerListElementKind, "string");
-        assertEquals(variable?.typeIsCertain, true);
+        assert(variable?.typeIsCertain);
       });
 
       it("throws if the second index has no closing bracket (end of input)", () => {
@@ -1795,7 +1798,7 @@ describe("parse: Python", () => {
         const program = parseProgram("Python", "a = [[]]\na[0] = [1, 2]");
         const variable = program.variables.find((v) => v.name === "a");
         assertEquals(variable?.innerListElementKind, "integer");
-        assertEquals(variable?.typeIsCertain, true);
+        assert(variable?.typeIsCertain);
       });
 
       it("leaves the inner element kind (and the variable's type) uncertain if the whole-sublist write is itself empty", () => {
@@ -2188,11 +2191,10 @@ describe("parse: Python", () => {
       );
       const listAssignment = listProgram.statements[1] as VariableAssignment;
       const listCall = listAssignment.value;
-      assertEquals(
+      assert(
         listCall.expressionType === "function" &&
           listCall.command.__ === "Command" &&
           listCall.command.forList,
-        true,
       );
 
       const stringProgram = parseProgram(
@@ -2202,11 +2204,10 @@ describe("parse: Python", () => {
       const stringAssignment = stringProgram
         .statements[1] as VariableAssignment;
       const stringCall = stringAssignment.value;
-      assertEquals(
+      assertFalse(
         stringCall.expressionType === "function" &&
           stringCall.command.__ === "Command" &&
           !!stringCall.command.forList,
-        false,
       );
     });
 
@@ -2242,7 +2243,7 @@ describe("parse: Python", () => {
       const program = parseProgram("Python", "x = []\nx.append(5)");
       const variable = program.variables.find((v) => v.name === "x");
       assertEquals(variable?.listElementKind, "integer");
-      assertEquals(variable?.typeIsCertain, true);
+      assert(variable?.typeIsCertain);
     });
 
     it("no regression: existing string dot-methods still parse (e.g. .strip)", () => {

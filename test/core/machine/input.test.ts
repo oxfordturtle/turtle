@@ -1,5 +1,5 @@
 import { describe, it } from "@std/testing/bdd";
-import { assertEquals } from "@std/assert";
+import { assert, assertEquals, assertFalse } from "@std/assert";
 import {
   defaultMachineOptions,
   run,
@@ -9,8 +9,8 @@ import {
   updateMouseMove,
   updateMouseUp,
 } from "@/core/machine.ts";
-import { fakeCanvas, fakeFiles, fakeOutput, fakeTimers } from "./_fakes.ts";
-import { PCode } from "./_helpers.ts";
+import { fakeCanvas, fakeFiles, fakeOutput, fakeTimers } from "./lib/fakes.ts";
+import { PCode } from "./lib/helpers.ts";
 
 /**
  * Coverage for `src/core/machine/input.ts`: the five `update*` functions
@@ -111,6 +111,23 @@ describe("machine/input", () => {
       updateKeyDown(104, "h", false, false, false);
       assertEquals(output.consoleText, "h");
     });
+
+    it("echoes Enter as a line break, so what follows a readln starts on a new line", () => {
+      const { output } = startPaused([], allocateBuffer(16));
+      updateKeyDown(104, "h", false, false, false);
+      updateKeyDown(13, "Enter", false, false, false);
+      assertEquals(output.consoleText, "h\n");
+    });
+
+    it("echoes nothing at all when KECH has turned key echo off", () => {
+      const { output } = startPaused(
+        [],
+        [...allocateBuffer(16), [PCode.ldin, 0], [PCode.kech]],
+      );
+      updateKeyDown(104, "h", false, false, false);
+      updateKeyDown(13, "Enter", false, false, false);
+      assertEquals(output.consoleText, "");
+    });
   });
 
   /** allocates a keybuffer of the given size, storing its address at main[1] per input.ts's convention */
@@ -179,10 +196,7 @@ describe("machine/input", () => {
       const { output } = startPaused([], allocateBuffer(16));
       updateKeyDown(8, "Backspace", false, false, false);
       assertEquals(output.consoleText, "");
-      assertEquals(
-        output.calls.some((c) => c.method === "backspaceConsole"),
-        false,
-      );
+      assertFalse(output.calls.some((c) => c.method === "backspaceConsole"));
     });
 
     it("Backspace wraps back to the physical end once the write pointer has wrapped to the start", () => {
@@ -861,6 +875,18 @@ describe("machine/input", () => {
       // isolation, the same way the keyboard release test above does
       updateMouseUp(0);
       assertEquals(output.outputText, "1");
+    });
+
+    it("a keyboard detect (a non-negative inputcode) is never resolved by a mouse click", () => {
+      // this is also why checkDetectMouse's keys[] ternary arm carries a
+      // deno-coverage-ignore in src/core/machine/input.ts: every condition
+      // that can resolve a detect from a mouse event requires a negative
+      // detectInputcode, so the positive-code arm can never run there
+      const { timers, output } = runMouseDetect(65); // "A"
+      updateMouseDown(0, 250, 300, 0, 0, 1000, 1000, false, false, false);
+      updateMouseUp(0);
+      assertEquals(output.outputText, ""); // still paused on the TDET
+      assert(timers.pendingCount() > 0); // the detect timeout is still live
     });
   });
 

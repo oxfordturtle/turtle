@@ -5,9 +5,9 @@ import {
   q,
   qa,
   settle,
-} from "../_setup.ts";
-import { assertEquals } from "@std/assert";
-import { beforeEach, describe, it } from "@std/testing/bdd";
+} from "../lib/setup.ts";
+import { assert, assertEquals, assertFalse } from "@std/assert";
+import { afterEach, beforeEach, describe, it } from "@std/testing/bdd";
 
 // The system menu is where both directions of the parent/child protocol are
 // load-bearing at once, and neither has any other verification:
@@ -40,13 +40,15 @@ beforeEach(async () => {
   await mountRoute("/");
 });
 
+// Rule 6: every test ends with Womble having reported nothing.
+afterEach(assertNoWombleLogs);
+
 describe("opening a submenu", () => {
   it("tells the root which submenu, and opens the menu with it", async () => {
     await click(toggle("file-menu"));
     assertEquals(system().submenu, "file");
-    assertEquals(system().menu, true);
+    assert(system().menu);
     assertEquals(openPanels(), 1);
-    assertNoWombleLogs();
   });
 
   it("closes the previous one, without the two cooperating", async () => {
@@ -54,7 +56,7 @@ describe("opening a submenu", () => {
     await click(toggle("edit-menu"));
     assertEquals(system().submenu, "edit");
     // `open` is a Boolean prop, so it is a boolean attribute: present or not.
-    assertEquals(q("file-menu").hasAttribute("open"), false);
+    assertFalse(q("file-menu").hasAttribute("open"));
     assertEquals(q("edit-menu").getAttribute("open"), "");
     assertEquals(openPanels(), 1);
   });
@@ -64,41 +66,66 @@ describe("opening a submenu", () => {
     await click(toggle("file-menu"));
     assertEquals(system().submenu, "");
     assertEquals(openPanels(), 0);
-    assertEquals(system().menu, true);
+    assert(system().menu);
   });
 });
 
 describe("the root's own chrome", () => {
   it("opens and closes the whole menu from the hamburger", async () => {
     await click(q("turtle-system .system-header button"));
-    assertEquals(system().menu, true);
+    assert(system().menu);
     assertEquals(qa("turtle-system nav.system-menu.open").length, 1);
     await click(q("turtle-system .system-header button"));
-    assertEquals(system().menu, false);
+    assertFalse(system().menu);
     assertEquals(qa("turtle-system nav.system-menu.open").length, 0);
-    assertNoWombleLogs();
   });
 
   it("closes every submenu with the menu itself", async () => {
     await click(toggle("examples-menu"));
     await click(q("turtle-system .system-header button"));
     await click(q("turtle-system .system-header button"));
-    assertEquals(system().menu, true);
+    assert(system().menu);
     assertEquals(system().submenu, "");
     assertEquals(openPanels(), 0);
+  });
+
+  // `<body>` is outside this island, so its class is set imperatively while
+  // the button's own icon and title stay a function of state.
+  it("puts the whole page into fullscreen and back from the header button", async () => {
+    const button = qa("turtle-system .system-header button").at(-1);
+    assertEquals(button.getAttribute("title"), "Maximize");
+    assertEquals(qa("i", button)[0].className, "fa fa-expand");
+
+    await click(button);
+    assert(system().fullscreen);
+    assert(document.body.classList.contains("fullscreen"));
+    assertEquals(button.getAttribute("title"), "Expand down");
+    assertEquals(qa("i", button)[0].className, "fa fa-compress");
+
+    await click(button);
+    assertFalse(system().fullscreen);
+    assertFalse(document.body.classList.contains("fullscreen"));
   });
 
   it("closes the menu when the work area is clicked", async () => {
     await click(toggle("view-menu"));
     await click(q("turtle-system main.system-main"));
-    assertEquals(system().menu, false);
+    assertFalse(system().menu);
     assertEquals(system().submenu, "");
   });
 
   // Props down, re-asserted: nothing was clicked, the root's own state was
   // written, and exactly one panel followed.
   it("re-asserts `open` on all seven submenus from `submenu` alone", async () => {
-    for (const menu of ["file", "edit", "view", "compile", "run", "options"]) {
+    for (const menu of [
+      "file",
+      "edit",
+      "view",
+      "compile",
+      "run",
+      "options",
+      "examples",
+    ]) {
       system().submenu = menu;
       await settle();
       assertEquals(openPanels(), 1);
@@ -107,7 +134,6 @@ describe("the root's own chrome", () => {
     system().submenu = "";
     await settle();
     assertEquals(openPanels(), 0);
-    assertNoWombleLogs();
   });
 });
 
@@ -118,9 +144,8 @@ describe("a menu command", () => {
     await click(
       commands.find((a: Element) => a.textContent?.includes("New program")),
     );
-    assertEquals(system().menu, false);
+    assertFalse(system().menu);
     assertEquals(system().submenu, "");
-    assertNoWombleLogs();
   });
 
   it("selects a tab and dismisses the menu, from the Run menu", async () => {
@@ -130,8 +155,7 @@ describe("a menu command", () => {
       links.find((a: Element) => a.textContent?.includes("Run Options")),
     );
     assertEquals(system().tab, "options");
-    assertEquals(system().menu, false);
-    assertNoWombleLogs();
+    assertFalse(system().menu);
   });
 
   // A command the online system doesn't implement deliberately leaves the menu
@@ -145,7 +169,7 @@ describe("a menu command", () => {
         a.textContent?.includes("Find and replace"),
       ),
     );
-    assertEquals(system().menu, true);
+    assert(system().menu);
     assertEquals(system().submenu, "edit");
   });
 });
@@ -163,7 +187,6 @@ describe("the examples submenu's own group", () => {
     await click(group);
     assertEquals(q("examples-menu").group, "");
     assertEquals(openGroups(), 0);
-    assertNoWombleLogs();
   });
 
   it("shows one group at a time", async () => {
@@ -184,12 +207,11 @@ describe("the examples submenu's own group", () => {
     await click(toggle("examples-menu"));
     await click(groupLinks()[0]);
     await click(toggle("file-menu"));
-    assertEquals(q("examples-menu").hasAttribute("open"), false);
+    assertFalse(q("examples-menu").hasAttribute("open"));
 
     await click(toggle("examples-menu"));
     assertEquals(q("examples-menu").group, "");
     assertEquals(openGroups(), 0);
     assertEquals(openPanels(), 1);
-    assertNoWombleLogs();
   });
 });

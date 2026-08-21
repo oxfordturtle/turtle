@@ -1,0 +1,48 @@
+{
+  "schemaVersion": 1,
+  "runMode": "bounded",
+  "pcode": {
+    "lines": 488,
+    "hash": "aef8bb7bdc8779f6"
+  },
+  "hitIterationCap": true,
+  "consoleText": "",
+  "outputText": "",
+  "runtimeErrors": [],
+  "turtle": {
+    "x": 35,
+    "y": 850,
+    "d": 0,
+    "a": 360,
+    "t": 2,
+    "c": "#000000"
+  },
+  "canvas": {
+    "callCount": 15,
+    "byMethod": {
+      "setResolution": 2,
+      "setVirtualCanvas": 2,
+      "clear": 2,
+      "drawText": 9
+    },
+    "logHash": "7472ef7f382a9186",
+    "head": [
+      "setResolution([1000,1000,false])",
+      "setVirtualCanvas([0,0,1000,1000])",
+      "setResolution([1000,1000,false])",
+      "clear([\"#FFFFFF\"])",
+      "setVirtualCanvas([0,0,1000,1000])",
+      "clear([\"#ffffff\"])",
+      "drawText([{\"x\":35,\"y\":50,\"d\":0,\"a\":360,\"t\":2,\"c\":\"#964b00\"},\"TURING MACHINE SIMULATOR\",20,42])",
+      "drawText([{\"x\":65,\"y\":175,\"d\":0,\"a\":360,\"t\":2,\"c\":\"#b22222\"},\"(Examples are taken from Charles Petzold's\",4,30])",
+      "drawText([{\"x\":65,\"y\":225,\"d\":0,\"a\":360,\"t\":2,\"c\":\"#b22222\"},\"excellent book, \\\"The Annotated Turing\\\")\",4,30])",
+      "drawText([{\"x\":35,\"y\":350,\"d\":0,\"a\":360,\"t\":2,\"c\":\"#000000\"},\"Choose from the following:\",20,36])",
+      "drawText([{\"x\":35,\"y\":450,\"d\":0,\"a\":360,\"t\":2,\"c\":\"#000000\"},\"  1.  Petzold p.81 (0 1 0 1 ...  4 states)\",4,36])",
+      "drawText([{\"x\":35,\"y\":550,\"d\":0,\"a\":360,\"t\":2,\"c\":\"#000000\"},\"  2.  Petzold p.84 (0 1 0 1 ...  1 state)\",4,36])",
+      "drawText([{\"x\":35,\"y\":650,\"d\":0,\"a\":360,\"t\":2,\"c\":\"#000000\"},\"  3.  Petzold p.87 (transcendental)\",4,36])",
+      "drawText([{\"x\":35,\"y\":750,\"d\":0,\"a\":360,\"t\":2,\"c\":\"#000000\"},\"  4.  Petzold p.99 (binary counting)\",4,36])",
+      "drawText([{\"x\":35,\"y\":850,\"d\":0,\"a\":360,\"t\":2,\"c\":\"#000000\"},\"  5.  Petzold pp. 102-8, root of 2\",4,36])"
+    ],
+    "tail": []
+  }
+}

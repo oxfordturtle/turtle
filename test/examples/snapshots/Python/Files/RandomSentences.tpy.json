@@ -1,0 +1,41 @@
+{
+  "schemaVersion": 1,
+  "runMode": "asyncFiles",
+  "pcode": {
+    "lines": 167,
+    "hash": "8cc957ccab77355d"
+  },
+  "hitIterationCap": false,
+  "consoleText": "File \"sentences/articles.txt\" has been created, with 2 lines\nFile \"sentences/adjectives.txt\" has been created, with 4 lines\nFile \"sentences/colours.txt\" has been created, with 4 lines\nFile \"sentences/nouns.txt\" has been created, with 5 lines\nFile \"sentences/verbs.txt\" has been created, with 4 lines\n\n2 lines have been read from file \"sentences/articles.txt\"\n4 lines have been read from file \"sentences/adjectives.txt\"\n4 lines have been read from file \"sentences/colours.txt\"\n5 lines have been read from file \"sentences/nouns.txt\"\n4 lines have been read from file \"sentences/verbs.txt\"\n\nNow up to 100000 random sentences will be generated using\nthese words. The generation will stop if a well-known target\nsentence is achieved before the maximum has been reached.\n\n30718 sentences written to \"sentences/30718_sentences.txt\"\n\n  Loop terminated early, having written:\n  \"The quick brown fox jumps over the lazy dog.\"\n\nFile moved to base directory.\nFile then copied back as \"Latest_Good_Example.txt\".\n",
+  "outputText": "File \"sentences/articles.txt\" has been created, with 2 lines\nFile \"sentences/adjectives.txt\" has been created, with 4 lines\nFile \"sentences/colours.txt\" has been created, with 4 lines\nFile \"sentences/nouns.txt\" has been created, with 5 lines\nFile \"sentences/verbs.txt\" has been created, with 4 lines\n\n2 lines have been read from file \"sentences/articles.txt\"\n4 lines have been read from file \"sentences/adjectives.txt\"\n4 lines have been read from file \"sentences/colours.txt\"\n5 lines have been read from file \"sentences/nouns.txt\"\n4 lines have been read from file \"sentences/verbs.txt\"\n\nNow up to 100000 random sentences will be generated using\nthese words. The generation will stop if a well-known target\nsentence is achieved before the maximum has been reached.\n\n30718 sentences written to \"sentences/30718_sentences.txt\"\n\n  Loop terminated early, having written:\n  \"The quick brown fox jumps over the lazy dog.\"\n\nFile moved to base directory.\nFile then copied back as \"Latest_Good_Example.txt\".\n",
+  "runtimeErrors": [],
+  "turtle": {
+    "x": 500,
+    "y": 500,
+    "d": 0,
+    "a": 360,
+    "t": 2,
+    "c": "#000"
+  },
+  "canvas": {
+    "callCount": 8,
+    "byMethod": {
+      "setResolution": 2,
+      "setVirtualCanvas": 2,
+      "clear": 1,
+      "setCursor": 3
+    },
+    "logHash": "8cf35c21317ac5af",
+    "head": [
+      "setResolution([1000,1000,false])",
+      "setVirtualCanvas([0,0,1000,1000])",
+      "setResolution([1000,1000,false])",
+      "clear([\"#FFFFFF\"])",
+      "setVirtualCanvas([0,0,1000,1000])",
+      "setCursor([11])",
+      "setCursor([1])",
+      "setCursor([1])"
+    ],
+    "tail": []
+  }
+}

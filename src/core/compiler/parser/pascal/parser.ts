@@ -117,11 +117,19 @@ export default function pascal(lexemes: Lexemes): Program {
                 'Keyword "begin" missing for main program.',
                 lexemes.get(),
               );
+              // deno-coverage-ignore-start -- everything from here to the
+              // stop marker is unreachable: begun only becomes true in the
+              // "begin" case above, whose statements loop runs until "end" or
+              // the lexemes run dry - the very condition that also ends this
+              // outer declarations loop - so the switch never runs again with
+              // begun === true (the marker sits inside the if because the
+              // never-taken else-branch is recorded on its closing brace)
             }
             throw new CompilerError(
               "{lex} makes no sense here.",
               lexemes.get(),
             );
+          // deno-coverage-ignore-stop
         }
         break;
 
@@ -131,8 +139,16 @@ export default function pascal(lexemes: Lexemes): Program {
             'Keyword "begin" missing for main program.',
             lexemes.get(),
           );
+          // deno-coverage-ignore-start -- everything from here to the stop
+          // marker is unreachable: begun only becomes true in the "begin"
+          // case above, whose statements loop runs until "end" or the lexemes
+          // run dry - the very condition that also ends this outer
+          // declarations loop - so the switch never runs again with begun ===
+          // true (the marker sits inside the if because the never-taken
+          // else-branch is recorded on its closing brace)
         }
         throw new CompilerError("{lex} makes no sense here.", lexemes.get());
+      // deno-coverage-ignore-stop
     }
   }
 

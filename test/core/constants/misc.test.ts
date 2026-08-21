@@ -1,5 +1,5 @@
 import { describe, it } from "@std/testing/bdd";
-import { assertEquals } from "@std/assert";
+import { assert, assertEquals } from "@std/assert";
 import { cursors, fonts, inputs } from "@/core/constants.ts";
 
 describe("cursors", () => {
@@ -10,8 +10,8 @@ describe("cursors", () => {
       Array.from({ length: 16 }, (_, i) => i),
     );
     for (const cursor of cursors) {
-      assertEquals(cursor.name.length > 0, true);
-      assertEquals(cursor.css.length > 0, true);
+      assert(cursor.name.length > 0);
+      assert(cursor.css.length > 0);
     }
   });
 });
@@ -24,8 +24,8 @@ describe("fonts", () => {
       Array.from({ length: 16 }, (_, i) => i),
     );
     for (const font of fonts) {
-      assertEquals(font.name.length > 0, true);
-      assertEquals(font.css.length > 0, true);
+      assert(font.name.length > 0);
+      assert(font.css.length > 0);
     }
   });
 });

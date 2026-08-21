@@ -1,0 +1,49 @@
+{
+  "schemaVersion": 1,
+  "runMode": "bounded",
+  "pcode": {
+    "lines": 276,
+    "hash": "90a271d20271219a"
+  },
+  "hitIterationCap": true,
+  "consoleText": "",
+  "outputText": "",
+  "runtimeErrors": [],
+  "turtle": {
+    "x": 35,
+    "y": 850,
+    "d": 0,
+    "a": 360,
+    "t": 2,
+    "c": "#000000"
+  },
+  "canvas": {
+    "callCount": 16,
+    "byMethod": {
+      "setResolution": 2,
+      "setVirtualCanvas": 2,
+      "clear": 2,
+      "drawText": 10
+    },
+    "logHash": "1e731c18427d8d01",
+    "head": [
+      "setResolution([1000,1000,false])",
+      "setVirtualCanvas([0,0,1000,1000])",
+      "setResolution([1000,1000,false])",
+      "clear([\"#FFFFFF\"])",
+      "setVirtualCanvas([0,0,1000,1000])",
+      "clear([\"#ffffff\"])",
+      "drawText([{\"x\":35,\"y\":50,\"d\":0,\"a\":360,\"t\":2,\"c\":\"#964b00\"},\"   NIM LEARNING PROGRAM\",20,42])",
+      "drawText([{\"x\":35,\"y\":150,\"d\":0,\"a\":360,\"t\":2,\"c\":\"#b22222\"},\"This program learns to play NIM, and can be\",4,32])",
+      "drawText([{\"x\":35,\"y\":200,\"d\":0,\"a\":360,\"t\":2,\"c\":\"#b22222\"},\"configured to play either against you (human\",4,32])",
+      "drawText([{\"x\":35,\"y\":250,\"d\":0,\"a\":360,\"t\":2,\"c\":\"#b22222\"},\"opponent), or against a simulated computer\",4,32])",
+      "drawText([{\"x\":35,\"y\":300,\"d\":0,\"a\":360,\"t\":2,\"c\":\"#b22222\"},\"opponent, which either plays randomly or\",4,32])",
+      "drawText([{\"x\":35,\"y\":350,\"d\":0,\"a\":360,\"t\":2,\"c\":\"#b22222\"},\"itself learns from experience.\",4,32])",
+      "drawText([{\"x\":35,\"y\":525,\"d\":0,\"a\":360,\"t\":2,\"c\":\"#000000\"},\"Choose from the following:\",20,36])",
+      "drawText([{\"x\":35,\"y\":650,\"d\":0,\"a\":360,\"t\":2,\"c\":\"#000000\"},\"  1. Human opponent\",4,36])",
+      "drawText([{\"x\":35,\"y\":750,\"d\":0,\"a\":360,\"t\":2,\"c\":\"#000000\"},\"  2. Random opponent\",4,36])",
+      "drawText([{\"x\":35,\"y\":850,\"d\":0,\"a\":360,\"t\":2,\"c\":\"#000000\"},\"  3. Opponent that also learns\",4,36])"
+    ],
+    "tail": []
+  }
+}

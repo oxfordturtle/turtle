@@ -1,8 +1,8 @@
 import { describe, it } from "@std/testing/bdd";
-import { assertEquals } from "@std/assert";
+import { assert, assertEquals } from "@std/assert";
 import { encode, lexify, parse, tokenize } from "@/core/compiler.ts";
 import { defaultMachineOptions, dump, run } from "@/core/machine.ts";
-import { fakeCanvas, fakeFiles, fakeOutput, fakeTimers } from "./_fakes.ts";
+import { fakeCanvas, fakeFiles, fakeOutput, fakeTimers } from "./lib/fakes.ts";
 
 /**
  * Coverage for `src/core/machine/memory.ts`'s `dump()`, driven entirely by
@@ -52,9 +52,9 @@ describe("machine/memory: dump()", () => {
   it("the stack region grows to hold global variables a real program assigns", () => {
     compileAndRun("x = 42\ny = 7");
     const { stack } = dump();
-    assertEquals(stack.length > 1, true);
-    assertEquals(stack.includes(42), true);
-    assertEquals(stack.includes(7), true);
+    assert(stack.length > 1);
+    assert(stack.includes(42));
+    assert(stack.includes(7));
   });
 
   it("the heap region holds string data a real program creates", () => {
@@ -62,7 +62,7 @@ describe("machine/memory: dump()", () => {
     const { heap } = dump();
     // heap strings are laid out as [length, ...charCodes] - see memory.ts's makeHeapString
     const start = heap.indexOf(2);
-    assertEquals(start >= 0, true);
+    assert(start >= 0);
     assertEquals(heap.slice(start, start + 3), [2, 104, 105]);
   });
 
@@ -76,7 +76,7 @@ describe("machine/memory: dump()", () => {
     compileAndRun('x = 42\nprint("hi")');
     const heapWithString = dump().heap.length;
 
-    assertEquals(heapWithString > heapWithoutString, true);
+    assert(heapWithString > heapWithoutString);
   });
 
   it("the DUMP command (dump()) surfaces exactly the memory dump() itself returns", () => {
@@ -87,7 +87,7 @@ describe("machine/memory: dump()", () => {
 
   it("selects the memory tab on DUMP when showMemoryOnDump is set (the default)", () => {
     const { output } = compileAndRun("dump()", { showMemoryOnDump: true });
-    assertEquals(output.tabs.includes("memory"), true);
+    assert(output.tabs.includes("memory"));
   });
 });
 
@@ -166,7 +166,7 @@ describe("machine/memory: heap temp-space reclaim", () => {
     };
     const shortRun = heapAfter(100);
     const longRun = heapAfter(1000);
-    assertEquals(longRun < shortRun * 2, true, `${shortRun} -> ${longRun}`);
+    assert(longRun < shortRun * 2, `${shortRun} -> ${longRun}`);
   });
 
   it("leaves a plain string variable's own slicing unaffected", () => {

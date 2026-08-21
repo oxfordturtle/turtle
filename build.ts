@@ -4,7 +4,7 @@ import { denoPlugins } from "@luca/esbuild-deno-loader";
 // build javascript
 console.log("Building src/client/index.ts...");
 const result = await esbuild.build({
-  entryPoints: ["./src/client/index.ts"],
+  entryPoints: ["./src/client/main.ts"],
   outfile: "./assets/build/index.js",
   bundle: true,
   platform: "browser",

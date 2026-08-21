@@ -31,13 +31,18 @@ const parseStatement = (
       statement = makePassStatement();
       break;
 
+    // deno-coverage-ignore-start -- unreachable: lexify never emits a newline
+    // as a routine's first lexeme (leading line breaks are dropped, and a
+    // first-line comment yields the comment lexeme first, handled above), and
+    // every dispatch point either consumes line breaks before parsing (the
+    // block parsers, parseNewLine for subroutine bodies) or follows the
+    // end-of-statement check below, which eats every colon/newline/comment;
+    // one-line IF/ELSE bodies are checked non-newline before dispatch. Kept
+    // as a safe no-op in case a future dispatch path misses a newline.
     case "newline":
-      // in general this should be impossible (new lines should be eaten up at
-      // the end of the previous statement), but it can happen at the start of
-      // of the program or the start of a block, if there's a comment on the
-      // first line (which is necessarily followed by a line break)
       statement = makePassStatement();
       break;
+    // deno-coverage-ignore-stop
 
     // '=' (at the end of a function)
     case "operator":

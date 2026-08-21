@@ -1,0 +1,45 @@
+{
+  "schemaVersion": 1,
+  "runMode": "bounded",
+  "pcode": {
+    "lines": 61,
+    "hash": "a532f2e46a12c779"
+  },
+  "hitIterationCap": true,
+  "consoleText": "",
+  "outputText": "",
+  "runtimeErrors": [],
+  "turtle": {
+    "x": 100,
+    "y": 620,
+    "d": 0,
+    "a": 360,
+    "t": 2,
+    "c": "#000"
+  },
+  "canvas": {
+    "callCount": 12,
+    "byMethod": {
+      "setResolution": 2,
+      "setVirtualCanvas": 2,
+      "clear": 2,
+      "drawText": 6
+    },
+    "logHash": "1f365c410befe6eb",
+    "head": [
+      "setResolution([1000,1000,false])",
+      "setVirtualCanvas([0,0,1000,1000])",
+      "setResolution([1000,1000,false])",
+      "clear([\"#FFFFFF\"])",
+      "setVirtualCanvas([0,0,1000,1000])",
+      "clear([\"#ffffbb\"])",
+      "drawText([{\"x\":15,\"y\":200,\"d\":0,\"a\":360,\"t\":2,\"c\":\"#000000\"},\"In this typing test, you will be shown the\",4,36])",
+      "drawText([{\"x\":20,\"y\":270,\"d\":0,\"a\":360,\"t\":2,\"c\":\"#000000\"},\"letters of the alphabet in a random order,\",4,36])",
+      "drawText([{\"x\":20,\"y\":340,\"d\":0,\"a\":360,\"t\":2,\"c\":\"#000000\"},\"and in a mixture of upper- and lower-case.\",4,36])",
+      "drawText([{\"x\":20,\"y\":410,\"d\":0,\"a\":360,\"t\":2,\"c\":\"#000000\"},\"Type them as fast as you can, and see how\",4,36])",
+      "drawText([{\"x\":20,\"y\":480,\"d\":0,\"a\":360,\"t\":2,\"c\":\"#000000\"},\"quickly you can finish the entire alphabet.\",4,36])",
+      "drawText([{\"x\":100,\"y\":620,\"d\":0,\"a\":360,\"t\":2,\"c\":\"#000000\"},\"Now press the \\\"Esc\\\" key to start ...\",4,36])"
+    ],
+    "tail": []
+  }
+}

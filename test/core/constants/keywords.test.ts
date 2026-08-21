@@ -1,12 +1,12 @@
 import { describe, it } from "@std/testing/bdd";
-import { assertEquals } from "@std/assert";
+import { assert, assertEquals } from "@std/assert";
 import { keywords, languages } from "@/core/constants.ts";
 
 describe("keywords", () => {
   it("defines a keyword list for every language", () => {
     for (const language of languages) {
-      assertEquals(Array.isArray(keywords[language]), true);
-      assertEquals(keywords[language].length > 0, true);
+      assert(Array.isArray(keywords[language]));
+      assert(keywords[language].length > 0);
     }
   });
 
@@ -27,9 +27,8 @@ describe("keywords", () => {
     // which only surfaces 20/21.
     for (const language of languages) {
       for (const keyword of keywords[language]) {
-        assertEquals(
+        assert(
           [20, 21, 22].includes(keyword.category),
-          true,
           `${language} ${keyword.name}: ${keyword.category}`,
         );
       }
@@ -40,11 +39,7 @@ describe("keywords", () => {
     for (const language of ["C", "Java", "Pascal", "TypeScript"] as const) {
       const names = keywords[language].map((k) => k.name.toLowerCase());
       for (const expected of ["if", "else", "for", "while"]) {
-        assertEquals(
-          names.includes(expected),
-          true,
-          `${language} missing "${expected}"`,
-        );
+        assert(names.includes(expected), `${language} missing "${expected}"`);
       }
     }
   });

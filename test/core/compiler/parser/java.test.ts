@@ -1,5 +1,5 @@
 import { describe, it } from "@std/testing/bdd";
-import { assertEquals, assertExists, assertThrows } from "@std/assert";
+import { assert, assertEquals, assertExists, assertThrows } from "@std/assert";
 import type {
   ForStatement,
   IfStatement,
@@ -8,7 +8,7 @@ import type {
   ReturnStatement,
   VariableAssignment,
 } from "@/core/compiler.ts";
-import { bodyStatements, parseProgram, wrapProgram } from "./_programs.ts";
+import { bodyStatements, parseProgram, wrapProgram } from "./lib/programs.ts";
 
 /**
  * Java-specific parser tests: syntax that's too divergent for the shared
@@ -269,10 +269,7 @@ describe("parse: Java", () => {
       );
       const sub = program.subroutines.find((s) => s.name === "go");
       assertExists(sub);
-      assertEquals(
-        sub.variables.some((v) => v.isParameter && v.name === "n"),
-        true,
-      );
+      assert(sub.variables.some((v) => v.isParameter && v.name === "n"));
     });
 
     it("calls a custom void method as a procedure", () => {

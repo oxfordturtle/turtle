@@ -1,20 +1,25 @@
 import { describe, it } from "@std/testing/bdd";
-import { assertAlmostEquals, assertEquals } from "@std/assert";
+import {
+  assert,
+  assertAlmostEquals,
+  assertEquals,
+  assertFalse,
+} from "@std/assert";
 import { encode, lexify, parse, tokenize } from "@/core/compiler.ts";
 import type { Language } from "@/core/constants.ts";
 import { defaultMachineOptions, run } from "@/core/machine.ts";
-import { LANGUAGES } from "../compiler/_languages.ts";
-import { wrapProgram } from "../compiler/parser/_programs.ts";
-import { fakeCanvas, fakeFiles, fakeOutput, fakeTimers } from "./_fakes.ts";
-import { runExampleBounded } from "./_exampleHarness.ts";
+import { LANGUAGES } from "../compiler/lib/languages.ts";
+import { wrapProgram } from "../compiler/parser/lib/programs.ts";
+import { fakeCanvas, fakeFiles, fakeOutput, fakeTimers } from "./lib/fakes.ts";
 import {
   PCode,
   readAddr,
+  runExampleBounded,
   runPcode,
   runToInt,
   runToString,
   withAngles360,
-} from "./_helpers.ts";
+} from "./lib/helpers.ts";
 
 /**
  * Behavioral coverage for `src/core/machine/runtime.ts`'s `execute()` -
@@ -35,7 +40,7 @@ import {
  * surface (only `dump()`'s variable/heap memory view is), most fragments
  * end with ITOS+WRIT (`runToInt`) or WRIT alone (`runToString`) to read
  * "what's on top of the stack" back out through the machine's own text
- * output - see `_helpers.ts`.
+ * output - see `lib/helpers.ts`.
  */
 describe("machine/runtime: execute()", () => {
   describe("basic stack operations", () => {
@@ -317,10 +322,7 @@ describe("machine/runtime: execute()", () => {
         [PCode.plus],
         [PCode.halt],
       ]);
-      assertEquals(
-        /overflow/i.test(overflowPlus.output.runtimeErrors[0].message),
-        true,
-      );
+      assert(/overflow/i.test(overflowPlus.output.runtimeErrors[0].message));
 
       const overflowSubt = runPcode([
         [PCode.ldin, -2147483648],
@@ -328,10 +330,7 @@ describe("machine/runtime: execute()", () => {
         [PCode.subt],
         [PCode.halt],
       ]);
-      assertEquals(
-        /overflow/i.test(overflowSubt.output.runtimeErrors[0].message),
-        true,
-      );
+      assert(/overflow/i.test(overflowSubt.output.runtimeErrors[0].message));
 
       const overflowMult = runPcode([
         [PCode.ldin, 2147483647],
@@ -339,10 +338,7 @@ describe("machine/runtime: execute()", () => {
         [PCode.mult],
         [PCode.halt],
       ]);
-      assertEquals(
-        /overflow/i.test(overflowMult.output.runtimeErrors[0].message),
-        true,
-      );
+      assert(/overflow/i.test(overflowMult.output.runtimeErrors[0].message));
 
       // stays within range: no error
       assertEquals(
@@ -1027,6 +1023,28 @@ describe("machine/runtime: execute()", () => {
       );
     });
 
+    it("a matched hex prefix followed by non-hex digits fails the parse (SVAL errors, SVDF falls back to its default)", () => {
+      // "$GG": the "$" prefix matches, but "GG" fails the hex-digit check.
+      // A different failure from "xxx" above, which never matches the prefix
+      // and falls through to (and fails) the plain decimal parse instead.
+      const dollarGG = [PCode.lstr, 3, 36, 71, 71]; // "$GG"
+      const { output } = runPcode([
+        dollarGG,
+        [PCode.ldin, 1],
+        [PCode.sval],
+        [PCode.halt],
+      ]);
+      assertEquals(output.runtimeErrors.length, 1);
+      assertEquals(
+        output.runtimeErrors[0].message,
+        "Cannot parse $GG to integer.",
+      );
+      assertEquals(
+        runToInt(dollarGG, [PCode.ldin, -1], [PCode.ldin, 1], [PCode.svdf]),
+        -1,
+      );
+    });
+
     it("QTOS converts a pseudo-real number (n2/n3) to a fixed-point string", () => {
       assertEquals(
         runToString(
@@ -1079,7 +1097,7 @@ describe("machine/runtime: execute()", () => {
         showMemoryOnDump: true,
       });
       assertEquals(output.memoryDumps.length, 1);
-      assertEquals(output.tabs.includes("memory"), true);
+      assert(output.tabs.includes("memory"));
     });
 
     it("DUMP doesn't select the memory tab when not configured to", () => {
@@ -1087,7 +1105,7 @@ describe("machine/runtime: execute()", () => {
         showMemoryOnDump: false,
       });
       assertEquals(output.memoryDumps.length, 1);
-      assertEquals(output.tabs.includes("memory"), false);
+      assertFalse(output.tabs.includes("memory"));
     });
 
     it("PCOH sets a pcode-line halt breakpoint, halting once that line finishes executing", () => {
@@ -1127,14 +1145,13 @@ describe("machine/runtime: execute()", () => {
           [PCode.halt],
         ),
       );
-      assertEquals(
+      assert(
         canvas.calls.some(
           (c) =>
             c.method === "setVirtualCanvas" &&
             c.args[2] === 200 &&
             c.args[3] === 100,
         ),
-        true,
       );
       // the turtle was at the screen centre before, so it stays at the
       // screen centre of the new (200x100) coordinate window
@@ -1157,11 +1174,10 @@ describe("machine/runtime: execute()", () => {
       ]);
       // only the initial reset's setVirtualCanvas(0, 0, 1000, 1000) call - the
       // CANV opcode itself did nothing, and left the turtle where it was
-      assertEquals(
+      assertFalse(
         canvas.calls.some(
           (c) => c.method === "setVirtualCanvas" && c.args[2] === 200,
         ),
-        false,
       );
       assertEquals(output.turtleProperties.x, 111);
       assertEquals(output.turtleProperties.y, 222);
@@ -1174,14 +1190,13 @@ describe("machine/runtime: execute()", () => {
         [PCode.reso],
         [PCode.halt],
       ]);
-      assertEquals(
+      assert(
         canvas.calls.some(
           (c) =>
             c.method === "setResolution" &&
             c.args[0] === 1000 &&
             c.args[2] === false,
         ),
-        true,
       );
     });
 
@@ -1192,14 +1207,13 @@ describe("machine/runtime: execute()", () => {
         [PCode.reso],
         [PCode.halt],
       ]);
-      assertEquals(
+      assert(
         canvas.calls.some(
           (c) =>
             c.method === "setResolution" &&
             c.args[0] === 80 &&
             c.args[2] === true,
         ),
-        true,
       );
     });
 
@@ -1421,10 +1435,7 @@ describe("machine/runtime: execute()", () => {
       ]);
       assertEquals(output.turtleProperties.x, 5);
       assertEquals(output.turtleProperties.y, 5);
-      assertEquals(
-        canvas.calls.some((c) => c.method === "drawLine"),
-        true,
-      );
+      assert(canvas.calls.some((c) => c.method === "drawLine"));
     });
 
     it("DRXY does not draw when the pen is up", () => {
@@ -1438,10 +1449,7 @@ describe("machine/runtime: execute()", () => {
         [PCode.drxy],
         [PCode.halt],
       ]);
-      assertEquals(
-        canvas.calls.some((c) => c.method === "drawLine"),
-        false,
-      );
+      assertFalse(canvas.calls.some((c) => c.method === "drawLine"));
     });
 
     it("DRXY draws a 1px hairline at exactly zero thickness (pen down, not up)", () => {
@@ -1451,10 +1459,7 @@ describe("machine/runtime: execute()", () => {
         [PCode.drxy],
         [PCode.halt],
       ]);
-      assertEquals(
-        canvas.calls.some((c) => c.method === "drawLine"),
-        true,
-      );
+      assert(canvas.calls.some((c) => c.method === "drawLine"));
     });
 
     it("FWRD moves forward in the current direction (0 degrees is up: -y)", () => {
@@ -1484,10 +1489,7 @@ describe("machine/runtime: execute()", () => {
         ),
       );
       assertEquals(output.turtleProperties.y, 50);
-      assertEquals(
-        canvas.calls.some((c) => c.method === "drawLine"),
-        true,
-      );
+      assert(canvas.calls.some((c) => c.method === "drawLine"));
     });
 
     it("LEFT and RGHT turn, modulo the angle unit, never leaving a negative stored direction", () => {
@@ -1569,11 +1571,10 @@ describe("machine/runtime: execute()", () => {
         [PCode.blnk],
         [PCode.halt],
       ]);
-      assertEquals(
+      assert(
         canvas.calls.some(
           (c) => c.method === "clear" && c.args[0] === "#00ff00",
         ),
-        true,
       );
     });
 
@@ -1585,11 +1586,10 @@ describe("machine/runtime: execute()", () => {
         [PCode.rcol],
         [PCode.halt],
       ]);
-      assertEquals(
+      assert(
         canvas.calls.some(
           (c) => c.method === "floodFill" && c.args[4] === false,
         ),
-        true,
       );
     });
 
@@ -1602,11 +1602,10 @@ describe("machine/runtime: execute()", () => {
         [PCode.fill],
         [PCode.halt],
       ]);
-      assertEquals(
+      assert(
         canvas.calls.some(
           (c) => c.method === "floodFill" && c.args[4] === true,
         ),
-        true,
       );
     });
 
@@ -1760,10 +1759,7 @@ describe("machine/runtime: execute()", () => {
         [PCode.pfil],
         [PCode.halt],
       ]);
-      assertEquals(
-        canvas.calls.some((c) => c.method === "drawPolygon"),
-        false,
-      );
+      assertFalse(canvas.calls.some((c) => c.method === "drawPolygon"));
     });
 
     it("CIRC and BLOT draw a circle (outline/filled)", () => {
@@ -1774,13 +1770,11 @@ describe("machine/runtime: execute()", () => {
         [PCode.blot],
         [PCode.halt],
       ]);
-      assertEquals(
+      assert(
         canvas.calls.some((c) => c.method === "drawArc" && c.args[3] === false),
-        true,
       );
-      assertEquals(
+      assert(
         canvas.calls.some((c) => c.method === "drawArc" && c.args[3] === true),
-        true,
       );
     });
 
@@ -1794,13 +1788,11 @@ describe("machine/runtime: execute()", () => {
         [PCode.eblt],
         [PCode.halt],
       ]);
-      assertEquals(
+      assert(
         canvas.calls.some((c) => c.method === "drawArc" && c.args[3] === false),
-        true,
       );
-      assertEquals(
+      assert(
         canvas.calls.some((c) => c.method === "drawArc" && c.args[3] === true),
-        true,
       );
     });
 
@@ -1813,14 +1805,13 @@ describe("machine/runtime: execute()", () => {
         [PCode.box],
         [PCode.halt],
       ]);
-      assertEquals(
+      assert(
         canvas.calls.some(
           (c) =>
             c.method === "drawBox" &&
             c.args[3] === "#00ff00" &&
             c.args[4] === true,
         ),
-        true,
       );
     });
   });
@@ -2303,9 +2294,8 @@ describe("machine/runtime: execute()", () => {
         [PCode.curs],
         [PCode.halt],
       ]);
-      assertEquals(
+      assert(
         canvas.calls.some((c) => c.method === "setCursor" && c.args[0] === 3),
-        true,
       );
     });
   });
@@ -2328,13 +2318,12 @@ describe("machine/runtime: execute()", () => {
         [PCode.outp],
         [PCode.halt],
       ]);
-      assertEquals(
+      assert(
         output.calls.some(
           (c) => c.method === "configureOutput" && c.args[0] === true,
         ),
-        true,
       );
-      assertEquals(output.tabs.includes("output"), true);
+      assert(output.tabs.includes("output"));
     });
 
     it("OUTP selects the canvas tab when the third argument is falsy", () => {
@@ -2345,7 +2334,7 @@ describe("machine/runtime: execute()", () => {
         [PCode.outp],
         [PCode.halt],
       ]);
-      assertEquals(output.tabs.includes("canvas"), true);
+      assert(output.tabs.includes("canvas"));
     });
 
     it("CONS configures the console", () => {
@@ -2355,10 +2344,7 @@ describe("machine/runtime: execute()", () => {
         [PCode.cons],
         [PCode.halt],
       ]);
-      assertEquals(
-        output.calls.some((c) => c.method === "configureConsole"),
-        true,
-      );
+      assert(output.calls.some((c) => c.method === "configureConsole"));
     });
 
     it("DISP draws text on the canvas", () => {
@@ -2369,9 +2355,8 @@ describe("machine/runtime: execute()", () => {
         [PCode.disp],
         [PCode.halt],
       ]);
-      assertEquals(
+      assert(
         canvas.calls.some((c) => c.method === "drawText" && c.args[1] === "Hi"),
-        true,
       );
     });
 
@@ -2384,7 +2369,7 @@ describe("machine/runtime: execute()", () => {
       );
       assertEquals(output.outputText, "Hi");
       assertEquals(output.consoleText, "Hi");
-      assertEquals(output.tabs.includes("output"), true);
+      assert(output.tabs.includes("output"));
     });
 
     it("NEWL writes a newline to both panes", () => {
@@ -2678,10 +2663,7 @@ describe("machine/runtime: compiled programs, end to end", () => {
       const pcode = compileToPcode("Python", code);
       const { output } = runPcode(pcode);
       assertEquals(output.runtimeErrors.length, 1);
-      assertEquals(
-        /index out of range/i.test(output.runtimeErrors[0].message),
-        true,
-      );
+      assert(/index out of range/i.test(output.runtimeErrors[0].message));
     });
 
     it("raises a runtime error for a too-negative index (past the start of the list)", () => {
@@ -2689,10 +2671,7 @@ describe("machine/runtime: compiled programs, end to end", () => {
       const pcode = compileToPcode("Python", code);
       const { output } = runPcode(pcode);
       assertEquals(output.runtimeErrors.length, 1);
-      assertEquals(
-        /index out of range/i.test(output.runtimeErrors[0].message),
-        true,
-      );
+      assert(/index out of range/i.test(output.runtimeErrors[0].message));
     });
 
     it("raises a runtime error writing past the end of the list", () => {
@@ -2781,10 +2760,7 @@ describe("machine/runtime: compiled programs, end to end", () => {
       const pcode = compileToPcode("Python", code);
       const { output } = runPcode(pcode);
       assertEquals(output.runtimeErrors.length, 1);
-      assertEquals(
-        /maximum capacity/i.test(output.runtimeErrors[0].message),
-        true,
-      );
+      assert(/maximum capacity/i.test(output.runtimeErrors[0].message));
     });
 
     it(".copy() returns an independent list (mutating the copy doesn't affect the original)", () => {
@@ -3377,7 +3353,7 @@ describe("machine/runtime: compiled programs, end to end", () => {
       } catch {
         threw = true;
       }
-      assertEquals(threw, true);
+      assert(threw);
     });
 
     it("Cellular/LifeArrays.tpy compiles without error (real file, chained reads/writes with compound index expressions)", async () => {

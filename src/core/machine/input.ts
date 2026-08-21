@@ -74,6 +74,11 @@ export const updateKeyDown = (
             buffer -
             2;
         }
+        // the visible counterpart of the CR just buffered: without it, anything
+        // written after a readln continues the line the user typed on
+        if (state.keyecho) {
+          ports.output.logToConsole("\n");
+        }
       }
     }
   } // add character to keybuffer if it's a printable character
@@ -281,10 +286,15 @@ const checkDetectMouse = (button: number): void => {
   if (state.detectInputcode === -1 && button == 0) rightThingPressed = true;
 
   if (rightThingPressed) {
+    // deno-coverage-ignore-start -- the keys[] arm is unreachable here: every
+    // condition that sets rightThingPressed above requires a *negative*
+    // detectInputcode (unlike checkDetectKey's, where a positive keyCode can
+    // match); the ternary just stays parallel with checkDetectKey's
     const returnValue =
       state.detectInputcode < 0
         ? memory.query[-state.detectInputcode]
         : memory.keys[state.detectInputcode];
+    // deno-coverage-ignore-stop
     memory.stack.pop();
     // the keyup/mouseup listener that negates the input has already run, so the
     // value is negative; the downloadable system reports it positive

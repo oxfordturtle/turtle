@@ -98,7 +98,13 @@ export const assignmentTarget = (
   routine: Routine,
   name: string,
 ): Variable | undefined => {
+  // deno-coverage-ignore-start -- the Pascal arm is unreachable:
+  // assignmentTarget exists for Python's binding rules (see the doc comment
+  // above) and is only called from python/statement.ts and
+  // python/statements/forStatement.ts; the lower-casing is kept for symmetry
+  // with variable() above
   const searchName = routine.language === "Pascal" ? name.toLowerCase() : name;
+  // deno-coverage-ignore-stop
 
   const turtleVariables =
     routine.__ === "Program"

@@ -183,18 +183,31 @@ const parseFactor = (lexemes: Lexemes, routine: Routine): Expression => {
       if (input) {
         lexemes.next();
         return makeInputValue(lexeme, input);
+        // deno-coverage-ignore-start -- the throw is unreachable: the
+        // tokenizer only makes an "inputCode" token for names on the same
+        // `inputs` list find.input searches (anything else becomes a
+        // "badInputCode", which lexify.ts rejects with "Unrecognised input
+        // code." before the parser ever runs), and lexer/lexeme.ts applies
+        // the same Pascal lower-casing find.input does, so the lookup cannot
+        // fail
       }
       throw new CompilerError("{lex} is not a valid input code.", lexeme);
     }
+    // deno-coverage-ignore-stop
 
     case "query": {
       const query = find.query(routine, lexeme.value);
       if (query) {
         lexemes.next();
         return makeQueryValue(lexeme, query);
+        // deno-coverage-ignore-start -- the throw is unreachable, for the
+        // same reason as the input case above: only names find.query itself
+        // accepts ever become "queryCode" tokens ("badQueryCode" is rejected
+        // by lexify.ts with "Unrecognised input query." first)
       }
       throw new CompilerError("{lex} is not a valid query code.", lexeme);
     }
+    // deno-coverage-ignore-stop
 
     case "identifier": {
       const constant = find.constant(routine, lexeme.value);

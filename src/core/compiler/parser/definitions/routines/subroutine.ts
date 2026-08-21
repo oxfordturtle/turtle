@@ -56,7 +56,16 @@ export const getResultVariable = (
 
 export const getResultType = (subroutine: Subroutine): Type | null => {
   const resultVariable = getResultVariable(subroutine);
+  // deno-coverage-ignore-start -- the ": null" arm is unreachable: every
+  // caller has already established the subroutine is a function - the four
+  // per-language returnStatement parsers reject "return <value>" in a
+  // procedure first, and a FunctionCall (whose parser and encoder are the
+  // only other callers) is only ever built past common/functionCall.ts's own
+  // "is a procedure, not a function" throw - so the result variable always
+  // exists. (The truthy arm is live and tested; it sits inside this range
+  // only because a branch cannot be excluded mid-expression.)
   return resultVariable ? resultVariable.type : null;
+  // deno-coverage-ignore-stop
 };
 
 export type SubroutineType = "function" | "procedure";

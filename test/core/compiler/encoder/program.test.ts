@@ -2,7 +2,7 @@ import { describe, it } from "@std/testing/bdd";
 import { assert, assertEquals, assertExists } from "@std/assert";
 import { PCode } from "@/core/constants.ts";
 import { defaultCompilerOptions } from "@/core/compiler.ts";
-import { compileAndEncode, countOf } from "./_helpers.ts";
+import { compileAndEncode, countOf } from "./lib/helpers.ts";
 
 /**
  * Covers `encoder/encode.ts` (the parts not already exercised incidentally
@@ -320,7 +320,7 @@ describe("encoder/program", () => {
       assertEquals(countOf(withoutZeroing, PCode.zptr), 1); // just programStart's own
     });
 
-    it("stores nothing for an array-by-value parameter (the array copy is a documented TODO, unimplemented)", () => {
+    it("stores nothing for an array-by-value parameter (the array copy is a documented TODO, unimplemented) [known limitation]", () => {
       // C never sets isReferenceParameter, so a plain array parameter here
       // is by-value syntax that's legal but has no copying logic yet -
       // the parameter-storing loop pushes an (initially empty) line for

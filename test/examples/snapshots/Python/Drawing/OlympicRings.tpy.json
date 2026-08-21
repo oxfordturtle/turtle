@@ -1,0 +1,45 @@
+{
+  "schemaVersion": 1,
+  "runMode": "bounded",
+  "pcode": {
+    "lines": 24,
+    "hash": "01324bbc9f107b32"
+  },
+  "hitIterationCap": false,
+  "consoleText": "",
+  "outputText": "",
+  "runtimeErrors": [],
+  "turtle": {
+    "x": 350,
+    "y": 575,
+    "d": 270,
+    "a": 360,
+    "t": -20,
+    "c": "#ffff00"
+  },
+  "canvas": {
+    "callCount": 11,
+    "byMethod": {
+      "setResolution": 2,
+      "setVirtualCanvas": 2,
+      "clear": 1,
+      "drawArc": 5,
+      "setCursor": 1
+    },
+    "logHash": "0c65503cedbe63d4",
+    "head": [
+      "setResolution([1000,1000,false])",
+      "setVirtualCanvas([0,0,1000,1000])",
+      "setResolution([1000,1000,false])",
+      "clear([\"#FFFFFF\"])",
+      "setVirtualCanvas([0,0,1000,1000])",
+      "drawArc([{\"x\":500,\"y\":450,\"d\":0,\"a\":360,\"t\":-20,\"c\":\"#000000\"},130,130,false])",
+      "drawArc([{\"x\":200,\"y\":450,\"d\":270,\"a\":360,\"t\":-20,\"c\":\"#0000ff\"},130,130,false])",
+      "drawArc([{\"x\":800,\"y\":450,\"d\":270,\"a\":360,\"t\":-20,\"c\":\"#ff0000\"},130,130,false])",
+      "drawArc([{\"x\":650,\"y\":575,\"d\":0,\"a\":360,\"t\":-20,\"c\":\"#00ff00\"},130,130,false])",
+      "drawArc([{\"x\":350,\"y\":575,\"d\":270,\"a\":360,\"t\":-20,\"c\":\"#ffff00\"},130,130,false])",
+      "setCursor([1])"
+    ],
+    "tail": []
+  }
+}

@@ -1,0 +1,37 @@
+{
+  "schemaVersion": 1,
+  "runMode": "bounded",
+  "pcode": {
+    "lines": 52,
+    "hash": "af64c09425a5130f"
+  },
+  "hitIterationCap": true,
+  "consoleText": "LOOP 1 ...\n\nABOUT TO TRY TO READ TestFile.txt ...\n  TestFile.txt could NOT be opened FOR reading\n\nABOUT TO TRY TO READ TestRename.txt ...\n",
+  "outputText": "LOOP 1 ...\n\nABOUT TO TRY TO READ TestFile.txt ...\n  TestFile.txt could NOT be opened FOR reading\n\nABOUT TO TRY TO READ TestRename.txt ...\n",
+  "runtimeErrors": [],
+  "turtle": {
+    "x": 500,
+    "y": 500,
+    "d": 0,
+    "a": 360,
+    "t": 2,
+    "c": "#000"
+  },
+  "canvas": {
+    "callCount": 5,
+    "byMethod": {
+      "setResolution": 2,
+      "setVirtualCanvas": 2,
+      "clear": 1
+    },
+    "logHash": "99710e8860a79822",
+    "head": [
+      "setResolution([1000,1000,false])",
+      "setVirtualCanvas([0,0,1000,1000])",
+      "setResolution([1000,1000,false])",
+      "clear([\"#FFFFFF\"])",
+      "setVirtualCanvas([0,0,1000,1000])"
+    ],
+    "tail": []
+  }
+}

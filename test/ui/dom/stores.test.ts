@@ -7,9 +7,14 @@ import {
   qa,
   settle,
   type,
-} from "../_setup.ts";
-import { assertEquals, assertStringIncludes } from "@std/assert";
-import { beforeAll, describe, it } from "@std/testing/bdd";
+} from "../lib/setup.ts";
+import {
+  assert,
+  assertEquals,
+  assertFalse,
+  assertStringIncludes,
+} from "@std/assert";
+import { afterEach, beforeEach, describe, it } from "@std/testing/bdd";
 
 // Two stores own the data - the open files and everything compiled from them,
 // and what the running machine reports - and ten components display it. Get the
@@ -20,16 +25,18 @@ import { beforeAll, describe, it } from "@std/testing/bdd";
 // They deliberately name no part of the mechanism, only the change and its
 // effect on screen, so that replacing the wiring doesn't rewrite the tests.
 
-beforeAll(async () => {
+beforeEach(async () => {
   await mountRoute("/");
 });
+
+// Rule 6: every test ends with Womble having reported nothing.
+afterEach(assertNoWombleLogs);
 
 describe("the program store drives the editor", () => {
   it("renders a line number per line of the current file", async () => {
     program.setCode("x = 1\ny = 2\nz = 3\n");
     await settle();
     assertEquals(qa("system-editor .line-numbers li").length, 4);
-    assertNoWombleLogs();
   });
 
   it("re-highlights the overlay from the store's tokens", async () => {
@@ -57,7 +64,6 @@ describe("the program store drives the editor", () => {
     assertEquals(program.getCode(), "print('hi')");
     assertEquals(textarea.value, "print('hi')");
     assertEquals(qa("system-editor .line-numbers li").length, 1);
-    assertNoWombleLogs();
   });
 
   it("shows the current file's name in the filename bar", async () => {
@@ -74,22 +80,21 @@ describe("the machine store drives the transport and the properties", () => {
     machine.setStatus("played");
     await settle();
     assertEquals(buttons()[0].querySelector("i")?.className, "fa fa-pause");
-    assertEquals(buttons()[1].hasAttribute("disabled"), false);
-    assertNoWombleLogs();
+    assertFalse(buttons()[1].hasAttribute("disabled"));
   });
 
   it("offers to resume a paused program, still running", async () => {
     machine.setStatus("paused");
     await settle();
     assertEquals(buttons()[0].querySelector("i")?.className, "fa fa-play");
-    assertEquals(buttons()[1].hasAttribute("disabled"), false);
+    assertFalse(buttons()[1].hasAttribute("disabled"));
   });
 
   it("disables HALT again when the program stops", async () => {
     machine.setStatus("halted");
     await settle();
     assertEquals(buttons()[0].querySelector("i")?.className, "fa fa-play");
-    assertEquals(buttons()[1].hasAttribute("disabled"), true);
+    assert(buttons()[1].hasAttribute("disabled"));
   });
 
   it("follows the turtle's properties", async () => {
@@ -103,7 +108,6 @@ describe("the machine store drives the transport and the properties", () => {
     assertEquals(values[0], "42");
     assertEquals(values[1], "-7");
     assertEquals(values.at(-1), "#ff0000");
-    assertNoWombleLogs();
   });
 
   it("re-labels the canvas edges when a program resizes the virtual canvas", async () => {
@@ -126,7 +130,6 @@ describe("the machine store drives the transport and the properties", () => {
     );
     assertEquals(labels.slice(0, 5), ["200", "400", "600", "800", "999"]);
     assertEquals(labels.slice(5, 10), ["-100", "0", "100", "200", "299"]);
-    assertNoWombleLogs();
   });
 
   // The pixels and the console text are deliberately outside this: the
@@ -141,8 +144,8 @@ describe("the machine store drives the transport and the properties", () => {
     console.textContent = "written by the adapter";
     machine.setVirtualCanvas(0, 0, 1000, 1000);
     await settle();
-    assertEquals(q("canvas-tab canvas") === canvas, true);
-    assertEquals(q("canvas-tab pre.console") === console, true);
+    assert(q("canvas-tab canvas") === canvas);
+    assert(q("canvas-tab pre.console") === console);
     assertEquals(console.textContent, "written by the adapter");
   });
 });

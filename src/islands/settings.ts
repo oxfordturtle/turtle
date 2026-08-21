@@ -276,7 +276,13 @@ const readSettings = (): Settings => {
   const settings = { ...defaultSettings };
   // `document` rather than a bare `location` or `sessionStorage` global: the DOM
   // shim test/ui/dom/ runs under installs `document` but no window globals
+  // deno-coverage-ignore-start -- the early return is unreachable from the
+  // tests and from a browser: Womble only calls `hydrate` when a store adopts
+  // its seed on the client, where there is always a document. It is what keeps
+  // this function safe to reach from the server-side render path, which
+  // imports this module too.
   if (typeof document === "undefined") return settings;
+  // deno-coverage-ignore-stop
   for (const name of settingNames) {
     write(settings, name, load(name as Property));
   }

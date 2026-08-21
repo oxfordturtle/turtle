@@ -1,5 +1,5 @@
 import { describe, it } from "@std/testing/bdd";
-import { assertEquals } from "@std/assert";
+import { assert, assertEquals } from "@std/assert";
 import {
   commandCategories,
   commands,
@@ -27,11 +27,7 @@ describe("commandCategories", () => {
 
   it("gives every category a non-empty title", () => {
     for (const category of commandCategories) {
-      assertEquals(
-        category.title.length > 0,
-        true,
-        `category ${category.index}`,
-      );
+      assert(category.title.length > 0, `category ${category.index}`);
     }
   });
 });

@@ -37,12 +37,16 @@ export default function subroutine(
 
   subroutine.variables.push(...parameters(lexemes, subroutine));
 
+  // deno-coverage-ignore-start -- unreachable: parameters() has just consumed
+  // the closing ")", which can never be the program's final lexeme
+  // (program.ts guarantees that's "}"), so the stream cannot be dry here
   if (!lexemes.get()) {
     throw new CompilerError(
       'Method parameters must be followed by an opening bracket "{".',
       lexemes.get(-1),
     );
   }
+  // deno-coverage-ignore-stop
   if (lexemes.get()?.content !== "{") {
     throw new CompilerError(
       'Method parameters must be followed by an opening bracket "{".',

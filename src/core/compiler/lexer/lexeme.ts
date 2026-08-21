@@ -212,9 +212,16 @@ export interface IntegerLexeme extends LexemeCommon {
 
 export const integerLexeme = (token: Token, radix: number): IntegerLexeme => {
   const firstNonInteger = token.content.match(/[^0-9]/);
+  // deno-coverage-ignore-start -- the "?? 0" fallback is unreachable:
+  // String.prototype.match always sets .index on a successful match (the
+  // regex is not global), and the ternary only dereferences it when the match
+  // succeeded; the "??" exists solely for TypeScript's optional typing of
+  // .index. (Both ternary arms are live and tested; they sit inside this
+  // range only because a branch cannot be excluded mid-expression.)
   const trimmedContent = firstNonInteger
     ? token.content.slice((firstNonInteger.index ?? 0) + 1)
     : token.content;
+  // deno-coverage-ignore-stop
 
   return {
     ...lexeme(token.line, token.character, token.content),

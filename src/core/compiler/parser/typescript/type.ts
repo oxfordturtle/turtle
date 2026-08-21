@@ -91,9 +91,16 @@ export default function type(
     const exp = parseExpression(lexemes, routine);
     typeCheck(routine.language, exp, "integer");
     const value = evaluate(exp, "TypeScript", "array");
+    // deno-coverage-ignore-start -- unreachable: getting here requires an
+    // expression that passes typeCheck(..., "integer") yet evaluates to a
+    // string; the only such expressions are "character"-typed (an indexed
+    // string constant), and getType() only reports "character" for languages
+    // in languagesWithCharacterType, which excludes TypeScript - a TypeScript
+    // string index is typed "string" and fails the typeCheck above first
     if (typeof value === "string") {
       throw new CompilerError("Array size must be an integer.", lexemes.get());
     }
+    // deno-coverage-ignore-stop
     if (value <= 0) {
       throw new CompilerError("Array size must be positive.", lexemes.get());
     }

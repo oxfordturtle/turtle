@@ -1,0 +1,39 @@
+{
+  "schemaVersion": 1,
+  "runMode": "bounded",
+  "pcode": {
+    "lines": 42,
+    "hash": "23f0fa351646294d"
+  },
+  "hitIterationCap": false,
+  "consoleText": "You will see this on a clear light blue Console\n",
+  "outputText": "Turtle is the name of a small animal.\nTypewriters were perfected in the 19th century.\nTypeScript is a typed superset of JavaScript.\n\"Turtle TypeScript\" has 17 characters.\nIn lower case it is \"turtle typescript\".\nIn upper case it is \"TURTLE TYPESCRIPT\".\n\"Type\" occurs within \"Turtle TypeScript\" at position 7.\n3.14159 times 100000 = 314159.\n314159 divided by 100000 = 3.14159.\n\nNow back to the Canvas and Console ...\nYou will see this on a clear light blue Console\n",
+  "runtimeErrors": [],
+  "turtle": {
+    "x": 500,
+    "y": 500,
+    "d": 0,
+    "a": 360,
+    "t": 2,
+    "c": "#000"
+  },
+  "canvas": {
+    "callCount": 6,
+    "byMethod": {
+      "setResolution": 2,
+      "setVirtualCanvas": 2,
+      "clear": 1,
+      "setCursor": 1
+    },
+    "logHash": "d982706e7ecfaa0e",
+    "head": [
+      "setResolution([1000,1000,false])",
+      "setVirtualCanvas([0,0,1000,1000])",
+      "setResolution([1000,1000,false])",
+      "clear([\"#FFFFFF\"])",
+      "setVirtualCanvas([0,0,1000,1000])",
+      "setCursor([1])"
+    ],
+    "tail": []
+  }
+}

@@ -1,5 +1,5 @@
 import { describe, it } from "@std/testing/bdd";
-import { assertEquals, assertExists, assertThrows } from "@std/assert";
+import { assert, assertEquals, assertExists, assertThrows } from "@std/assert";
 import type {
   ForStatement,
   IfStatement,
@@ -8,7 +8,7 @@ import type {
   VariableAssignment,
   WhileStatement,
 } from "@/core/compiler.ts";
-import { parseProgram } from "./_programs.ts";
+import { parseProgram } from "./lib/programs.ts";
 
 /**
  * Pascal-specific parser tests: syntax that's too divergent for the shared
@@ -692,7 +692,7 @@ describe("parse: Pascal", () => {
       assertEquals(program.subroutines.length, 1);
       const sub = program.subroutines[0];
       assertEquals(sub.name, "go");
-      assertEquals(sub.variables[0].isParameter, true);
+      assert(sub.variables[0].isParameter);
       assertEquals(sub.variables[0].type, "integer");
     });
 
@@ -701,10 +701,7 @@ describe("parse: Pascal", () => {
         "Pascal",
         "program Test;\nprocedure go(var n: integer);\nbegin\nend;\nbegin\nend.",
       );
-      assertEquals(
-        program.subroutines[0].variables[0].isReferenceParameter,
-        true,
-      );
+      assert(program.subroutines[0].variables[0].isReferenceParameter);
     });
 
     it("parses several parameters separated by semicolons", () => {

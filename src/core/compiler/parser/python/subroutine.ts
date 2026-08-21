@@ -41,12 +41,17 @@ export default (
       );
     }
 
+    // deno-coverage-ignore-start -- unreachable: python/type.ts returns empty
+    // arrayDimensions on every path (Python has no array type syntax; the
+    // tuple slot only exists for signature parity with the other languages'
+    // type parsers), so this guard can never fire
     if (arrayDimensions.length > 0) {
       throw new CompilerError(
         "Functions cannot return arrays.",
         lexemes.get(-1),
       );
     }
+    // deno-coverage-ignore-stop
 
     if (isList) {
       throw new CompilerError(
@@ -173,12 +178,17 @@ const parameters = (lexemes: Lexemes, routine: Subroutine): Variable[] => {
     }
   }
 
+  // deno-coverage-ignore-start -- unreachable: the loop above only exits when
+  // the current lexeme is ")" - if the lexemes run dry first, variable() ->
+  // identifier() throws '"..." must be followed by an identifier.' inside the
+  // loop body instead
   if (lexemes.get()?.content !== ")") {
     throw new CompilerError(
       "Closing bracket missing after function parameters.",
       lexemes.get(-1),
     );
   }
+  // deno-coverage-ignore-stop
   lexemes.next();
 
   return parameters;

@@ -1,5 +1,5 @@
 import { describe, it } from "@std/testing/bdd";
-import { assertEquals } from "@std/assert";
+import { assert, assertEquals } from "@std/assert";
 import { PCode, pcodeArgs } from "@/core/constants.ts";
 
 // mirrors the four groups in pcodeArgs's switch statement -- kept as an
@@ -77,7 +77,7 @@ describe("pcodeArgs", () => {
     // sanity: this codebase has plenty of pcodes outside the three named
     // groups (e.g. plain stack/arithmetic operators) -- if this list were
     // empty the test below would be vacuous
-    assertEquals(others.length > 0, true);
+    assert(others.length > 0);
     for (const code of others) {
       assertEquals(pcodeArgs(code), 0, PCode[code]);
     }

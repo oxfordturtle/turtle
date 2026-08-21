@@ -1,0 +1,45 @@
+{
+  "schemaVersion": 1,
+  "runMode": "bounded",
+  "pcode": {
+    "lines": 40,
+    "hash": "f5a7bdb9984d7f2b"
+  },
+  "hitIterationCap": true,
+  "consoleText": "",
+  "outputText": "",
+  "runtimeErrors": [],
+  "turtle": {
+    "x": 100,
+    "y": 620,
+    "d": 0,
+    "a": 360,
+    "t": 2,
+    "c": "#000"
+  },
+  "canvas": {
+    "callCount": 12,
+    "byMethod": {
+      "setResolution": 2,
+      "setVirtualCanvas": 2,
+      "clear": 2,
+      "drawText": 6
+    },
+    "logHash": "bc10e255280a9289",
+    "head": [
+      "setResolution([1000,1000,false])",
+      "setVirtualCanvas([0,0,1000,1000])",
+      "setResolution([1000,1000,false])",
+      "clear([\"#FFFFFF\"])",
+      "setVirtualCanvas([0,0,1000,1000])",
+      "clear([\"#ffffbb\"])",
+      "drawText([{\"x\":15,\"y\":200,\"d\":0,\"a\":360,\"t\":2,\"c\":\"#000000\"},\"This reaction game will display a sequence\",4,36])",
+      "drawText([{\"x\":20,\"y\":270,\"d\":0,\"a\":360,\"t\":2,\"c\":\"#000000\"},\"of 10 coloured circles on the Canvas.  Try\",4,36])",
+      "drawText([{\"x\":20,\"y\":340,\"d\":0,\"a\":360,\"t\":2,\"c\":\"#000000\"},\"to click the mouse on each circle as quickly\",4,36])",
+      "drawText([{\"x\":20,\"y\":410,\"d\":0,\"a\":360,\"t\":2,\"c\":\"#000000\"},\"as you can, and see how short a total time\",4,36])",
+      "drawText([{\"x\":20,\"y\":480,\"d\":0,\"a\":360,\"t\":2,\"c\":\"#000000\"},\"you can achieve for all 10.\",4,36])",
+      "drawText([{\"x\":100,\"y\":620,\"d\":0,\"a\":360,\"t\":2,\"c\":\"#000000\"},\"Now press the \\\"Esc\\\" key to start ...\",4,36])"
+    ],
+    "tail": []
+  }
+}

@@ -16,6 +16,8 @@ import { PCode, pcodeArgs } from "@/core/constants.ts";
  * number can be, so an unresolved one can never be mistaken for a real line.
  */
 export const relativeJump = (distance: number): number => {
+  // deno-coverage-ignore-start -- unreachable: the only callers
+  // (compoundExpression.ts) pass right.length + 1, which is always >= 1
   if (distance < 1) {
     // a zero or backwards distance would be indistinguishable from an absolute
     // target once negated. Unreachable from the current caller; this guards the
@@ -24,6 +26,7 @@ export const relativeJump = (distance: number): number => {
       `Relative jump distance must be at least 1 (got ${distance}).`,
     );
   }
+  // deno-coverage-ignore-stop
   return -distance;
 };
 

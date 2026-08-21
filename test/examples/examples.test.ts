@@ -1,185 +1,80 @@
 import { assertEquals, assertMatch } from "@std/assert";
 import { describe, it } from "@std/testing/bdd";
-import type { Language } from "@/core/constants.ts";
 import {
-  compileExample,
-  readExample,
-  runExampleBounded,
-  runExampleBoundedAsync,
-  runWithReadlines,
-} from "../core/machine/_exampleHarness.ts";
+  allExamples,
+  EXPECTED_RUNTIME_ERRORS,
+  runExample,
+} from "./lib/harness.ts";
+import { buildRecord, readGolden } from "./lib/record.ts";
 
 /**
- * Compiles and runs every real example program under `assets/examples/**`
- * through the full
- * `tokenize -> lexify -> parse -> analyse -> encode -> run` pipeline, as an
- * end-to-end regression suite. These programs weren't written as test
- * fixtures and have no recorded expected output, so "compiles, and runs
- * bounded without an unexpected runtime error" is the baseline assertion for
- * the vast majority of files below.
+ * Runs every real example program under `assets/examples/**` through the full
+ * `tokenize -> lexify -> parse -> encode -> run` pipeline and compares
+ * everything observable about the run - output and console text verbatim, a
+ * digest of every canvas call, the pcode's shape, whether the program halted
+ * or hit the iteration bound - against its golden record in
+ * `test/examples/snapshots/`. The runs are deterministic under the fake ports
+ * (see `lib/harness.ts`), which is what makes exact records possible for
+ * programs that were never written as test fixtures.
  *
- * Three kinds of named exception exist, each asserting a *specific*,
- * understood outcome rather than silently skipping the file:
+ * Two assertions per example, in a deliberate order:
  *
- * - `READLINE_INPUTS`: examples that block on a line-read command
- *   (`GETLINE$`/`gets()`/`readLine()`/`readln`/`input()`, all compiling to
- *   `PCode.rdln`) right at or near the start. Fed canned keyboard input via
- *   `runWithReadlines` (see that function's doc comment in
- *   `_exampleHarness.ts` for why a plain bounded run can't just be flushed
- *   past these).
- * - `FILE_PROCESSING_ASYNC`: examples that legitimately reach `DIRY`/`FFND`/
- *   `FDIR`/`FNXT`/`FMOV` (or, transitively, any other file-processing PCode)
- *   and so suspend
- *   `execute()` on a real `FileSystem` `Promise` - a plain synchronous
- *   `runExampleBounded`/`timers.flush()` can never drive that to
- *   completion (see `_exampleHarness.ts`'s `runExampleBoundedAsync` doc
- *   comment), so these route through that instead. Asserted to run cleanly,
- *   same bar as the default path.
- * - `KNOWN_BUGS`: for a real, already-investigated bug being deliberately
- *   deferred rather than fixed - asserted to fail with exactly its known
- *   error, so a real fix (or a regression) shows up as a test change either
- *   way. Currently empty.
+ * 1. **No unexpected runtime error** - checked against
+ *    `EXPECTED_RUNTIME_ERRORS` *before* any golden comparison, so
+ *    `deno task test:examples:update` can regenerate every record without
+ *    ever being able to bless a new crash into one.
+ * 2. **The record matches the golden.** A failure here is either a real
+ *    regression (wrong output, wrong drawing, a program that stopped halting
+ *    or started looping) or a deliberate change - in which case re-run the
+ *    updater and review the diff.
  *
- * `BASIC/Files/FileSearching.tbas` and `Pascal/Files/FileSearching.tpas`
- * still hit the (unrelated) iteration cap before ever reaching a
- * file-processing PCode within a *bounded* run, even now that DIRY/FFND are
- * implemented - so they need no exception entry either, the default
- * (synchronous) assertion already passes them the same way it always did.
- * `Files/ReadCSV.tpy`/`Files/SaveCSV.tpy` and other file-touching examples
- * not listed in `FILE_PROCESSING_ASYNC` below have the same latent gap this
- * category exists to fix (a synchronous run leaves them suspended, not
- * verified to actually complete) but happen to still assert cleanly via the
- * default path's "zero runtime errors" bar. Auditing every file-touching example
- * is a job of its own; `FILE_PROCESSING_ASYNC` below only lists the examples
- * that a synchronous run asserts *wrongly*, rather than merely incompletely.
+ * A missing golden fails with instructions rather than passing vacuously.
  */
 
-const LANGUAGES: {
-  language: Language;
-  directory: string;
-  extension: string;
-}[] = [
-  { language: "BASIC", directory: "BASIC", extension: ".tbas" },
-  { language: "C", directory: "C", extension: ".tc" },
-  { language: "Java", directory: "Java", extension: ".tjav" },
-  { language: "Pascal", directory: "Pascal", extension: ".tpas" },
-  { language: "Python", directory: "Python", extension: ".tpy" },
-  { language: "TypeScript", directory: "TypeScript", extension: ".tts" },
-];
-
-// canned (prompt substring, line to type) pairs, one per blocking read the
-// program is expected to perform, in order - see runWithReadlines's own
-// doc comment for why waiting for the actual prompt text matters here
-const ASK_NAME = [{ untilOutputIncludes: "What is your name?", line: "Amyas" }];
-
-const READLINE_INPUTS: Record<
-  string,
-  { untilOutputIncludes: string; line: string }[]
-> = {
-  "BASIC/Interaction/AskInput.tbas": ASK_NAME,
-  "C/Interaction/AskInput.tc": ASK_NAME,
-  "Java/Interaction/AskInput.tjav": ASK_NAME,
-  "Pascal/Interaction/AskInput.tpas": ASK_NAME,
-  "Python/Interaction/AskInput.tpy": ASK_NAME,
-  "TypeScript/Interaction/AskInput.tts": ASK_NAME,
-  // numdisks (>1, so getnum()'s own re-prompt loop only runs once), then
-  // start pillar, then finish pillar - Pascal's pillars are 1/2/3, Python's
-  // are 0/1/2 (see each file's own getnum())
-  "Pascal/Logic&CS/Hanoi.tpas": [
-    { untilOutputIncludes: "How many disks", line: "3" },
-    { untilOutputIncludes: "Start pillar", line: "1" },
-    { untilOutputIncludes: "Finish pillar", line: "2" },
-  ],
-  "Python/Logic&CS/Hanoi.tpy": [
-    { untilOutputIncludes: "How many disks", line: "3" },
-    { untilOutputIncludes: "Start pillar", line: "0" },
-    { untilOutputIncludes: "Finish pillar", line: "1" },
-  ],
-  "Pascal/Logic&CS/IterateRoot.tpas": [
-    { untilOutputIncludes: "Which square root", line: "10" },
-  ],
-  "Python/Logic&CS/IterateRoot.tpy": [
-    { untilOutputIncludes: "Which square root", line: "10" },
-  ],
-};
-
-const FILE_PROCESSING_ASYNC = new Set([
-  "BASIC/Files/DirectoryCommands.tbas",
-  "BASIC/Files/RandomSentences.tbas",
-  "Pascal/Files/DirectoryCommands.tpas",
-  "Pascal/Files/RandomSentences.tpas",
-  "Python/Files/DirectoryCommands.tpy",
-  "Python/Files/RandomSentences.tpy",
-  "Python/Files/FileSearching.tpy",
-]);
-
-const KNOWN_BUGS: Record<string, RegExp> = {};
-
-const collectExamplePaths = async (
-  language: string,
-  directory: string,
-  extension: string,
-): Promise<string[]> => {
-  const paths: string[] = [];
-  const walk = async (relativeDir: string): Promise<void> => {
-    const url = new URL(
-      `../../assets/examples/${relativeDir}`,
-      import.meta.url,
-    );
-    for await (const entry of Deno.readDir(url)) {
-      const relativeEntry = `${relativeDir}/${entry.name}`;
-      if (entry.isDirectory) {
-        await walk(relativeEntry);
-      } else if (entry.isFile && entry.name.endsWith(extension)) {
-        paths.push(relativeEntry);
-      }
-    }
-  };
-  await walk(directory);
-  paths.sort();
-  return paths;
-};
-
-const allExamples = (
-  await Promise.all(
-    LANGUAGES.map(async ({ language, directory, extension }) => {
-      const paths = await collectExamplePaths(language, directory, extension);
-      return paths.map((path) => ({ language, path }));
-    }),
-  )
-).flat();
+const examples = await allExamples();
 
 describe("example programs", () => {
-  for (const { language, path } of allExamples) {
-    it(path, async () => {
-      const code = await readExample(path);
-      const pcode = compileExample(language, code);
+  for (const entry of examples) {
+    it(entry.path, async () => {
+      const { runMode, pcode, result } = await runExample(entry);
+      const record = buildRecord(runMode, pcode, result);
 
-      if (path in READLINE_INPUTS) {
-        const { output } = runWithReadlines(pcode, READLINE_INPUTS[path]);
-        assertEquals(output.runtimeErrors, []);
-        return;
+      const expectedError = EXPECTED_RUNTIME_ERRORS[entry.path];
+      if (expectedError === undefined) {
+        assertEquals(record.runtimeErrors, []);
+      } else {
+        assertEquals(record.runtimeErrors.length, 1);
+        assertMatch(record.runtimeErrors[0], expectedError);
+      }
+      if (runMode === "asyncFiles") {
+        assertEquals(record.hitIterationCap, false);
       }
 
-      if (FILE_PROCESSING_ASYNC.has(path)) {
-        const { output, hitIterationCap } = await runExampleBoundedAsync(
-          pcode,
-          50,
+      const golden = await readGolden(entry.path);
+      if (golden === null) {
+        throw new Error(
+          `no golden record for ${entry.path} - ` +
+            `run \`deno task test:examples:update\` and review the new file`,
         );
-        assertEquals(hitIterationCap, false);
-        assertEquals(output.runtimeErrors, []);
-        return;
       }
-
-      if (path in KNOWN_BUGS) {
-        const { output } = runExampleBounded(pcode, 500);
-        assertEquals(output.runtimeErrors.length, 1);
-        assertMatch(output.runtimeErrors[0].message, KNOWN_BUGS[path]);
-        return;
-      }
-
-      const { output } = runExampleBounded(pcode, 500);
-      assertEquals(output.runtimeErrors, []);
+      assertEquals(record, golden);
     });
   }
+
+  // The whole suite rests on runs being deterministic (fixed fake-timer
+  // origin, so a fixed PRNG seed). If that ever breaks, this fails with one
+  // clear message before the 503 records above drown it in opaque diffs.
+  // Dendrites is randomness-heavy: every particle's walk consumes the PRNG.
+  it("determinism sentinel: the same example runs to the same record twice", async () => {
+    const entry = examples.find(
+      (candidate) => candidate.path === "Python/Cellular/Dendrites.tpy",
+    );
+    if (entry === undefined) throw new Error("sentinel example missing");
+    const first = await runExample(entry);
+    const second = await runExample(entry);
+    assertEquals(
+      buildRecord(first.runMode, first.pcode, first.result),
+      buildRecord(second.runMode, second.pcode, second.result),
+    );
+  });
 });

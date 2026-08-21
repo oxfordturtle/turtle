@@ -10,6 +10,18 @@ export {
   default as makeProgram,
   type Program,
 } from "./compiler/parser/definitions/routines/program.ts";
+/**
+ * The formatter is an unfinished stub (TODO.md §2.2): `formatProgram` returns
+ * the literal string "program", and several statement and expression arms
+ * return "TODO". It is exported all the same so that its current behaviour is
+ * pinned by test/core/compiler/formatter.test.ts and visible to the coverage
+ * gate; implementing it for real means updating those pins as part of the
+ * change.
+ */
+export { default as formatProgram } from "./compiler/formatter/formatter.ts";
+export { default as formatStatement } from "./compiler/formatter/statement.ts";
+export { default as formatExpression } from "./compiler/formatter/expression.ts";
+export { default as formatType } from "./compiler/formatter/type.ts";
 export type { UsageCategory } from "./compiler/analyser/usageCategory.ts";
 export type { UsageExpression } from "./compiler/analyser/usageExpression.ts";
 export type { Type } from "./compiler/lexer/types.ts";

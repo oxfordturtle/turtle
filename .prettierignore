@@ -1,3 +1,4 @@
 assets/
 coverage/
 node_modules/
+test/examples/snapshots/

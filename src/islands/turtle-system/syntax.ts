@@ -34,9 +34,17 @@ define("syntax-tab", {
                     <td>${lexeme.line.toString(10)}</td>
                     <td class="wide">
                       <code
-                        >${lexeme.content
-                          ? unsafeHtml(highlight(lexeme.content, language))
-                          : ""}</code
+                        >${
+                          // deno-coverage-ignore-start -- the "" arm can't be
+                          // reached: every lexeme constructor takes its content
+                          // from a token (never empty - the tokenizer's illegal
+                          // fallback consumes at least one character per token)
+                          // or sets a "[newline]"-style placeholder
+                          lexeme.content
+                            ? unsafeHtml(highlight(lexeme.content, language))
+                            : ""
+                          // deno-coverage-ignore-stop
+                        }</code
                       >
                     </td>
                     <td class="wide">${describe(lexeme)}</td>

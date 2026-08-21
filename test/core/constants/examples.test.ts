@@ -1,5 +1,5 @@
 import { describe, it } from "@std/testing/bdd";
-import { assertEquals } from "@std/assert";
+import { assert, assertEquals } from "@std/assert";
 import {
   exampleGroups,
   examples,
@@ -50,7 +50,7 @@ describe("examples", () => {
   it("every example's groupId corresponds to a real example group", () => {
     const groupIds = new Set(exampleGroups.map((g) => g.id));
     for (const example of examples) {
-      assertEquals(groupIds.has(example.groupId), true, example.id);
+      assert(groupIds.has(example.groupId), example.id);
     }
   });
 

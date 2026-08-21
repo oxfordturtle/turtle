@@ -4,9 +4,10 @@ import {
   PCode,
   readAddr,
   runPcode,
+  runSource,
   runToInt,
   runToString,
-} from "./_helpers.ts";
+} from "./lib/helpers.ts";
 
 /**
  * Behavioral coverage for the eleven Python list operator PCodes (`LAPP`
@@ -703,5 +704,164 @@ describe("machine/lists: Python list operators", () => {
       const build3d = buildHeapStrList(packSize(2, 2, 2, 0), ["x", "y"]);
       assertEquals(runToString(...build3d, [PCode.lprt, STR_3D]), "['x', 'y']");
     });
+  });
+});
+
+// Regression pins for list bugs originally found (and fixed) while getting
+// the real Python examples under assets/examples/ to run - each mirrors the
+// exact source shape of a fixed bug, as compiled Python rather than
+// hand-written pcode, because the bugs lived in the compile-and-run
+// interaction (aliasing, scoping, heap-slot reuse), not in a single opcode.
+// They moved here from the retired pythonListExamples files when the example
+// sweep became pure snapshot tests.
+describe("machine/lists: compiled-Python regression pins", () => {
+  it("building several lists via '.append()' inside a loop gives each row its own independent list", () => {
+    // reproduces the exact shape of the fixed aliasing bug:
+    // "toadd=['']*maxwords" created ONCE outside the loop, then
+    // "word.append(toadd)" five times, made all five rows aliases of the
+    // SAME list object - mutating one corrupted all the others. The fix
+    // (also used here) builds a fresh list *inside* the loop for every row.
+    const code = [
+      "rows=[]",
+      "for i in range(5):",
+      "    rows.append(['']*3)",
+      "rows[0][0]='X'",
+      "print(rows[1][0])",
+    ].join("\n");
+    const { output } = runSource("Python", code);
+    assertEquals(output.runtimeErrors, []);
+    // rows[1] must be untouched by the mutation to rows[0] - an empty
+    // string, not "X"
+    assertEquals(output.outputText.trim(), "");
+  });
+
+  it("sanity check: the pre-fix pattern (one shared list appended N times) really does alias, confirming the test above is meaningful", () => {
+    // same as above, but mirroring the ORIGINAL, buggy source text (a single
+    // "toadd" list object appended 5 times) - this is not testing a bug in
+    // today's compiler (list append-by-reference is correct Python
+    // semantics), it's confirming that *this specific source pattern* is
+    // what the fix moved away from, so the previous test's assertion is
+    // known to actually distinguish the two shapes rather than passing
+    // either way
+    const code = [
+      "toadd=['']*3",
+      "rows=[]",
+      "for i in range(5):",
+      "    rows.append(toadd)",
+      "rows[0][0]='X'",
+      "print(rows[1][0])",
+    ].join("\n");
+    const { output } = runSource("Python", code);
+    assertEquals(output.runtimeErrors, []);
+    // with the shared-list pattern, rows[1] IS rows[0], so the mutation
+    // shows up here too
+    assertEquals(output.outputText.trim(), "X");
+  });
+
+  it("the pile[start].substring()-based movedisk() pattern moves a disk correctly", () => {
+    // mirrors Hanoi.tpy's real movedisk() logic:
+    //   startpile=pile[start]
+    //   pile[finish]=startpile.substring(0,1)+pile[finish]
+    //   pile[start]=startpile.substring(1,len(startpile)-1)
+    // exercising the dot-call/.substring() rewrite on a list element read
+    // into a local, plus writing the results back into the list
+    const code = [
+      "pile = ['123', '', '']",
+      "def movedisk(start, finish):",
+      "    global pile",
+      "    startpile = pile[start]",
+      "    pile[finish] = startpile.substring(0,1) + pile[finish]",
+      "    pile[start] = startpile.substring(1, len(startpile)-1)",
+      "movedisk(0, 2)",
+      "print(pile[0])",
+      "print(pile[2])",
+    ].join("\n");
+    const { output } = runSource("Python", code);
+    // top disk ('1') moved from pile 0 to pile 2; pile 0 keeps the rest
+    assertEquals(output.outputText, "23\n1\n");
+  });
+
+  it("bubblesort over an integer list via a global-mutating swap() sorts correctly", () => {
+    // mirrors Sorting.tpy's own lessthan()/swap()/bubblesort() structure
+    // exactly, on a small list - list indexed read/write and global-scoped
+    // mutation via swap(), independent of that example's print formatting
+    const code = [
+      "n=8",
+      "A=[5,3,8,1,9,2,7,4]",
+      "def lessthan(x,y):",
+      "    return (x<y)",
+      "def swap(x,y):",
+      "    global A",
+      "    t=A[x]",
+      "    A[x]=A[y]",
+      "    A[y]=t",
+      "def bubblesort():",
+      "    changed=True",
+      "    while changed:",
+      "        changed=False",
+      "        for i in range(n-1):",
+      "            if lessthan(A[i+1],A[i]):",
+      "                swap(i,i+1)",
+      "                changed=True",
+      "bubblesort()",
+      "for i in range(n):",
+      "    print(str(A[i]))",
+    ].join("\n");
+    const { output } = runSource("Python", code);
+    assertEquals(output.outputText, "1\n2\n3\n4\n5\n7\n8\n9\n");
+  });
+
+  it("lessthan()/swap() correctly compare and exchange two string-list elements", () => {
+    // mirrors SortingStrings.tpy's lessthan(x: str, y: str)/swap()
+    // structure and the single comparison+conditional-swap step its
+    // bubblesort inner loop performs - the typed-parameter string
+    // comparison (which once resolved untyped parameters to a numeric
+    // placeholder), plus the list-of-strings read/write swap() itself
+    const code = [
+      "n=2",
+      "A=['banana','apple']",
+      "def lessthan(x: str,y: str):",
+      "    return (x<y)",
+      "def swap(x,y):",
+      "    global A",
+      "    t=A[x]",
+      "    A[x]=A[y]",
+      "    A[y]=t",
+      "for i in range(n-1):",
+      "    if lessthan(A[i+1],A[i]):",
+      "        swap(i,i+1)",
+      "print(A[0])",
+      "print(A[1])",
+    ].join("\n");
+    const { output } = runSource("Python", code);
+    assertEquals(output.outputText, "apple\nbanana\n");
+  });
+
+  it("a while loop wrapping swap() doesn't corrupt an uninvolved list element", () => {
+    // regression pin: wrapping swap(0,1) in a while loop that runs it twice
+    // (an identity operation - the list should end up unchanged) used to
+    // corrupt A[2]/A[3] too, because swap()'s temp variable "t" aliased its
+    // own fixed heap buffer into both A[0] and A[1]'s slots; the second
+    // swap()'s "t=A[x]" reassignment then silently rewrote whichever slot
+    // still aliased it
+    const code = [
+      "A=['delta','bravo','charlie','alpha']",
+      "def swap(x,y):",
+      "    global A",
+      "    t=A[x]",
+      "    A[x]=A[y]",
+      "    A[y]=t",
+      "i=0",
+      "while i<2:",
+      "    swap(0,1)",
+      "    i=i+1",
+      "print(A[0])",
+      "print(A[1])",
+      "print(A[2])",
+      "print(A[3])",
+    ].join("\n");
+    const { output } = runSource("Python", code);
+    // two swaps of the same pair = identity; nothing should have changed
+    assertEquals(output.outputText, "delta\nbravo\ncharlie\nalpha\n");
   });
 });

@@ -1,0 +1,51 @@
+{
+  "schemaVersion": 1,
+  "runMode": "bounded",
+  "pcode": {
+    "lines": 19,
+    "hash": "654fa7b14dd012b4"
+  },
+  "hitIterationCap": true,
+  "consoleText": "",
+  "outputText": "",
+  "runtimeErrors": [],
+  "turtle": {
+    "x": 6,
+    "y": 9,
+    "d": 0,
+    "a": 360,
+    "t": 2,
+    "c": "#000"
+  },
+  "canvas": {
+    "callCount": 18,
+    "byMethod": {
+      "setResolution": 3,
+      "setVirtualCanvas": 3,
+      "clear": 2,
+      "writePixel": 10
+    },
+    "logHash": "2448da99b8681237",
+    "head": [
+      "setResolution([1000,1000,false])",
+      "setVirtualCanvas([0,0,1000,1000])",
+      "setResolution([1000,1000,false])",
+      "clear([\"#FFFFFF\"])",
+      "setVirtualCanvas([0,0,1000,1000])",
+      "setVirtualCanvas([1,1,10,15])",
+      "setResolution([20,30,true])",
+      "clear([\"#FFFFFF\"])",
+      "writePixel([1,29,2263842,true])",
+      "writePixel([3,29,16711680,true])",
+      "writePixel([5,29,255,true])",
+      "writePixel([7,29,16776960,true])",
+      "writePixel([9,29,9055202,true])",
+      "writePixel([11,29,65280,true])",
+      "writePixel([13,29,16755200,true])",
+      "writePixel([15,29,45311,true])",
+      "writePixel([17,29,9849600,true])",
+      "writePixel([19,29,15602313,true])"
+    ],
+    "tail": []
+  }
+}

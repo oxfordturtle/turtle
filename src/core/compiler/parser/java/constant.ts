@@ -22,12 +22,16 @@ export default (lexemes: Lexemes, routine: Routine): Constant => {
 
   const name = identifier(lexemes, routine);
 
+  // deno-coverage-ignore-start -- unreachable: program.ts guarantees the final
+  // lexeme is "}", and identifier() has just consumed a real identifier (it
+  // rejects "}"), so at least that final "}" is still ahead of us here
   if (!lexemes.get()) {
     throw new CompilerError(
       `Constant ${name} must be assigned a value.`,
       lexemes.get(-1),
     );
   }
+  // deno-coverage-ignore-stop
   if (lexemes.get()?.content !== "=") {
     throw new CompilerError(
       `Constant ${name} must be assigned a value.`,

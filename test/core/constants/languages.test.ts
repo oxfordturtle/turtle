@@ -1,5 +1,5 @@
 import { describe, it } from "@std/testing/bdd";
-import { assertEquals } from "@std/assert";
+import { assert, assertEquals } from "@std/assert";
 import { extension, languages, trueValue } from "@/core/constants.ts";
 
 describe("languages", () => {
@@ -31,7 +31,7 @@ describe("languages", () => {
   it("gives every language a Boolean true value of 1 or -1", () => {
     for (const language of languages) {
       const value = trueValue[language];
-      assertEquals(value === 1 || value === -1, true, `${language}: ${value}`);
+      assert(value === 1 || value === -1, `${language}: ${value}`);
     }
   });
 });

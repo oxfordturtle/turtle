@@ -79,8 +79,13 @@ const expression = (exp: Expression, language: Language): string => {
     case "listLiteral":
       return `[${exp.elements.map((x) => expression(x, language)).join(", ")}]`;
 
+    // deno-coverage-ignore-start -- unreachable: the switch above is
+    // exhaustive over Expression's variants, as "satisfies never" proves at
+    // compile time, so no parsed program can produce a node that reaches
+    // this arm.
     default:
       return exp satisfies never;
+    // deno-coverage-ignore-stop
   }
 };
 

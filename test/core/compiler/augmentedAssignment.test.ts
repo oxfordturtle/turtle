@@ -1,13 +1,6 @@
 import { describe, it } from "@std/testing/bdd";
 import { assertEquals, assertThrows } from "@std/assert";
-import { encode, lexify, parse, tokenize } from "@/core/compiler.ts";
-import { defaultMachineOptions, run } from "@/core/machine.ts";
-import {
-  fakeCanvas,
-  fakeFiles,
-  fakeOutput,
-  fakeTimers,
-} from "../machine/_fakes.ts";
+import { runSourceToText } from "../machine/lib/helpers.ts";
 
 /**
  * "x += 1" and "x -= 1", which only Python has (the tokenizer's operator
@@ -26,23 +19,9 @@ import {
  * expression naming the index twice. The last group below pins that.
  */
 describe("compiler: Python augmented assignment", () => {
-  const runPython = (code: string): string => {
-    const pcode = encode(
-      parse(lexify(tokenize(code, "Python"), "Python"), "Python"),
-    );
-    const output = fakeOutput();
-    const timers = fakeTimers();
-    run(
-      pcode,
-      defaultMachineOptions,
-      timers,
-      output,
-      fakeCanvas(),
-      fakeFiles(),
-    );
-    timers.flush(); // console writes are queued, not immediate
-    return output.outputText.replace(/\n$/, "");
-  };
+  /** This file's assertions never care about the trailing newline. */
+  const runPython = (code: string): string =>
+    runSourceToText("Python", code).replace(/\n$/, "");
 
   /** "1 2 3" for a three-element integer list, so a stray write shows up. */
   const printInts = (name: string, length: number): string =>

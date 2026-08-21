@@ -1,13 +1,10 @@
 import { describe, it } from "@std/testing/bdd";
 import { assertEquals, assertThrows } from "@std/assert";
-import { encode, lexify, parse, tokenize } from "@/core/compiler.ts";
-import { defaultMachineOptions, run } from "@/core/machine.ts";
+import { lexify, parse, tokenize } from "@/core/compiler.ts";
 import {
-  fakeCanvas,
-  fakeFiles,
-  fakeOutput,
-  fakeTimers,
-} from "../machine/_fakes.ts";
+  assertCompilerError,
+  runSourceToText,
+} from "../machine/lib/helpers.ts";
 
 /**
  * Python's membership tests, "x in y" and "x not in y". "in" used to exist only
@@ -24,24 +21,6 @@ import {
  * opinions about ("'' in s" is true, "not in" is the exact negation).
  */
 describe("compiler: Python membership tests", () => {
-  const runPython = (code: string): string => {
-    const pcode = encode(
-      parse(lexify(tokenize(code, "Python"), "Python"), "Python"),
-    );
-    const output = fakeOutput();
-    const timers = fakeTimers();
-    run(
-      pcode,
-      defaultMachineOptions,
-      timers,
-      output,
-      fakeCanvas(),
-      fakeFiles(),
-    );
-    timers.flush(); // console writes are queued, not immediate
-    return output.outputText;
-  };
-
   /**
    * Evaluates a boolean expression and reports it as "T"/"F". Routed
    * through an "if" rather than printed directly because the machine has no
@@ -49,17 +28,10 @@ describe("compiler: Python membership tests", () => {
    * actually get used.
    */
   const truthOf = (expression: string, setup = ""): string =>
-    runPython(
+    runSourceToText(
+      "Python",
       `${setup}\nif ${expression}:\n    print('T',newline)\nelse:\n    print('F',newline)`,
     ).replace(/\s+$/, "");
-
-  const assertCompilerError = (code: string, message: string) => {
-    assertThrows(
-      () => encode(parse(lexify(tokenize(code, "Python"), "Python"), "Python")),
-      Error,
-      message,
-    );
-  };
 
   describe("against a list literal", () => {
     it("finds a string that is present", () => {
@@ -92,7 +64,8 @@ describe("compiler: Python membership tests", () => {
       // a chain-of-comparisons encoding would re-evaluate it per element,
       // running the side effect three times
       assertEquals(
-        runPython(
+        runSourceToText(
+          "Python",
           "n=0\ndef bump() -> int:\n    global n\n    n=n+1\n    return 9\nif bump() in [1,2,3]:\n    pass\nprint(str(n),newline)",
         ).replace(/\s+$/, ""),
         "1",
@@ -163,20 +136,20 @@ describe("compiler: Python membership tests", () => {
   describe("interaction with the rest of the grammar", () => {
     it("leaves 'for x in range(...)' parsing as a loop, not a membership test", () => {
       assertEquals(
-        runPython("for i in range(3):\n    print(str(i),newline)").replace(
-          /\s+$/,
-          "",
-        ),
+        runSourceToText(
+          "Python",
+          "for i in range(3):\n    print(str(i),newline)",
+        ).replace(/\s+$/, ""),
         "0 \n1 \n2",
       );
     });
 
     it("leaves 'for x in <list>' parsing as a loop", () => {
       assertEquals(
-        runPython("n=[4,5]\nfor e in n:\n    print(str(e),newline)").replace(
-          /\s+$/,
-          "",
-        ),
+        runSourceToText(
+          "Python",
+          "n=[4,5]\nfor e in n:\n    print(str(e),newline)",
+        ).replace(/\s+$/, ""),
         "4 \n5",
       );
     });
@@ -201,43 +174,42 @@ describe("compiler: Python membership tests", () => {
   describe("errors", () => {
     it("rejects a right operand that is neither list nor string", () => {
       assertCompilerError(
+        "Python",
         "x='a' in 5",
         "must be followed by a list or a string",
       );
     });
 
     it("rejects an empty list literal, naming the reason", () => {
-      assertCompilerError("x=1 in []", "is empty, so nothing can be in it");
+      assertCompilerError(
+        "Python",
+        "x=1 in []",
+        "is empty, so nothing can be in it",
+      );
     });
 
     it("rejects a list of lists", () => {
       assertCompilerError(
+        "Python",
         "w=[[1,2],[3,4]]\nx=1 in w",
         "cannot search a list of lists",
       );
     });
 
     it("rejects an integer looked for in a list of strings", () => {
-      assertCompilerError("x=1 in ['a','b']", "Type error");
+      assertCompilerError("Python", "x=1 in ['a','b']", "Type error");
     });
 
     it("rejects a string looked for in a list of integers", () => {
-      assertCompilerError("x='a' in [1,2]", "Type error");
+      assertCompilerError("Python", "x='a' in [1,2]", "Type error");
     });
 
     it("rejects an integer looked for in a string", () => {
-      assertCompilerError("x=1 in 'abc'", "Type error");
+      assertCompilerError("Python", "x=1 in 'abc'", "Type error");
     });
 
     it("reports the error at the 'in', not at the operand before it", () => {
-      assertThrows(
-        () =>
-          encode(
-            parse(lexify(tokenize("x='a' in 5", "Python"), "Python"), "Python"),
-          ),
-        Error,
-        '("in", line 1',
-      );
+      assertCompilerError("Python", "x='a' in 5", '("in", line 1');
     });
   });
 
