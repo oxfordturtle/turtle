@@ -9,7 +9,7 @@ import { html } from "@merivale/womble";
 import router from "@/pages/router.ts";
 import parseRequest from "@/pages/router/parseRequest.ts";
 import errorPage from "@/pages/error.ts";
-import { jsonResponse } from "@/pages/utils/response.ts";
+import { fileResponse, jsonResponse } from "@/pages/utils/response.ts";
 import { safely, safelyOptional, withLogging } from "@/pages/utils/tools.ts";
 import { code } from "@/pages/documentation/reference/notes/lib.ts";
 import { renderRoute } from "./lib/render.ts";
@@ -41,8 +41,18 @@ const capturingLog = <T>(cb: () => T): { result: T; logged: unknown[] } => {
 };
 
 describe("the asset routes", () => {
-  it("serves a stylesheet with its type, name and exact bytes", async () => {
-    const response = await router(request("/build/screen.css"));
+  // The charset-bearing media types belong to assets/build/, which holds build
+  // output and is not in the repo - so serving the real screen.css through the
+  // router would pass here and 404 on a fresh clone or on CI, where
+  // coverage:check runs before build. fileResponse derives the type, charset
+  // and filename from the path alone, so a fixture pins them without a file on
+  // disk; the two tests below drive the same function through the router with
+  // assets that are committed.
+  it("names a stylesheet with its type, charset and filename", async () => {
+    const response = await fileResponse(
+      "body { margin: 0 }",
+      "./assets/build/screen.css",
+    );
     assertEquals(response.status, 200);
     assertEquals(
       response.headers.get("content-type"),
@@ -52,10 +62,7 @@ describe("the asset routes", () => {
       response.headers.get("content-disposition"),
       "inline; filename=screen.css",
     );
-    assertEquals(
-      await response.text(),
-      await Deno.readTextFile("assets/build/screen.css"),
-    );
+    assertEquals(await response.text(), "body { margin: 0 }");
   });
 
   it("serves an image with its media type", async () => {
