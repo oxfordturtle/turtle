@@ -34,7 +34,6 @@ const exampleGroup = (
 });
 
 export const exampleGroups = [
-  exampleGroup(0, "CSAC", "computer science across the curriculum"),
   exampleGroup(1, "Drawing", "drawing and counting loops"),
   exampleGroup(2, "Procedures", "procedures, functions and recursion"),
   exampleGroup(3, "Further", "further commands and structures"),
