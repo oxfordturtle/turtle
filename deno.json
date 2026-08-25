@@ -32,7 +32,7 @@
     "path": "https://deno.land/std@0.215.0/path/mod.ts",
     "esbuild": "npm:esbuild@0.24.0",
     "jsdom": "npm:jsdom@25",
-    "playwright-core": "npm:playwright-core@1.49",
+    "playwright-core": "npm:playwright-core@1.62.1",
     "@fortawesome/fontawesome-free/": "npm:/@fortawesome/fontawesome-free@6.7.2/"
   },
   "compilerOptions": {
