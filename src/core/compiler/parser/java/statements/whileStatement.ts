@@ -22,12 +22,16 @@ const parseWhileStatement = (
   }
   lexemes.next();
 
+  // deno-coverage-ignore-start -- unreachable: the last consumed lexeme is
+  // "(", which can never be the program's final lexeme (program.ts guarantees
+  // that's "}"), so the stream cannot be dry here
   if (!lexemes.get()) {
     throw new CompilerError(
       '"while (" must be followed by a Boolean expression.',
       lexemes.get(-1),
     );
   }
+  // deno-coverage-ignore-stop
   let condition = parseExpression(lexemes, routine);
   condition = typeCheck(routine.language, condition, "boolean");
 

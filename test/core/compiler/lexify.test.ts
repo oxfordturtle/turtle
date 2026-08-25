@@ -1,7 +1,13 @@
 import { describe, it } from "@std/testing/bdd";
-import { assertEquals, assertExists, assertThrows } from "@std/assert";
+import {
+  assert,
+  assertEquals,
+  assertExists,
+  assertFalse,
+  assertThrows,
+} from "@std/assert";
 import { lexify, tokenize } from "@/core/compiler.ts";
-import { LANGUAGES } from "./_languages.ts";
+import { LANGUAGES } from "./lib/languages.ts";
 
 describe("lexify", () => {
   it("returns no lexemes for empty input", () => {
@@ -10,16 +16,13 @@ describe("lexify", () => {
 
   it("skips spaces tokens", () => {
     const lexemes = lexify(tokenize("x   y", "Python"), "Python");
-    assertEquals(
-      lexemes.every((l) => l.content !== "   "),
-      true,
-    );
+    assert(lexemes.every((l) => l.content !== "   "));
   });
 
   for (const language of LANGUAGES) {
     it(`produces lexemes with a type and line for every token in ${language}`, () => {
       const lexemes = lexify(tokenize("x = 1", language), language);
-      assertEquals(lexemes.length > 0, true);
+      assert(lexemes.length > 0);
       lexemes.forEach((lex) => {
         assertExists(lex.type);
         assertEquals(typeof lex.line, "number");
@@ -31,18 +34,12 @@ describe("lexify", () => {
     for (const language of ["BASIC", "Python", "TypeScript"] as const) {
       it(`pushes newline lexemes between statements in ${language}`, () => {
         const lexemes = lexify(tokenize("x = 1\ny = 2", language), language);
-        assertEquals(
-          lexemes.some((l) => l.type === "newline"),
-          true,
-        );
+        assert(lexemes.some((l) => l.type === "newline"));
       });
 
       it(`does not push a leading newline lexeme for blank lines at the start of a ${language} program`, () => {
         const lexemes = lexify(tokenize("\n\nx = 1", language), language);
-        assertEquals(
-          lexemes.some((l) => l.type === "newline"),
-          false,
-        );
+        assertFalse(lexemes.some((l) => l.type === "newline"));
       });
 
       it(`collapses consecutive blank lines into a single newline lexeme in ${language}`, () => {
@@ -58,10 +55,7 @@ describe("lexify", () => {
     for (const language of ["C", "Java", "Pascal"] as const) {
       it(`does not treat line breaks as significant in ${language}`, () => {
         const lexemes = lexify(tokenize("x = 1;\ny = 2;", language), language);
-        assertEquals(
-          lexemes.some((l) => l.type === "newline"),
-          false,
-        );
+        assertFalse(lexemes.some((l) => l.type === "newline"));
       });
     }
   });
@@ -69,10 +63,7 @@ describe("lexify", () => {
   describe("Python indentation", () => {
     it("pushes an indent lexeme when indentation increases", () => {
       const lexemes = lexify(tokenize("if x:\n    y = 1", "Python"), "Python");
-      assertEquals(
-        lexemes.some((l) => l.type === "indent"),
-        true,
-      );
+      assert(lexemes.some((l) => l.type === "indent"));
     });
 
     it("pushes a dedent lexeme when indentation decreases", () => {
@@ -80,10 +71,7 @@ describe("lexify", () => {
         tokenize("if x:\n    y = 1\nz = 2", "Python"),
         "Python",
       );
-      assertEquals(
-        lexemes.some((l) => l.type === "dedent"),
-        true,
-      );
+      assert(lexemes.some((l) => l.type === "dedent"));
     });
 
     it("pushes multiple dedent lexemes when indentation drops across several levels", () => {
@@ -140,7 +128,7 @@ describe("lexify", () => {
         const lexemes = lexify(tokenize("// hi\nx = 1;", language), language);
         const commentIndex = lexemes.findIndex((l) => l.type === "comment");
         assertExists(lexemes[commentIndex]);
-        assertEquals(lexemes[commentIndex + 1]?.type === "newline", false);
+        assertFalse(lexemes[commentIndex + 1]?.type === "newline");
       });
     }
 
@@ -228,10 +216,7 @@ describe("lexify", () => {
     for (const language of LANGUAGES) {
       it(`produces a delimiter lexeme in ${language}`, () => {
         const lexemes = lexify(tokenize("f(x)", language), language);
-        assertEquals(
-          lexemes.some((l) => l.type === "delimiter"),
-          true,
-        );
+        assert(lexemes.some((l) => l.type === "delimiter"));
       });
     }
   });

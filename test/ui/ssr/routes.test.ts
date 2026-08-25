@@ -1,4 +1,9 @@
-import { assertEquals, assertStringIncludes } from "@std/assert";
+import {
+  assert,
+  assertEquals,
+  assertFalse,
+  assertStringIncludes,
+} from "@std/assert";
 import { describe, it } from "@std/testing/bdd";
 import {
   customTags,
@@ -8,7 +13,7 @@ import {
   ROUTES,
   settingAttributes,
   settingsNamed,
-} from "./_render.ts";
+} from "./lib/render.ts";
 import { isSettingName } from "@/islands/settings.ts";
 
 // The failure-mode sweep: one pass over every route, asserting the things that
@@ -35,9 +40,8 @@ describe("every route", () => {
       // should be there can pass against a page that lost half of itself.
       it("expands every island", async () => {
         const { markup } = await renderRoute(route.path);
-        assertEquals(
+        assertFalse(
           markup.includes(FAILED_TO_RENDER),
-          false,
           `an island failed to render: ${markup
             .slice(markup.indexOf(FAILED_TO_RENDER) - 40)
             .slice(0, 120)}`,
@@ -102,7 +106,7 @@ describe("the settings controls", () => {
     // reach a user through a route anyway.
     const written = Array.from(await settingAttributes()).filter(isSettingName);
     assertEquals(written.filter((name) => !rendered.has(name)).sort(), []);
-    assertEquals(written.length > 0, true);
+    assert(written.length > 0);
   });
 });
 

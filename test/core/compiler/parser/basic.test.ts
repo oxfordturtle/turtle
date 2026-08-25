@@ -1,5 +1,11 @@
 import { describe, it } from "@std/testing/bdd";
-import { assertEquals, assertExists, assertThrows } from "@std/assert";
+import {
+  assert,
+  assertEquals,
+  assertExists,
+  assertFalse,
+  assertThrows,
+} from "@std/assert";
 import type {
   ForStatement,
   IfStatement,
@@ -9,7 +15,8 @@ import type {
   VariableAssignment,
   WhileStatement,
 } from "@/core/compiler.ts";
-import { bodyStatements, parseProgram } from "./_programs.ts";
+import { assertCompilerError } from "../../machine/lib/helpers.ts";
+import { bodyStatements, parseProgram } from "./lib/programs.ts";
 
 /**
  * BASIC-specific parser tests: syntax that's too divergent for the shared
@@ -118,10 +125,7 @@ describe("parse: BASIC", () => {
       assertEquals(program.subroutines.length, 1);
       const sub = program.subroutines[0];
       assertEquals(sub.name, "PROCgo");
-      assertEquals(
-        sub.variables.some((v) => v.isParameter),
-        true,
-      );
+      assert(sub.variables.some((v) => v.isParameter));
     });
 
     it("parses an FN function with a return statement", () => {
@@ -147,10 +151,7 @@ describe("parse: BASIC", () => {
         parameters.map((v) => v.name),
         ["a%", "b%"],
       );
-      assertEquals(
-        parameters.every((v) => v.isReferenceParameter),
-        false,
-      );
+      assertFalse(parameters.every((v) => v.isReferenceParameter));
     });
 
     it("parses a RETURN (reference) parameter", () => {
@@ -160,8 +161,8 @@ describe("parse: BASIC", () => {
       );
       const parameter = program.subroutines[0].variables[0];
       assertEquals(parameter.name, "n%");
-      assertEquals(parameter.isParameter, true);
-      assertEquals(parameter.isReferenceParameter, true);
+      assert(parameter.isParameter);
+      assert(parameter.isReferenceParameter);
     });
 
     it("parses an array parameter (empty brackets after the name)", () => {
@@ -171,7 +172,7 @@ describe("parse: BASIC", () => {
       );
       const parameter = program.subroutines[0].variables[0];
       assertEquals(parameter.name, "arr%");
-      assertEquals(parameter.isParameter, true);
+      assert(parameter.isParameter);
       // dummy dimensions - the real ones come from the argument at call time
       assertEquals(parameter.arrayDimensions, [[0, 0]]);
     });
@@ -980,6 +981,177 @@ describe("parse: BASIC", () => {
         () => parseProgram("BASIC", "x% = FNfoo\nEND\nDEF FNfoo\n="),
         Error,
         "Expression expected.",
+      );
+    });
+  });
+
+  describe("abrupt end of input", () => {
+    // statements in the main program always have the program's "END" lexeme
+    // ahead of them, so the parser can only genuinely run out of lexemes
+    // inside a function subroutine, whose body ends at its "=<expression>"
+    // line: statements chained onto that line with colons can be cut off
+    // mid-construct by the end of the file. Each test here truncates the
+    // file at a different point of a different construct.
+    const truncated = (fragment: string): string =>
+      `x% = FNfoo\nEND\nDEF FNfoo\n=1 : ${fragment}`;
+
+    it('throws if the file ends right after "FOR"', () => {
+      assertCompilerError(
+        "BASIC",
+        truncated("FOR"),
+        '"FOR" must be followed by an integer variable.',
+      );
+    });
+
+    it('throws if the file ends after a "FOR" loop initialisation', () => {
+      assertCompilerError(
+        "BASIC",
+        truncated("FOR i% = 1"),
+        '"FOR" loop initialisation must be followed by "TO".',
+      );
+    });
+
+    it('throws if the file ends right after "TO"', () => {
+      assertCompilerError(
+        "BASIC",
+        truncated("FOR i% = 1 TO"),
+        '"TO" must be followed by an integer (or integer constant).',
+      );
+    });
+
+    it('throws if the file ends right after "STEP"', () => {
+      assertCompilerError(
+        "BASIC",
+        truncated("FOR i% = 1 TO 3 STEP"),
+        '"STEP" instruction must be followed by an integer value.',
+      );
+    });
+
+    it('throws if the file ends after a complete "FOR" loop header', () => {
+      assertCompilerError(
+        "BASIC",
+        truncated("FOR i% = 1 TO 3"),
+        'No statements found after "FOR" loop initialisation.',
+      );
+    });
+
+    it('throws if the file ends right after "IF"', () => {
+      assertCompilerError(
+        "BASIC",
+        truncated("IF"),
+        '"IF" must be followed by a boolean expression.',
+      );
+    });
+
+    it('throws if the file ends after an "IF" condition', () => {
+      // same message as the "IF TRUE x% = 1" test above, but this trips the
+      // end-of-input guard rather than the wrong-lexeme one
+      assertCompilerError(
+        "BASIC",
+        truncated("IF TRUE"),
+        '"IF ..." must be followed by "THEN".',
+      );
+    });
+
+    it('throws if the file ends right after "THEN"', () => {
+      assertCompilerError(
+        "BASIC",
+        truncated("IF TRUE THEN"),
+        'No statements found after "IF ... THEN".',
+      );
+    });
+
+    it('throws if the file ends right after "ELSE"', () => {
+      assertCompilerError(
+        "BASIC",
+        truncated("IF TRUE THEN y% = 1 ELSE"),
+        'No statements found after "ELSE".',
+      );
+    });
+
+    it('throws if the file ends on the line break after "THEN"', () => {
+      // the header check passes (a newline lexeme is still there), so this
+      // one gets all the way to the block parser before running dry
+      assertCompilerError(
+        "BASIC",
+        truncated("IF TRUE THEN\n"),
+        'No commands found after "IF".',
+      );
+    });
+
+    it('throws if the file ends right after "REPEAT"', () => {
+      assertCompilerError(
+        "BASIC",
+        truncated("REPEAT"),
+        'No statements found after "REPEAT".',
+      );
+    });
+
+    it('throws if the file ends right after "UNTIL"', () => {
+      assertCompilerError(
+        "BASIC",
+        truncated("REPEAT y% = 1 : UNTIL"),
+        '"UNTIL" must be followed by a boolean expression.',
+      );
+    });
+
+    it('throws if the file ends right after "WHILE"', () => {
+      assertCompilerError(
+        "BASIC",
+        truncated("WHILE"),
+        '"WHILE" must be followed by a boolean expression.',
+      );
+    });
+
+    it('throws if the file ends after a "WHILE" condition', () => {
+      assertCompilerError(
+        "BASIC",
+        truncated("WHILE TRUE"),
+        'No commands found after "WHILE ... DO".',
+      );
+    });
+
+    it("throws if the file ends inside array indexes", () => {
+      assertCompilerError(
+        "BASIC",
+        "DIM a%(2)\nx% = FNfoo\nEND\nDEF FNfoo\n=1 : a%(1",
+        'Closing bracket ")" needed after array indexes.',
+      );
+    });
+
+    it("throws if the file ends right after a variable", () => {
+      // same message as the "x% + 1" test above, but this trips the
+      // end-of-input guard rather than the wrong-lexeme one
+      assertCompilerError(
+        "BASIC",
+        truncated("y%"),
+        'Variable must be followed by assignment operator "=".',
+      );
+    });
+
+    it('throws if the file ends right after an assignment "="', () => {
+      assertCompilerError(
+        "BASIC",
+        truncated("y% ="),
+        'Variable "y%" must be assigned a value.',
+      );
+    });
+
+    it('throws if the file ends after a "DIM" variable name', () => {
+      // same message as the "DIM arr%" test above, but this trips the
+      // end-of-input guard rather than the wrong-lexeme one
+      assertCompilerError(
+        "BASIC",
+        truncated("DIM a%"),
+        '"DIM" variable identifier must be followed by dimensions in brackets.',
+      );
+    });
+
+    it('throws if the file ends inside a "DIM" specification', () => {
+      assertCompilerError(
+        "BASIC",
+        truncated("DIM a%("),
+        "Expected array size specification.",
       );
     });
   });

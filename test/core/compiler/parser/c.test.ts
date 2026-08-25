@@ -1,5 +1,5 @@
 import { describe, it } from "@std/testing/bdd";
-import { assertEquals, assertExists, assertThrows } from "@std/assert";
+import { assert, assertEquals, assertExists, assertThrows } from "@std/assert";
 import type {
   Expression,
   ForStatement,
@@ -9,7 +9,7 @@ import type {
   ReturnStatement,
   VariableAssignment,
 } from "@/core/compiler.ts";
-import { bodyStatements, parseProgram } from "./_programs.ts";
+import { bodyStatements, parseProgram } from "./lib/programs.ts";
 
 /**
  * C-specific parser tests: syntax that's too divergent for the shared
@@ -197,7 +197,7 @@ describe("parse: C", () => {
       const sub = program.subroutines[0];
       const variable = sub.variables.find((v) => v.name === "p");
       assertExists(variable);
-      assertEquals(variable.isPointer, true);
+      assert(variable.isPointer);
       assertEquals(statements[0].statementType, "passStatement");
     });
 
@@ -373,7 +373,7 @@ describe("parse: C", () => {
       );
       const sub = program.subroutines.find((s) => s.name === "addOne");
       assertExists(sub);
-      assertEquals(sub.hasReturnStatement, true);
+      assert(sub.hasReturnStatement);
       const result = sub.variables.find((v) => v.name === "!result");
       assertExists(result);
       assertEquals(result.type, "integer");

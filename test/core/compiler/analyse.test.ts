@@ -1,5 +1,5 @@
 import { describe, it } from "@std/testing/bdd";
-import { assertEquals } from "@std/assert";
+import { assertEquals, assertFalse } from "@std/assert";
 import {
   analyse,
   lexify,
@@ -8,8 +8,8 @@ import {
   type UsageCategory,
 } from "@/core/compiler.ts";
 import type { Language } from "@/core/constants.ts";
-import { LANGUAGES } from "./_languages.ts";
-import { wrapProgram } from "./parser/_programs.ts";
+import { LANGUAGES } from "./lib/languages.ts";
+import { wrapProgram } from "./parser/lib/programs.ts";
 
 /**
  * `analyse()` is a pure lexeme-usage report: for every command/keyword
@@ -193,9 +193,6 @@ describe("analyse", () => {
     });
     // PROCfoo itself never appears as a "Subroutine calls" expression,
     // even though it's both defined and called.
-    assertEquals(
-      category?.expressions.some((e) => e.name === "PROCfoo"),
-      false,
-    );
+    assertFalse(category?.expressions.some((e) => e.name === "PROCfoo"));
   });
 });

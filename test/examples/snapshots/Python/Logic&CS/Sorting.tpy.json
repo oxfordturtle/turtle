@@ -1,0 +1,39 @@
+{
+  "schemaVersion": 1,
+  "runMode": "bounded",
+  "pcode": {
+    "lines": 182,
+    "hash": "e5582efe653e60e2"
+  },
+  "hitIterationCap": false,
+  "consoleText": "4 sorting methods will be compared, each of them being used to\nsort randomised lists of 100 items (10 times), while keeping\ntrack of the numbers of comparisons and swaps required.\nIf sorting fails, the program will halt and show the list.\n\nBubblesort:      8613 comparisons  2424 swaps\nSelectionsort:   4950 comparisons    92 swaps\nInsertionsort:   2449 comparisons  2350 swaps\nQuicksort:        691 comparisons   336 swaps\n\nBubblesort:      7821 comparisons  2099 swaps\nSelectionsort:   4950 comparisons    97 swaps\nInsertionsort:   2354 comparisons  2255 swaps\nQuicksort:        724 comparisons   476 swaps\n\nBubblesort:      8118 comparisons  2419 swaps\nSelectionsort:   4950 comparisons    99 swaps\nInsertionsort:   2277 comparisons  2178 swaps\nQuicksort:        603 comparisons   381 swaps\n\nBubblesort:      9801 comparisons  2614 swaps\nSelectionsort:   4950 comparisons    97 swaps\nInsertionsort:   2833 comparisons  2734 swaps\nQuicksort:        592 comparisons   346 swaps\n\nBubblesort:      9405 comparisons  2184 swaps\nSelectionsort:   4950 comparisons    97 swaps\nInsertionsort:   2709 comparisons  2610 swaps\nQuicksort:        676 comparisons   376 swaps\n\nBubblesort:      8910 comparisons  2660 swaps\nSelectionsort:   4950 comparisons    96 swaps\nInsertionsort:   2471 comparisons  2372 swaps\nQuicksort:        676 comparisons   361 swaps\n\nBubblesort:      8910 comparisons  1989 swaps\nSelectionsort:   4950 comparisons    97 swaps\nInsertionsort:   2493 comparisons  2394 swaps\nQuicksort:        649 comparisons   455 swaps\n\nBubblesort:      8316 comparisons  2217 swaps\nSelectionsort:   4950 comparisons    96 swaps\nInsertionsort:   2358 comparisons  2259 swaps\nQuicksort:        653 comparisons   272 swaps\n\nBubblesort:      8019 comparisons  2570 swaps\nSelectionsort:   4950 comparisons    97 swaps\nInsertionsort:   2303 comparisons  2204 swaps\nQuicksort:        694 comparisons   366 swaps\n\nBubblesort:      8910 comparisons  2123 swaps\nSelectionsort:   4950 comparisons    93 swaps\nInsertionsort:   2610 comparisons  2511 swaps\nQuicksort:        629 comparisons   437 swaps\n\nAverages from sorting 100 items, over 10 trials\n\n               COMPARISONS    SWAPS\nBubblesort:       8682.3     2329.9\nSelectionsort:    4950.0       96.1\nInsertionsort:    2485.7     2386.7\nQuicksort:         658.7      380.6\n",
+  "outputText": "Averages from sorting 100 items, over 10 trials\n\n               COMPARISONS    SWAPS\nBubblesort:       8682.3     2329.9\nSelectionsort:    4950.0       96.1\nInsertionsort:    2485.7     2386.7\nQuicksort:         658.7      380.6\n",
+  "runtimeErrors": [],
+  "turtle": {
+    "x": 500,
+    "y": 500,
+    "d": 0,
+    "a": 360,
+    "t": 2,
+    "c": "#000"
+  },
+  "canvas": {
+    "callCount": 6,
+    "byMethod": {
+      "setResolution": 2,
+      "setVirtualCanvas": 2,
+      "clear": 1,
+      "setCursor": 1
+    },
+    "logHash": "d982706e7ecfaa0e",
+    "head": [
+      "setResolution([1000,1000,false])",
+      "setVirtualCanvas([0,0,1000,1000])",
+      "setResolution([1000,1000,false])",
+      "clear([\"#FFFFFF\"])",
+      "setVirtualCanvas([0,0,1000,1000])",
+      "setCursor([1])"
+    ],
+    "tail": []
+  }
+}

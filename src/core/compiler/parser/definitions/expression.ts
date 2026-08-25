@@ -73,8 +73,14 @@ export const getType = (expression: Expression): Type => {
           : expression.variable.type
         : expression.variable.type;
 
+    // deno-coverage-ignore-start -- unreachable: the one place a
+    // NamedArgument is built (Python print's "sep"/"end" handling in
+    // common/arguments.ts) type-checks the raw argument *before* wrapping it,
+    // and nothing queries the wrapped expression's type afterwards - the
+    // encoder unwraps .expression directly without calling getType
     case "namedArgument":
       return getType(expression.expression);
+    // deno-coverage-ignore-stop
 
     case "listLiteral":
       // Type stays strictly scalar, so a list's own "type" is a placeholder;
@@ -116,21 +122,37 @@ export const getListElementKind = (
     case "listLiteral":
       return expression.listElementKind;
     case "variable": {
+      // deno-coverage-ignore-start -- unreachable: every caller either guards
+      // with isListExpression first (false for a non-list variable), or has
+      // already type-checked the expression against a pList parameter, so a
+      // non-list variable never arrives here
       if (!expression.variable.isList) {
         return undefined;
       }
+      // deno-coverage-ignore-stop
       if (expression.variable.isListOfLists) {
         if (expression.indexes.length === 0) {
           return expression.variable.listElementKind;
         }
         if (expression.indexes.length === 1) {
           return expression.variable.innerListElementKind;
+          // deno-coverage-ignore-start -- the fall-throughs below are
+          // unreachable: with two indexes a list-of-lists reference is a
+          // scalar, and with one index a flat-list reference is too;
+          // isListExpression is already false for both, so the guarded
+          // callers never pass them, and the unguarded ones (method receivers
+          // and matchesListElement arguments in common/arguments.ts and
+          // common/functionCall.ts) have had the receiver type-checked
+          // against a pList parameter first. (The zero-indexes arm of the
+          // final return is live and tested; it sits inside this range only
+          // because a branch cannot be excluded mid-expression.)
         }
         return undefined;
       }
       return expression.indexes.length === 0
         ? expression.variable.listElementKind
         : undefined;
+      // deno-coverage-ignore-stop
     }
     case "compound":
       return expression.listElementKind;

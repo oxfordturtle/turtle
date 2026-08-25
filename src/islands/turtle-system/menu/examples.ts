@@ -79,7 +79,11 @@ define("examples-menu", {
     // Both the group link and its "back" link run this: opening the group
     // that's already open closes it, which is what `back` means.
     openGroup: (attributes, { element }) => {
+      // deno-coverage-ignore-start -- the `?? ""` fallback is unreachable:
+      // both elements this action is bound to (the group's link and its
+      // "back" link) are written with a `data-group` in the render above.
       const id = element.dataset.group ?? "";
+      // deno-coverage-ignore-stop
       return { group: attributes.group === id ? "" : id };
     },
     openExample: (_attributes, { element }) => {

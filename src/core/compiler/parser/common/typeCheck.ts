@@ -188,9 +188,16 @@ export const pinListElementKind = (
   variable: Variable,
   value: Expression,
 ): void => {
+  // deno-coverage-ignore-start -- unreachable: both call sites
+  // (common/arguments.ts's matchesListElement handling and
+  // python/statements/variableAssignment.ts's indexed-write handling) only
+  // call this after establishing that the element kind is still unknown, so
+  // this guard - a defensive backstop for the "no-op if already known"
+  // promise in the doc comment above - can never fire
   if (variable.listElementKind !== undefined) {
     return;
   }
+  // deno-coverage-ignore-stop
   if (isListExpression(value)) {
     variable.isListOfLists = true;
     variable.listElementKind = "integer"; // opaque sublist pointers at the PCode level

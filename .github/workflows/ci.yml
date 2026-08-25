@@ -14,9 +14,21 @@ jobs:
         with:
           deno-version: v2.x
       - run: deno task fmt:check
-      - run: deno task test:core
-      - run: deno task test:ui
+      - run: deno task coverage:check
+  examples:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
       - run: deno task test:examples
+  browser:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
       - run: deno task build
-      - run: deno run -A npm:playwright-core@1.49 install --with-deps chromium
       - run: deno task test:ui:browser

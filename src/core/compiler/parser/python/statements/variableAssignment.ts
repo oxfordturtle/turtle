@@ -25,6 +25,14 @@ export default (
 ): VariableAssignment | PassStatement => {
   const indexes: Expression[] = [];
   if (lexemes.get()?.content === "[") {
+    // deno-coverage-ignore-start -- the isArray branch is unreachable: no
+    // Python variable is ever an array - python/type.ts returns empty
+    // arrayDimensions on every path (Python has no array declaration syntax;
+    // a "List[T]" hint sets isList instead) - so isArray() is always false
+    // here and indexed assignment always goes through the string/list
+    // branches below (the stop marker sits just inside the string branch
+    // because the never-run block's zero count is recorded on both of its
+    // brace lines)
     if (isArray(variable)) {
       lexemes.next();
       while (lexemes.get() && lexemes.get()?.content !== "]") {
@@ -44,6 +52,7 @@ export default (
       }
       lexemes.next();
     } else if (variable.type === "string") {
+      // deno-coverage-ignore-stop
       lexemes.next();
       let exp = parseExpression(lexemes, routine);
       exp = typeCheck(routine.language, exp, "integer");
@@ -88,6 +97,8 @@ export default (
     }
   }
 
+  // deno-coverage-ignore-start -- unreachable: as above, python/type.ts never
+  // yields arrayDimensions, so isArray() is always false for Python variables
   if (isArray(variable)) {
     const allowedIndexes =
       variable.type === "string"
@@ -100,6 +111,7 @@ export default (
       );
     }
   }
+  // deno-coverage-ignore-stop
 
   const assignmentLexeme = lexemes.get();
   if (!assignmentLexeme) {

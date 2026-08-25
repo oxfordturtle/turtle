@@ -1,7 +1,7 @@
 import { describe, it } from "@std/testing/bdd";
-import { assertEquals, assertExists, assertThrows } from "@std/assert";
+import { assert, assertEquals, assertExists, assertThrows } from "@std/assert";
 import type { VariableAssignment } from "@/core/compiler.ts";
-import { parseProgram } from "./_programs.ts";
+import { parseProgram } from "./lib/programs.ts";
 
 /**
  * Coverage for `src/core/compiler/parser/common/*.ts` and
@@ -625,9 +625,8 @@ describe("parse: shared parser plumbing (common/ and definitions/)", () => {
       );
       const sub = program.subroutines.find((s) => s.name === "PROCa");
       assertExists(sub);
-      assertEquals(
+      assert(
         sub.statements.some((s) => s.statementType === "variableAssignment"),
-        true,
       );
     });
 
@@ -764,8 +763,8 @@ describe("parse: shared parser plumbing (common/ and definitions/)", () => {
       const program = parseProgram("Python", "x = [[1,2],[3,4]]");
       const variable = program.variables.find((v) => v.name === "x");
       assertExists(variable);
-      assertEquals(variable.isList, true);
-      assertEquals(variable.isListOfLists, true);
+      assert(variable.isList);
+      assert(variable.isListOfLists);
       // the outer elements are opaque sublist pointers ("integer"); the
       // sublists' own scalar element kind is tracked separately
       assertEquals(variable.listElementKind, "integer");
@@ -974,9 +973,9 @@ describe("parse: shared parser plumbing (common/ and definitions/)", () => {
       );
       const thisgen = program.variables.find((v) => v.name === "thisgen");
       assertExists(thisgen);
-      assertEquals(thisgen.isListOfLists, true);
+      assert(thisgen.isListOfLists);
       assertEquals(thisgen.innerListElementKind, "integer");
-      assertEquals(thisgen.typeIsCertain, true);
+      assert(thisgen.typeIsCertain);
     });
 
     it("propagates list-of-lists-ness when assigned to a fresh variable", () => {
@@ -989,8 +988,8 @@ describe("parse: shared parser plumbing (common/ and definitions/)", () => {
       );
       const newlist = program.variables.find((v) => v.name === "newlist");
       assertExists(newlist);
-      assertEquals(newlist.isList, true);
-      assertEquals(newlist.isListOfLists, true);
+      assert(newlist.isList);
+      assert(newlist.isListOfLists);
       assertEquals(newlist.innerListElementKind, "integer");
     });
 
@@ -1062,7 +1061,7 @@ describe("parse: shared parser plumbing (common/ and definitions/)", () => {
       );
       const sub = program.variables.find((v) => v.name === "sub");
       assertExists(sub);
-      assertEquals(sub.isList, true);
+      assert(sub.isList);
       assertEquals(sub.listElementKind, "integer");
     });
 

@@ -59,9 +59,16 @@ export function array(lexemes: Lexemes, routine: Routine): Variable {
     const exp = parseExpression(lexemes, routine);
     typeCheck(routine.language, exp, "integer");
     const value = evaluate(exp, "BASIC", "array");
+    // deno-coverage-ignore-start -- unreachable: no BASIC expression both
+    // passes the "integer" type check above and evaluates to a string -
+    // character lexemes exist only in C/Java/Pascal, string literals,
+    // constants and concatenations fail the type check as 'string', and
+    // variables and function calls are rejected by evaluate itself. The
+    // check still narrows `value` to number for the comparison below.
     if (typeof value === "string") {
       throw new CompilerError("Array size must be an integer.", lexemes.get());
     }
+    // deno-coverage-ignore-stop
     if (value <= 0) {
       throw new CompilerError("Array size must be positive.", lexemes.get());
     }
@@ -81,12 +88,17 @@ export function array(lexemes: Lexemes, routine: Routine): Variable {
     }
   }
 
+  // deno-coverage-ignore-start -- unreachable: the loop above only exits when
+  // the current lexeme is ")" (a dry stream re-enters the loop, where the
+  // "Expected array size specification" check throws first), so the current
+  // lexeme is always ")" here
   if (!lexemes.get() || lexemes.get()?.content !== ")") {
     throw new CompilerError(
       "Closing bracket missing after array size specification.",
       lexemes.get(-1),
     );
   }
+  // deno-coverage-ignore-stop
   if (foo.arrayDimensions.length === 0) {
     throw new CompilerError(
       "Expected array size specification.",

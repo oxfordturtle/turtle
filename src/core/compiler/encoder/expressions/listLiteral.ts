@@ -21,6 +21,11 @@ export default (
   const pcode: number[][] = [[PCode.lihp, encodeSize(capacity)]];
 
   if (exp.elements.length > 0) {
+    // The "integer" fallback is unreachable: the parser (common/factor.ts)
+    // computes a definite element kind for every literal with at least one
+    // element; only the element-less "[]", which never enters this branch,
+    // leaves listElementKind undefined.
+    // deno-coverage-ignore
     const lp = encodeLp(exp.listElementKind ?? "integer");
     for (const element of exp.elements) {
       merge(pcode, [[PCode.dupl]]);

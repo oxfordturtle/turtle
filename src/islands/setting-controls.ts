@@ -121,7 +121,14 @@ define("setting-flag", {
     setting: "",
     label: "",
     group: "",
-    value: false,
+    /**
+     * The boolean this radio selects, spelled as a string. A `boolean`
+     * attribute is a *boolean attribute* - true whenever it is written at
+     * all - so `value="false"` would arrive as `true`, and both radios of a
+     * pair would stand for the same value. Compared as a string for the same
+     * reason `setting-radio` above does.
+     */
+    value: "",
     option: "",
   },
   sources: [settingsStore],
@@ -133,7 +140,7 @@ define("setting-flag", {
           type="radio"
           name="${group}"
           value="${option}"
-          .checked="${settings[setting as SettingName] === value}"
+          .checked="${String(settings[setting as SettingName]) === value}"
           on-change="chooseFlag"
         />
         ${label}
@@ -143,7 +150,10 @@ define("setting-flag", {
   actions: {
     chooseFlag: (attributes, { element }) => {
       if (!(element as HTMLInputElement).checked) return undefined;
-      setSetting(attributes.setting as SettingName, attributes.value);
+      setSetting(
+        attributes.setting as SettingName,
+        attributes.value === "true",
+      );
       return undefined;
     },
   },

@@ -211,6 +211,12 @@ const string = (
         let length = 1;
         let end = false;
         while (code[length] && !end) {
+          // deno-coverage-ignore-start -- unreachable: code was truncated to
+          // its first line at the top of this function, so it cannot contain
+          // a newline by the time this loop runs; a string cut off by a line
+          // break (or by the end of the code) falls through to the "!end"
+          // check after the loop instead - both cases are pinned in
+          // test/core/compiler/tokenize.test.ts
           if (code[length] === "\n") {
             return token(
               "unterminatedString",
@@ -219,6 +225,7 @@ const string = (
               character,
             );
           }
+          // deno-coverage-ignore-stop
           if (code[length] !== quote) {
             length += 1;
           } else {

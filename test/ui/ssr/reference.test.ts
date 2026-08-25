@@ -12,8 +12,8 @@ import {
 } from "@/core/constants.ts";
 import "@/islands/reference/colour-table.ts";
 import "@/islands/reference/command-table.ts";
-import { LANGUAGES } from "../../core/compiler/_languages.ts";
-import { renderIslands, renderRoute } from "./_render.ts";
+import { LANGUAGES } from "../../core/compiler/lib/languages.ts";
+import { renderIslands, renderRoute } from "./lib/render.ts";
 
 // The reference page's whole point is that it ships real markup rather than
 // five empty containers a script fills in on load (which is what it did before
@@ -85,7 +85,7 @@ describe("the reference page", () => {
 
 // The two tables that depend on the language, over all six of them. The
 // language is a setting, and the server always renders every page at their
-// defaults, so these seed the store around the render - see _render.ts.
+// defaults, so these seed the store around the render - see lib/render.ts.
 describe("the reference tables, by language", () => {
   for (const language of LANGUAGES) {
     it(`names every command in ${language}`, () => {

@@ -1,0 +1,49 @@
+{
+  "schemaVersion": 1,
+  "runMode": "bounded",
+  "pcode": {
+    "lines": 29,
+    "hash": "d06ccc963b633328"
+  },
+  "hitIterationCap": true,
+  "consoleText": "",
+  "outputText": "",
+  "runtimeErrors": [],
+  "turtle": {
+    "x": 500,
+    "y": 500,
+    "d": 0,
+    "a": 360,
+    "t": 10,
+    "c": "#ee1289"
+  },
+  "canvas": {
+    "callCount": 16,
+    "byMethod": {
+      "setResolution": 2,
+      "setVirtualCanvas": 2,
+      "clear": 1,
+      "drawArc": 11
+    },
+    "logHash": "36a544c88db3703d",
+    "head": [
+      "setResolution([1000,1000,false])",
+      "setVirtualCanvas([0,0,1000,1000])",
+      "setResolution([1000,1000,false])",
+      "clear([\"#FFFFFF\"])",
+      "setVirtualCanvas([0,0,1000,1000])",
+      "drawArc([{\"x\":50,\"y\":950,\"d\":0,\"a\":360,\"t\":2,\"c\":\"#228b22\"},50,50,true])",
+      "drawArc([{\"x\":150,\"y\":950,\"d\":0,\"a\":360,\"t\":2,\"c\":\"#ff0000\"},50,50,true])",
+      "drawArc([{\"x\":250,\"y\":950,\"d\":0,\"a\":360,\"t\":2,\"c\":\"#0000ff\"},50,50,true])",
+      "drawArc([{\"x\":350,\"y\":950,\"d\":0,\"a\":360,\"t\":2,\"c\":\"#ffff00\"},50,50,true])",
+      "drawArc([{\"x\":450,\"y\":950,\"d\":0,\"a\":360,\"t\":2,\"c\":\"#8a2be2\"},50,50,true])",
+      "drawArc([{\"x\":550,\"y\":950,\"d\":0,\"a\":360,\"t\":2,\"c\":\"#00ff00\"},50,50,true])",
+      "drawArc([{\"x\":650,\"y\":950,\"d\":0,\"a\":360,\"t\":2,\"c\":\"#ffaa00\"},50,50,true])",
+      "drawArc([{\"x\":750,\"y\":950,\"d\":0,\"a\":360,\"t\":2,\"c\":\"#00b0ff\"},50,50,true])",
+      "drawArc([{\"x\":850,\"y\":950,\"d\":0,\"a\":360,\"t\":2,\"c\":\"#964b00\"},50,50,true])",
+      "drawArc([{\"x\":950,\"y\":950,\"d\":0,\"a\":360,\"t\":2,\"c\":\"#ee1289\"},50,50,true])",
+      "drawArc([{\"x\":500,\"y\":500,\"d\":0,\"a\":360,\"t\":10,\"c\":\"#ee1289\"},2,2,true])"
+    ],
+    "tail": []
+  }
+}

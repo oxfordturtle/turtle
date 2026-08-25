@@ -1,4 +1,9 @@
-import { assertEquals, assertStringIncludes } from "@std/assert";
+import {
+  assert,
+  assertEquals,
+  assertFalse,
+  assertStringIncludes,
+} from "@std/assert";
 import { afterAll, beforeAll, describe, it } from "@std/testing/bdd";
 import type { Page } from "playwright-core";
 import {
@@ -7,11 +12,11 @@ import {
   pixel,
   startApp,
   writeProgram,
-} from "./_app.ts";
+} from "./lib/app.ts";
 
 /**
  * The acceptance pass a human would otherwise do by hand. Deliberately small:
- * four tests, each covering something no other layer can see.
+ * five tests, each covering something no other layer can see.
  *
  * The canvas and the console are the reason this layer exists at all. Both are
  * written imperatively by the adapters rather than rendered by any component,
@@ -31,32 +36,11 @@ afterAll(async () => {
 });
 
 describe("running a program", () => {
-  it("draws on the canvas and prints to the console", async () => {
-    await page().goto(app.url("/"));
-    await writeProgram(
-      page(),
-      "blank(green)\nforward(100)\nprint('hello from turtle')",
-    );
-    await page().locator('button[title="RUN"]').click();
-    await page().locator("canvas-tab pre.console:not(:empty)").waitFor();
-
-    // `blank(green)` fills the canvas with forestgreen, #228B22.
-    assertEquals(await pixel(page(), 10, 10), [34, 139, 34]);
-    // and the turtle draws a black line from the centre, upwards
-    assertEquals(await pixel(page(), 500, 450), [0, 0, 0]);
-    assertStringIncludes(
-      await page().locator("canvas-tab pre.console").innerText(),
-      "hello from turtle",
-    );
-    assertStringIncludes(
-      await page().locator("output-tab pre").innerText(),
-      "hello from turtle",
-    );
-  });
-});
-
-describe("an example program", () => {
-  it("opens, compiles, runs and halts", async () => {
+  // The whole journey in one pass: an example opens from the menu, compiles,
+  // runs and halts; then a program of our own draws and prints, and the pixels
+  // and the console text - the two things only a real browser has - are read
+  // back.
+  it("opens an example, runs it, halts it, then draws and prints", async () => {
     await page().goto(app.url("/"));
     await openSubmenu(page(), "Examples");
     // A bouncing-ball example, deliberately: it never finishes, so there is
@@ -70,9 +54,8 @@ describe("an example program", () => {
         (document.querySelector("system-filename input") as HTMLInputElement)
           ?.value === "BouncingBall",
     );
-    assertEquals(
+    assert(
       (await page().locator("system-editor textarea").inputValue()).length > 0,
-      true,
     );
 
     await page().locator('button[title="RUN"]').click();
@@ -81,29 +64,31 @@ describe("an example program", () => {
     await page().locator('button[title="HALT"]:not([disabled])').waitFor();
     await page().locator('button[title="HALT"]').click();
     await page().locator('button[title="HALT"][disabled]').waitFor();
-
     // and it drew something: the ball bounces around a white canvas.
     assertEquals(await pixel(page(), 0, 0), [255, 255, 255]);
+
+    // Now the pixels and the text, from a program whose output is exact.
+    await writeProgram(
+      page(),
+      "blank(green)\nforward(100)\nprint('hello from turtle')",
+    );
+    await page().locator('button[title="RUN"]').click();
+    await page()
+      .locator("canvas-tab pre.console", { hasText: "hello from turtle" })
+      .waitFor();
+
+    // `blank(green)` fills the canvas with forestgreen, #228B22.
+    assertEquals(await pixel(page(), 10, 10), [34, 139, 34]);
+    // and the turtle draws a black line from the centre, upwards
+    assertEquals(await pixel(page(), 500, 450), [0, 0, 0]);
+    assertStringIncludes(
+      await page().locator("output-tab pre").innerText(),
+      "hello from turtle",
+    );
   });
 });
 
 describe("a link into the system", () => {
-  it("opens the example named by ?x=", async () => {
-    // The only layer that can see this. `?x=` is read by the client entry
-    // (src/client/index.ts) as the page loads, so there is no interaction to
-    // simulate and nothing in the server markup to assert.
-    await page().goto(app.url("/?x=BouncingBall"));
-    await page().waitForFunction(
-      () =>
-        (document.querySelector("system-filename input") as HTMLInputElement)
-          ?.value === "BouncingBall",
-    );
-    assertEquals(
-      (await page().locator("system-editor textarea").inputValue()).length > 0,
-      true,
-    );
-  });
-
   // The seed's own test, and the only layer that can make it. `?l=` is decided
   // twice - the layout seeds the settings store from it on the server, and
   // `initialiseSettings` re-derives it in the browser - and what the seed buys
@@ -141,48 +126,46 @@ describe("a link into the system", () => {
   });
 });
 
-describe("the two page-wide sweeps", () => {
-  it("follows the language on the documentation prose", async () => {
-    await page().goto(app.url("/documentation/reference?tab=colours"));
-    await page().locator("colour-table td").first().waitFor();
-    assertStringIncludes(
-      await page().locator("colour-table td").first().innerText(),
-      "green",
-    );
-    await page().locator("language-select select").selectOption("BASIC");
+describe("the hidden class", () => {
+  // The jsdom layer asserts `.hidden` lands on the right elements; only a
+  // browser can say what the class *does*. This is the one `:visible` check
+  // for both page-wide sweeps: if `.hidden` were not `display: none`, the
+  // prose for every language would be on show at once.
+  it("really takes the other languages' prose off the screen", async () => {
+    await page().goto(app.url("/documentation/help"));
     await page()
-      .locator('colour-table td:text-matches("^GREEN")')
+      .locator("code[data-language].hidden")
       .first()
-      .waitFor();
+      .waitFor({ state: "attached" });
     const visible = await page()
       .locator("code[data-language]:visible")
       .evaluateAll((elements) =>
         elements.map((element) => element.getAttribute("data-language")),
       );
-    assertEquals(visible.length > 0, true);
-    assertEquals(
-      visible.every((language) => language === "BASIC"),
-      true,
+    assert(visible.length > 0);
+    assert(visible.every((language) => language === "Python"));
+    assertFalse(
+      await page().locator('code[data-language="BASIC"]').first().isVisible(),
     );
   });
+});
 
-  it("follows the mode on the system's tab list", async () => {
-    await page().goto(app.url("/"));
-    await openSubmenu(page(), "View");
-    await page().locator('label:has-text("Simple Mode") input').check();
-    const tabs = page().locator("turtle-system .system-header select").first();
-    assertEquals(
-      await tabs
-        .locator("option:not(.hidden)")
-        .evaluateAll((options) =>
-          options.map((option) => option.getAttribute("value")),
-        ),
-      ["canvas", "output"],
-    );
-    assertEquals(
-      await page().locator("pcode-tab .system-tab-pane").isVisible(),
-      false,
-    );
+describe("the documentation code blocks", () => {
+  // Backstops `highlightCodeBlocks`'s reading of the server's blocks via
+  // `textContent` (src/client/passes.ts): in real Chrome, the pass must leave
+  // the blocks marked up rather than showing markup as text.
+  it("come out highlighted, not escaped", async () => {
+    await page().goto(app.url("/documentation/help"));
+    const block = page()
+      .locator('code[data-language="Python"]:visible', {
+        has: page().locator("span[class]"),
+      })
+      .first();
+    await block.waitFor();
+    const text = await block.innerText();
+    assert(text.trim().length > 0);
+    // parsed as markup: nothing of the highlighter's own output is readable
+    assertFalse(text.includes("<span"));
   });
 });
 
@@ -199,10 +182,7 @@ describe("the session", () => {
       await page().locator("system-editor textarea").inputValue(),
       "circle(100)",
     );
-    assertEquals(
-      await page().locator("pcode-tab .system-tab-pane").isVisible(),
-      false,
-    );
+    assertFalse(await page().locator("pcode-tab .system-tab-pane").isVisible());
     // Expert mode came back with it: the PCode tab is offered again, which it
     // isn't in simple or normal mode.
     const tabs = page().locator("turtle-system .system-header select").first();

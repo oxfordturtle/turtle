@@ -1,0 +1,39 @@
+{
+  "schemaVersion": 1,
+  "runMode": "bounded",
+  "pcode": {
+    "lines": 53,
+    "hash": "0a41327ddaecc682"
+  },
+  "hitIterationCap": false,
+  "consoleText": "Illustration of built-in list operations\n\nList multiplication with [0]*8:\n[0, 0, 0, 0, 0, 0, 0, 0]\n\nAssignment of values to elements - square of index:\n[0, 1, 4, 9, 16, 25, 36, 49]\n\nAPPEND element valued 64 to the list:\n[0, 1, 4, 9, 16, 25, 36, 49, 64]\n\nDELETE element at index 3 from the list:\n[0, 1, 4, 16, 25, 36, 49, 64]\n\nEXTEND list with [81,100]:\n[0, 1, 4, 16, 25, 36, 49, 64, 81, 100]\n\nREMOVE element valued 16:\n[0, 1, 4, 25, 36, 49, 64, 81, 100]\n\nIdentify INDEX of element valued 36:\nIndex of 36 = 4\n\nINSERT element valued 16 at index 5:\n[0, 1, 4, 25, 36, 16, 49, 64, 81, 100]\n\nREVERSE list:\n[100, 81, 64, 49, 16, 36, 25, 4, 1, 0]\n\nIterate through list elements:\n100  81  64  49  16  36  25  4  1  0  \n\nPrint every third element:\n64  36  1  ",
+  "outputText": "Illustration of built-in list operations\n\nList multiplication with [0]*8:\n[0, 0, 0, 0, 0, 0, 0, 0]\n\nAssignment of values to elements - square of index:\n[0, 1, 4, 9, 16, 25, 36, 49]\n\nAPPEND element valued 64 to the list:\n[0, 1, 4, 9, 16, 25, 36, 49, 64]\n\nDELETE element at index 3 from the list:\n[0, 1, 4, 16, 25, 36, 49, 64]\n\nEXTEND list with [81,100]:\n[0, 1, 4, 16, 25, 36, 49, 64, 81, 100]\n\nREMOVE element valued 16:\n[0, 1, 4, 25, 36, 49, 64, 81, 100]\n\nIdentify INDEX of element valued 36:\nIndex of 36 = 4\n\nINSERT element valued 16 at index 5:\n[0, 1, 4, 25, 36, 16, 49, 64, 81, 100]\n\nREVERSE list:\n[100, 81, 64, 49, 16, 36, 25, 4, 1, 0]\n\nIterate through list elements:\n100  81  64  49  16  36  25  4  1  0  \n\nPrint every third element:\n64  36  1  ",
+  "runtimeErrors": [],
+  "turtle": {
+    "x": 500,
+    "y": 500,
+    "d": 0,
+    "a": 360,
+    "t": 2,
+    "c": "#000"
+  },
+  "canvas": {
+    "callCount": 6,
+    "byMethod": {
+      "setResolution": 2,
+      "setVirtualCanvas": 2,
+      "clear": 1,
+      "setCursor": 1
+    },
+    "logHash": "d982706e7ecfaa0e",
+    "head": [
+      "setResolution([1000,1000,false])",
+      "setVirtualCanvas([0,0,1000,1000])",
+      "setResolution([1000,1000,false])",
+      "clear([\"#FFFFFF\"])",
+      "setVirtualCanvas([0,0,1000,1000])",
+      "setCursor([1])"
+    ],
+    "tail": []
+  }
+}

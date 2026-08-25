@@ -2,8 +2,8 @@ import { describe, it } from "@std/testing/bdd";
 import { assertEquals, assertExists } from "@std/assert";
 import type { Language } from "@/core/constants.ts";
 import type { IfStatement, VariableAssignment } from "@/core/compiler.ts";
-import { bodyStatements, parseProgram, wrapProgram } from "./_programs.ts";
-import { LANGUAGES } from "../_languages.ts";
+import { bodyStatements, parseProgram, wrapProgram } from "./lib/programs.ts";
+import { LANGUAGES } from "../lib/languages.ts";
 
 /**
  * Shared, cross-language statement-kind tests. Each language has wildly
@@ -78,8 +78,9 @@ describe("parse: shared statement-kind behavior", () => {
         ) as IfStatement | undefined;
         assertExists(ifStatement);
         assertEquals(ifStatement.condition.expressionType, "integer");
-        assertEquals(ifStatement.ifStatements.length > 0, true);
-        assertEquals(ifStatement.elseStatements.length > 0, true);
+        // every fixture has exactly one statement in each branch
+        assertEquals(ifStatement.ifStatements.length, 1);
+        assertEquals(ifStatement.elseStatements.length, 1);
       });
     }
   });
@@ -110,7 +111,8 @@ describe("parse: shared statement-kind behavior", () => {
           (s) => s.statementType === "whileStatement",
         );
         assertExists(whileStatement);
-        assertEquals(whileStatement.statements.length > 0, true);
+        // every fixture has exactly one statement in the loop body
+        assertEquals(whileStatement.statements.length, 1);
       });
     }
   });
@@ -170,10 +172,9 @@ describe("parse: shared statement-kind behavior", () => {
           (s) => s.statementType === "procedureCall",
         );
         assertExists(call);
-        if (call && call.statementType === "procedureCall") {
-          assertEquals(call.arguments.length, 1);
-          assertEquals(call.arguments[0].expressionType, "integer");
-        }
+        assertEquals(call.statementType, "procedureCall");
+        assertEquals(call.arguments.length, 1);
+        assertEquals(call.arguments[0].expressionType, "integer");
       });
     }
   });

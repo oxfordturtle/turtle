@@ -34,56 +34,65 @@ import "@/islands/doc-tabs.ts";
 import "@/islands/reference/colour-table.ts";
 import "@/islands/reference/command-table.ts";
 
-// `run()` installs these again on every run, but "Reset machine" calls
-// `machine.reset()` directly, which draws to the canvas without a run first.
-machine.setPorts({ timers, output, canvas, files });
+/**
+ * The whole client startup, in its one load-bearing order. `main.ts` (the
+ * bundle entry) calls this once per page load; `test/ui/lib/setup.ts` calls it
+ * per mount, so the startup the tests exercise IS this function rather than a
+ * hand-kept mirror of it. The islands above register as this module loads,
+ * before anything calls `init`.
+ */
+export const init = (): void => {
+  // `run()` installs these again on every run, but "Reset machine" calls
+  // `machine.reset()` directly, which draws to the canvas without a run first.
+  machine.setPorts({ timers, output, canvas, files });
 
-// add the file/compile state to globals (for playing around in the console)
-const glob = globalThis as unknown as { program: typeof program };
-glob.program = program;
+  // add the file/compile state to globals (for playing around in the console)
+  const glob = globalThis as unknown as { program: typeof program };
+  glob.program = program;
 
-// The registration is what keeps `alert` - which exists in Deno too, and blocks
-// on stdin - out of the island modules the server also imports.
-setErrorHandler((error) => {
-  console.error(error);
-  alert(error instanceof Error ? error.message : String(error));
-});
+  // The registration is what keeps `alert` - which exists in Deno too, and
+  // blocks on stdin - out of the island modules the server also imports.
+  setErrorHandler((error) => {
+    console.error(error);
+    alert(error instanceof Error ? error.message : String(error));
+  });
 
-// Both before the islands hydrate - they are queued on a microtask, after this
-// module's body - so the first render of every display already has the right
-// program and settings in it. The order matters: the file memory is restored for
-// the *stored* language, and initialising the settings is what notices that
-// `?l=` has changed it.
-program.initialise();
-initialiseSettings();
+  // Both before the islands hydrate - they are queued on a microtask, after
+  // this module's body - so the first render of every display already has the
+  // right program and settings in it. The order matters: the file memory is
+  // restored for the *stored* language, and initialising the settings is what
+  // notices that `?l=` has changed it.
+  program.initialise();
+  initialiseSettings();
 
-// The three page-wide DOM passes (./passes.ts). Two of them follow the settings
-// for as long as the page lives: the store notifies, the sweep runs.
-highlightCodeBlocks();
-languageVisibility();
-modeVisibility();
-settingsStore.subscribe(() => {
+  // The three page-wide DOM passes (./passes.ts). Two of them follow the
+  // settings for as long as the page lives: the store notifies, the sweep runs.
+  highlightCodeBlocks();
   languageVisibility();
   modeVisibility();
-});
+  settingsStore.subscribe(() => {
+    languageVisibility();
+    modeVisibility();
+  });
 
-// A link into the system can carry an example (?x=) or a remote file (?f=) to
-// open, and a language (?l=), which the settings store reads for itself above.
-// None of the three is state, so all are taken straight off the URL.
-//
-// This module loads on every page, so the two file parameters are gated on the
-// system app being present: without it, `/documentation/reference?x=Triangle`
-// would quietly replace whatever file the user has open.
-if (document.querySelector("turtle-system")) {
-  const parameters = new URLSearchParams(document.location.search);
-  const example = parameters.get("x");
-  const file = parameters.get("f");
-  if (example) program.openExampleFile(example);
-  if (file) program.openRemoteFile(file);
-}
-
-addEventListener("beforeunload", function () {
-  if (load("alwaysSaveSettings")) {
-    showError(new SystemError("Not yet implemented."));
+  // A link into the system can carry an example (?x=) or a remote file (?f=)
+  // to open, and a language (?l=), which the settings store reads for itself
+  // above. None of the three is state, so all are taken straight off the URL.
+  //
+  // This runs on every page, so the two file parameters are gated on the
+  // system app being present: without it, `/documentation/reference?x=Triangle`
+  // would quietly replace whatever file the user has open.
+  if (document.querySelector("turtle-system")) {
+    const parameters = new URLSearchParams(document.location.search);
+    const example = parameters.get("x");
+    const file = parameters.get("f");
+    if (example) program.openExampleFile(example);
+    if (file) program.openRemoteFile(file);
   }
-});
+
+  addEventListener("beforeunload", function () {
+    if (load("alwaysSaveSettings")) {
+      showError(new SystemError("Not yet implemented."));
+    }
+  });
+};

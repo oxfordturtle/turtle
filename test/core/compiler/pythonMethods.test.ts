@@ -1,13 +1,9 @@
 import { describe, it } from "@std/testing/bdd";
-import { assertEquals, assertThrows } from "@std/assert";
-import { encode, lexify, parse, tokenize } from "@/core/compiler.ts";
-import { defaultMachineOptions, run } from "@/core/machine.ts";
+import { assertEquals } from "@std/assert";
 import {
-  fakeCanvas,
-  fakeFiles,
-  fakeOutput,
-  fakeTimers,
-} from "../machine/_fakes.ts";
+  assertCompilerError,
+  runSourceToText,
+} from "../machine/lib/helpers.ts";
 
 /**
  * String methods on any string expression, not just a plain variable.
@@ -26,23 +22,9 @@ import {
  * through - including the Python list methods.
  */
 describe("compiler: Python string methods on arbitrary expressions", () => {
-  const runPython = (code: string): string => {
-    const pcode = encode(
-      parse(lexify(tokenize(code, "Python"), "Python"), "Python"),
-    );
-    const output = fakeOutput();
-    const timers = fakeTimers();
-    run(
-      pcode,
-      defaultMachineOptions,
-      timers,
-      output,
-      fakeCanvas(),
-      fakeFiles(),
-    );
-    timers.flush(); // console writes are queued, not immediate
-    return output.outputText.replace(/\n$/, "");
-  };
+  /** This file's assertions never care about the trailing newline. */
+  const runPython = (code: string): string =>
+    runSourceToText("Python", code).replace(/\n$/, "");
 
   describe("literal receivers", () => {
     it("'012'.find(s) returns a 0-based index", () => {
@@ -108,17 +90,9 @@ describe("compiler: Python string methods on arbitrary expressions", () => {
   });
 
   describe("errors", () => {
-    const assertCompilerError = (code: string, message: string) => {
-      assertThrows(
-        () =>
-          encode(parse(lexify(tokenize(code, "Python"), "Python"), "Python")),
-        Error,
-        message,
-      );
-    };
-
     it("names the receiver's type when the method doesn't apply to it", () => {
       assertCompilerError(
+        "Python",
         "print(str((3).find('x')))",
         'Method ".find" is not defined for type "integer"',
       );
@@ -126,6 +100,7 @@ describe("compiler: Python string methods on arbitrary expressions", () => {
 
     it("names the method when it doesn't exist at all", () => {
       assertCompilerError(
+        "Python",
         "print('a'.nosuch())",
         'Method "nosuch" is not defined',
       );
@@ -133,6 +108,7 @@ describe("compiler: Python string methods on arbitrary expressions", () => {
 
     it("rejects a method name that isn't an identifier", () => {
       assertCompilerError(
+        "Python",
         "s='ab'\nprint(s.(3))",
         "Method name missing after '.'",
       );
@@ -144,17 +120,9 @@ describe("compiler: Python string methods on arbitrary expressions", () => {
     // variable has. Both of these were syntax errors before this step and
     // must stay errors: an early draft let them through the new loop and
     // they compiled to a memory dump rather than a value.
-    const assertCompilerError = (code: string, message: string) => {
-      assertThrows(
-        () =>
-          encode(parse(lexify(tokenize(code, "Python"), "Python"), "Python")),
-        Error,
-        message,
-      );
-    };
-
     it("rejects a method on a list literal", () => {
       assertCompilerError(
+        "Python",
         "print(str([1,2,3].index(2)))",
         "a list was not expected here",
       );
@@ -162,6 +130,7 @@ describe("compiler: Python string methods on arbitrary expressions", () => {
 
     it("rejects a method on a list-returning call's result", () => {
       assertCompilerError(
+        "Python",
         "x=[1,2,3]\nprint(str(x.copy().index(2)))",
         "a list was not expected here",
       );

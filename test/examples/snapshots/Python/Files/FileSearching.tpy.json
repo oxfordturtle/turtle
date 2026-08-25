@@ -1,0 +1,39 @@
+{
+  "schemaVersion": 1,
+  "runMode": "asyncFiles",
+  "pcode": {
+    "lines": 37,
+    "hash": "5d3c903b8a58eefc"
+  },
+  "hitIterationCap": false,
+  "consoleText": "Turtle directories (up to first level) and their files ...\n\nBase directory:\n  <no files>\n\n",
+  "outputText": "Turtle directories (up to first level) and their files ...\n\nBase directory:\n  <no files>\n\n",
+  "runtimeErrors": [],
+  "turtle": {
+    "x": 500,
+    "y": 500,
+    "d": 0,
+    "a": 360,
+    "t": 2,
+    "c": "#000"
+  },
+  "canvas": {
+    "callCount": 6,
+    "byMethod": {
+      "setResolution": 2,
+      "setVirtualCanvas": 2,
+      "clear": 1,
+      "setCursor": 1
+    },
+    "logHash": "d982706e7ecfaa0e",
+    "head": [
+      "setResolution([1000,1000,false])",
+      "setVirtualCanvas([0,0,1000,1000])",
+      "setResolution([1000,1000,false])",
+      "clear([\"#FFFFFF\"])",
+      "setVirtualCanvas([0,0,1000,1000])",
+      "setCursor([1])"
+    ],
+    "tail": []
+  }
+}

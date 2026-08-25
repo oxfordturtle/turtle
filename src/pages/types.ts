@@ -1,3 +1,6 @@
+// deno-coverage-ignore-file -- type declarations only: erased at compile time, so no
+// test can ever load this module at runtime.
+
 export type RequestParams = {
   method: string;
   url: URL;

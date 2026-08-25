@@ -54,10 +54,17 @@ export const baseLength = (variable: Variable): number =>
     ? variable.stringLength + 3 // 3 = pointer + max length byte + actual length byte
     : 1;
 
+// deno-coverage-ignore-start -- the ": 0" arm is unreachable: all three
+// callers (encoder/addresses.ts, encoder/program/programStart.ts and
+// encoder/program/subroutines.ts) either test isArray() first or pass a
+// SubVariable's parent, and getSubVariables only ever creates a SubVariable
+// under an array. (The array arm is live and tested; it sits inside this
+// range only because a branch cannot be excluded mid-expression.)
 export const elementCount = (variable: Variable): number =>
   isArray(variable)
     ? variable.arrayDimensions[0][1] - variable.arrayDimensions[0][0] + 1
     : 0;
+// deno-coverage-ignore-stop
 
 export const getLength = (variable: Variable): number => {
   // these all simply hold an address

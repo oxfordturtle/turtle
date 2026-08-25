@@ -81,12 +81,24 @@ by-value case immediately below it in the same file, which does copy, via
 [src/core/compiler/formatter/statement.ts:33-51](src/core/compiler/formatter/statement.ts#L33)
 and
 [src/core/compiler/formatter/expression.ts:74-77](src/core/compiler/formatter/expression.ts#L74)
-between them have nine branches that literally `return "TODO"`. Listed as a
-known gap in `src/README.md`.
+between them have nine branches that literally `return "TODO"`, and
+`formatProgram` returns the literal string `"program"`. Listed as a known gap
+in `src/README.md`.
+
+The stub is nevertheless exported from the compiler barrel
+(`src/core/compiler.ts`, as `formatProgram`/`formatStatement`/
+`formatExpression`/`formatType`) and its current behaviour — the finished
+arms and the `"TODO"`/`"program"` placeholders alike — is pinned in
+[test/core/compiler/formatter.test.ts](test/core/compiler/formatter.test.ts),
+so the coverage gate can see it. Implementing the formatter therefore means
+updating those pins as part of the change: the `[known limitation]` tests
+will trip rather than pass silently.
 
 ### 2.3 Undo, Redo, Cut, Copy and Paste report "not implemented"
 
-[src/client/index.ts:87](src/client/index.ts#L87). As `src/README.md` records,
+[src/islands/turtle-system/editing.ts:8](src/islands/turtle-system/editing.ts#L8),
+pinned at
+[test/ui/dom/controls.test.ts](test/ui/dom/controls.test.ts). As `src/README.md` records,
 these need either `document.execCommand`, which is deprecated and unspecified,
 or an undo stack that would have to replace the browser's rather than sit beside
 it. The keyboard shortcuts all work on the textarea already, so this is only the
@@ -95,31 +107,69 @@ Edit menu.
 ### 2.4 Save/load settings
 
 [src/islands/settings.ts:211](src/islands/settings.ts#L211) and
-[:215](src/islands/settings.ts#L215) both report "Not yet implemented". Blocked
-on an account system that does not exist.
+[:215](src/islands/settings.ts#L215) both report "Not yet implemented", pinned
+at [test/ui/dom/settings.test.ts](test/ui/dom/settings.test.ts) ("saving
+settings to an account"). Blocked on an account system that does not exist.
+`loadSavedSettings` has no call site at all yet; `saveSettings` is reached from
+the Options menu, and from `init()`'s `beforeunload` listener when
+`alwaysSaveSettings` is on.
 
 ### 2.5 No filesystem adapter
 
-The file-processing opcodes have nothing real behind them in the browser. Listed
-as a known gap in `src/README.md`.
+The file-processing opcodes have nothing real behind them in the browser: every
+method of [src/client/adapters/files.ts](src/client/adapters/files.ts) answers
+as if the sandboxed filesystem were always empty (the intended backing is OPFS),
+pinned at
+[test/ui/dom/adapters/ports.test.ts](test/ui/dom/adapters/ports.test.ts).
+Listed as a known gap in `src/README.md`.
 
 ### 2.6 `.tmj` and `.tmb` file loading
 
-[src/islands/turtle-system/program.ts:379](src/islands/turtle-system/program.ts#L379).
-pcode as JSON and pcode as binary respectively; both currently fall through to
-"Invalid file type."
+[src/islands/turtle-system/program.ts:384](src/islands/turtle-system/program.ts#L384),
+pinned at
+[test/ui/dom/program.test.ts](test/ui/dom/program.test.ts) ("rejects a file
+type it cannot read"). pcode as JSON and pcode as binary respectively; both
+currently fall through to "Invalid file type."
 
 ### 2.7 Underlined and strikethrough canvas text
 
 [src/client/adapters/canvas.ts:179](src/client/adapters/canvas.ts#L179) and
-[:183](src/client/adapters/canvas.ts#L183). The font bits are decoded and then
-ignored; bold and italic immediately above them are handled.
+[:183](src/client/adapters/canvas.ts#L183), pinned at
+[test/ui/dom/adapters/canvas.test.ts](test/ui/dom/adapters/canvas.test.ts)
+("ignores the underline and strikethrough bits"). The font bits are decoded and
+then ignored; bold and italic immediately above them are handled.
 
 ### 2.8 `TRAC` and `MEMW` opcodes just pop the stack
 
 [src/core/machine/runtime.ts:1977](src/core/machine/runtime.ts#L1977) and
 [:1981](src/core/machine/runtime.ts#L1981), pinned at
 `test/core/machine/runtime.test.ts:1066`.
+
+### 2.9 Seven of the eight `EncoderOptions` are dead
+
+Pinned at
+[test/core/compiler/encode.test.ts:178](test/core/compiler/encode.test.ts#L178).
+`canvasStartSize`, `setupDefaultKeyBuffer`, `turtleAttributesAsGlobals`,
+`allowCSTR`, `separateReturnStack`, `separateMemoryControlStack` and
+`separateSubroutineRegisterStack` are all threaded from the Compile menu
+through `compilerOptions()` in
+`src/islands/turtle-system/program.ts` into `encode()`, and then never read:
+`programStart` ignores its options argument entirely, and `initialiseLocals` is
+the only field the encoder consults anywhere. The seven controls in the Compile
+submenu are rendered `disabled` for the same reason, and say so when clicked.
+Implementing any one of them means giving it a real test and updating the pin.
+
+### 2.10 Python's indexed-array-assignment arm is dead code
+
+Two regions in
+[src/core/compiler/parser/python/statements/variableAssignment.ts:28](src/core/compiler/parser/python/statements/variableAssignment.ts#L28)
+and [:100](src/core/compiler/parser/python/statements/variableAssignment.ts#L100),
+both under justified `deno-coverage-ignore` directives. No Python variable is
+ever an array: `python/type.ts` returns empty `arrayDimensions` on every path
+(Python has no array declaration syntax, and a `List[T]` hint sets `isList`
+instead), so `isArray()` is always false here and indexed assignment always goes
+through the string and list branches. Either Python grows arrays, or the arms
+go.
 
 ---
 

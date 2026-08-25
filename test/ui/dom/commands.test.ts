@@ -8,9 +8,9 @@ import {
   qa,
   settings,
   settle,
-} from "../_setup.ts";
-import { assertEquals } from "@std/assert";
-import { beforeEach, describe, it } from "@std/testing/bdd";
+} from "../lib/setup.ts";
+import { assert, assertEquals, assertFalse } from "@std/assert";
+import { afterEach, beforeEach, describe, it } from "@std/testing/bdd";
 
 // `src/islands/turtle-system/commands.ts` is how code that isn't inside a
 // component's own subtree asks that component to do something.
@@ -26,6 +26,9 @@ beforeEach(async () => {
   await mountRoute("/");
 });
 
+// Rule 6: every test ends with Womble having reported nothing.
+afterEach(assertNoWombleLogs);
+
 describe("requestTab", () => {
   // What the machine asks for on RUN, on output, and on a memory dump.
   it("shows the tab it asks for", async () => {
@@ -33,15 +36,14 @@ describe("requestTab", () => {
     await settle();
     assertEquals(system().tab, "output");
     assertEquals(qa("output-tab .system-tab-pane.active").length, 1);
-    assertNoWombleLogs();
   });
 
   it("dismisses the menu with it", async () => {
     await click(q("turtle-system .system-header button"));
-    assertEquals(system().menu, true);
+    assert(system().menu);
     commands.requestTab("memory");
     await settle();
-    assertEquals(system().menu, false);
+    assertFalse(system().menu);
   });
 });
 
@@ -59,7 +61,6 @@ describe("requestValidTab", () => {
     commands.requestValidTab();
     await settle();
     assertEquals(system().tab, "canvas");
-    assertNoWombleLogs();
   });
 
   it("leaves a tab that is in this mode alone", async () => {
@@ -79,14 +80,13 @@ describe("requestCloseMenu", () => {
   it("closes the menu and the submenu it had open", async () => {
     // The toggle link in the collapsed rail, which opens the menu with it.
     await click(q("options-menu > div > a"));
-    assertEquals(system().menu, true);
+    assert(system().menu);
     assertEquals(system().submenu, "options");
 
     commands.requestCloseMenu();
     await settle();
-    assertEquals(system().menu, false);
+    assertFalse(system().menu);
     assertEquals(system().submenu, "");
-    assertNoWombleLogs();
   });
 });
 
@@ -99,7 +99,6 @@ describe("requestSelectAll", () => {
     const textarea = q("system-editor textarea") as HTMLTextAreaElement;
     assertEquals(textarea.selectionStart, 0);
     assertEquals(textarea.selectionEnd, "print('hello')".length);
-    assertNoWombleLogs();
   });
 });
 
@@ -118,7 +117,6 @@ describe("syncLanguage", () => {
     await settle();
     assertEquals(settings.getSettings().language, "Java");
     assertEquals(q("language-select select").value, "Java");
-    assertNoWombleLogs();
   });
 
   it("re-runs the language-visibility pass with it", async () => {
@@ -129,12 +127,11 @@ describe("syncLanguage", () => {
     const shown = qa("code[data-language]").filter(
       (element: Element) => !element.classList.contains("hidden"),
     );
-    assertEquals(shown.length > 0, true);
-    assertEquals(
+    assert(shown.length > 0);
+    assert(
       shown.every(
         (element: Element) => element.getAttribute("data-language") === "C",
       ),
-      true,
     );
   });
 });

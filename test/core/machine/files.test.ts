@@ -1,20 +1,18 @@
 import { describe, it } from "@std/testing/bdd";
-import { assertEquals, assertMatch } from "@std/assert";
+import { assert, assertEquals, assertFalse, assertMatch } from "@std/assert";
 import { encode, lexify, parse, tokenize } from "@/core/compiler.ts";
 import { isRunning } from "@/core/machine.ts";
-import { type FakeFiles, fakeFiles } from "./_fakes.ts";
+import { type FakeFiles, fakeFiles } from "./lib/fakes.ts";
 import {
   compileExample,
+  PCode,
   readExample,
   runExampleBoundedAsync,
-} from "./_exampleHarness.ts";
-import {
-  PCode,
   runFilePcode,
   runFileToInt,
   runPcode,
   str,
-} from "./_helpers.ts";
+} from "./lib/helpers.ts";
 
 /**
  * Coverage for `src/core/machine/runtime.ts`'s file-processing PCodes:
@@ -25,7 +23,7 @@ import {
  *
  * Every test here uses `runFilePcode` (not `runPcode`) because every op under
  * test suspends `execute()` on a genuine `Promise` - see that helper's doc
- * comment in `_helpers.ts`.
+ * comment in `lib/helpers.ts`.
  *
  * Stack push order in every hand-written program below is the *reverse*
  * of the reference doc's "top of stack first" listing (e.g. FILE's
@@ -155,7 +153,7 @@ describe("machine/runtime: file processing (core operators)", () => {
       ]);
       assertEquals(result.output.runtimeErrors.length, 1);
       assertMatch(result.output.runtimeErrors[0].message, /does not exist/);
-      assertEquals(isRunning(), false);
+      assertFalse(isRunning());
     });
 
     it("the notifyPresent tier applies when the target already existed", async () => {
@@ -186,7 +184,7 @@ describe("machine/runtime: file processing (core operators)", () => {
       ]);
       assertEquals(result.output.runtimeErrors.length, 1);
       assertMatch(result.output.runtimeErrors[0].message, /cannot contain/i);
-      assertEquals(isRunning(), false);
+      assertFalse(isRunning());
     });
   });
 
@@ -265,8 +263,8 @@ describe("machine/runtime: file processing (core operators)", () => {
       assertEquals(readMissing, 0);
       assertEquals(appendMissing, 0);
       assertEquals(writeExisting, 0);
-      assertEquals(writeMissing > 0, true);
-      assertEquals(rewriteExisting > 0, true);
+      assert(writeMissing > 0);
+      assert(rewriteExisting > 0);
     });
 
     it("fails softly (returns 0) for an out-of-range mode code, rather than throwing", async () => {
@@ -639,7 +637,7 @@ describe("machine/runtime: file processing (core operators)", () => {
       );
       const lines = result.output.outputText.trim().split("\n");
       assertEquals(lines[0], "a.txt");
-      assertEquals(Number(lines[1]) > 0, true);
+      assert(Number(lines[1]) > 0);
     });
 
     it("FFND returns the null string when nothing matches", async () => {
@@ -755,14 +753,8 @@ describe("machine/runtime: file processing (core operators)", () => {
         files,
       );
       assertEquals(ints(result.output.outputText), [1]);
-      assertEquals(
-        (await files.testFile("old.txt", "enquire")).existedBefore,
-        false,
-      );
-      assertEquals(
-        (await files.testFile("new.txt", "enquire")).existedBefore,
-        true,
-      );
+      assertFalse((await files.testFile("old.txt", "enquire")).existedBefore);
+      assert((await files.testFile("new.txt", "enquire")).existedBefore);
     });
 
     it("v=1 rename fails (pushes false) when the old file doesn't exist", async () => {
@@ -794,14 +786,8 @@ describe("machine/runtime: file processing (core operators)", () => {
         files,
       );
       assertEquals(ints(result.output.outputText), [1]);
-      assertEquals(
-        (await files.testFile("old.txt", "enquire")).existedBefore,
-        false,
-      );
-      assertEquals(
-        (await files.testFile("dest/old.txt", "enquire")).existedBefore,
-        true,
-      );
+      assertFalse((await files.testFile("old.txt", "enquire")).existedBefore);
+      assert((await files.testFile("dest/old.txt", "enquire")).existedBefore);
     });
 
     it("v=3 copies a file, preserving the old path and its content", async () => {
@@ -820,14 +806,8 @@ describe("machine/runtime: file processing (core operators)", () => {
         files,
       );
       assertEquals(ints(result.output.outputText), [1]);
-      assertEquals(
-        (await files.testFile("old.txt", "enquire")).existedBefore,
-        true,
-      );
-      assertEquals(
-        (await files.testFile("copy.txt", "enquire")).existedBefore,
-        true,
-      );
+      assert((await files.testFile("old.txt", "enquire")).existedBefore);
+      assert((await files.testFile("copy.txt", "enquire")).existedBefore);
     });
 
     it("a v other than 1/2/3 checks path legality but otherwise does nothing, returning false", async () => {
@@ -846,14 +826,8 @@ describe("machine/runtime: file processing (core operators)", () => {
         files,
       );
       assertEquals(ints(result.output.outputText), [0]);
-      assertEquals(
-        (await files.testFile("old.txt", "enquire")).existedBefore,
-        true,
-      );
-      assertEquals(
-        (await files.testFile("new.txt", "enquire")).existedBefore,
-        false,
-      );
+      assert((await files.testFile("old.txt", "enquire")).existedBefore);
+      assertFalse((await files.testFile("new.txt", "enquire")).existedBefore);
     });
 
     it("rejects a '..' segment in the old path", async () => {
@@ -898,7 +872,7 @@ describe("machine/runtime: file processing (core operators)", () => {
       );
       assertEquals(result.output.runtimeErrors.length, 1);
       assertEquals(result.output.runtimeErrors[0].message, "disk exploded");
-      assertEquals(isRunning(), false);
+      assertFalse(isRunning());
     });
 
     it("a resolved promise from a superseded run doesn't resume the run that replaced it (state.runToken guard)", async () => {
@@ -915,7 +889,7 @@ describe("machine/runtime: file processing (core operators)", () => {
         {},
         firstFiles,
       );
-      assertEquals(isRunning(), true);
+      assert(isRunning());
 
       // supersede it with a second run that's ALSO suspended on its own
       // pending open() - if resolving the first run's stale promise were
@@ -934,17 +908,17 @@ describe("machine/runtime: file processing (core operators)", () => {
         {},
         secondFiles,
       );
-      assertEquals(isRunning(), true);
+      assert(isRunning());
 
       resolveFirst(1); // resolve the first (now-stale) run's promise
       await Promise.resolve();
       await Promise.resolve();
-      assertEquals(isRunning(), true); // second run untouched - still waiting on its own promise
+      assert(isRunning()); // second run untouched - still waiting on its own promise
 
       resolveSecond(2); // sanity check: the second run's own promise still resumes it normally
       await Promise.resolve();
       await Promise.resolve();
-      assertEquals(isRunning(), false);
+      assertFalse(isRunning());
     });
 
     it("a rejected promise from a superseded run doesn't affect the run that replaced it (state.runToken guard)", async () => {
@@ -975,18 +949,18 @@ describe("machine/runtime: file processing (core operators)", () => {
         {},
         secondFiles,
       );
-      assertEquals(isRunning(), true);
+      assert(isRunning());
 
       rejectFirst(new Error("stale rejection")); // must not halt/error the second run
       await Promise.resolve();
       await Promise.resolve();
-      assertEquals(isRunning(), true);
+      assert(isRunning());
       assertEquals(second.output.runtimeErrors, []);
 
       resolveSecond(2);
       await Promise.resolve();
       await Promise.resolve();
-      assertEquals(isRunning(), false);
+      assertFalse(isRunning());
     });
   });
 
@@ -1062,7 +1036,7 @@ END.
       const result = await runFilePcode(pcode);
 
       assertEquals(result.output.runtimeErrors, []);
-      assertEquals(isRunning(), false);
+      assertFalse(isRunning());
       assertEquals(
         result.output.outputText,
         "This is the first line to be written.\nThis is the second line to be written.\n",
@@ -1109,7 +1083,7 @@ END.
       const pcode = compileExample("Pascal", code);
       const result = await runExampleBoundedAsync(pcode, 50, {}, files);
 
-      assertEquals(result.hitIterationCap, false);
+      assertFalse(result.hitIterationCap);
       assertEquals(result.output.runtimeErrors, []);
       assertEquals(
         result.output.outputText,
@@ -1125,7 +1099,7 @@ END.
       const pcode = compileExample("Pascal", code);
       const result = await runExampleBoundedAsync(pcode, 50, {}, files);
 
-      assertEquals(result.hitIterationCap, false);
+      assertFalse(result.hitIterationCap);
       assertEquals(result.output.runtimeErrors, []);
       assertEquals(
         result.output.outputText,

@@ -1,7 +1,7 @@
 import { describe, it } from "@std/testing/bdd";
 import { assertEquals, assertStringIncludes } from "@std/assert";
 import { highlight, type Token } from "@/core/compiler.ts";
-import { LANGUAGES } from "./_languages.ts";
+import { LANGUAGES } from "./lib/languages.ts";
 
 // A hand-built token, used to reach highlighter branches that the tokenizer
 // itself can never produce (e.g. a "colour" token whose content doesn't

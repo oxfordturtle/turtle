@@ -1,0 +1,40 @@
+{
+  "schemaVersion": 1,
+  "runMode": "bounded",
+  "pcode": {
+    "lines": 52,
+    "hash": "5941c5f2279a06f0"
+  },
+  "hitIterationCap": true,
+  "consoleText": "",
+  "outputText": "",
+  "runtimeErrors": [],
+  "turtle": {
+    "x": 16,
+    "y": 16,
+    "d": 0,
+    "a": 360,
+    "t": 2,
+    "c": "#000"
+  },
+  "canvas": {
+    "callCount": 8,
+    "byMethod": {
+      "setResolution": 3,
+      "setVirtualCanvas": 3,
+      "clear": 2
+    },
+    "logHash": "fc74e31b23006b88",
+    "head": [
+      "setResolution([1000,1000,false])",
+      "setVirtualCanvas([0,0,1000,1000])",
+      "setResolution([1000,1000,false])",
+      "clear([\"#FFFFFF\"])",
+      "setVirtualCanvas([0,0,1000,1000])",
+      "setVirtualCanvas([0,0,32,32])",
+      "setResolution([64,64,true])",
+      "clear([\"#FFFFFF\"])"
+    ],
+    "tail": []
+  }
+}

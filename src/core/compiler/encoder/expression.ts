@@ -41,8 +41,15 @@ const expression = (
       return reference && !referenceVariableAddressIsValue(exp)
         ? variableAddress(exp, program, options)
         : variableValue(exp, program, options);
+    // deno-coverage-ignore-start -- unreachable: a NamedArgument is only ever
+    // built for Python print's "sep"/"end" (parser/common/arguments.ts), and
+    // print's encoder (statements/procedureCall.ts) filters named arguments
+    // out of the positional list and calls expression() on their inner
+    // .expression directly, so the wrapper itself never arrives here. The
+    // case must still exist for this switch to be exhaustive over Expression.
     case "namedArgument":
       return expression(exp.expression, program, options, reference);
+    // deno-coverage-ignore-stop
     case "function":
       return functionValue(exp, program, options);
     case "compound":

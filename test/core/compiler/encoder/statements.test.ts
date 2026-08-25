@@ -1,23 +1,27 @@
 import { describe, it } from "@std/testing/bdd";
-import { assertEquals } from "@std/assert";
+import { assert, assertEquals, assertFalse, assertThrows } from "@std/assert";
 import { PCode } from "@/core/constants.ts";
-import { compileAndEncode, countOf, includesCode } from "./_helpers.ts";
-import { runPcode } from "../../machine/_helpers.ts";
+import { compileAndEncode, countOf, includesCode } from "./lib/helpers.ts";
+import { runPcode } from "../../machine/lib/helpers.ts";
 
 /**
  * Covers `src/core/compiler/encoder/statement.ts` (the statementType
  * dispatcher) and everything under `src/core/compiler/encoder/statements/`.
  * `forStatement.ts` is already fully covered by
- * `test/core/compiler/encode.test.ts` and isn't specifically targeted here,
- * beyond one test that reaches the "forStatement" arm of the dispatcher
- * switch so this file's own coverage run exercises every arm of it.
+ * `test/core/compiler/encode.test.ts` and isn't specifically targeted here
+ * (though the break/continue tests below reach it incidentally).
  *
  * `encode()` isn't part of `@/core/compiler.ts`'s public surface beyond the
- * single `encode()` entry point (see `_helpers.ts`), so every test here
+ * single `encode()` entry point (see `lib/helpers.ts`), so every test here
  * builds a real per-language program that reaches the target branch and
- * inspects the shape of the resulting pcode - either by exact array
- * equality (for small, fully deterministic programs, values taken from
- * actually running the code) or by searching for specific opcodes.
+ * inspects the shape of the resulting pcode. Every program opens with the
+ * same startup prelude (memory setup, turtle defaults), which belongs to
+ * the program encoder, not to any statement - so tests here pin only the
+ * statement's *own* lines, located from the end of the program (where the
+ * main-program statements always sit, just before the final halt line),
+ * plus the relationships between jump operands and their target lines.
+ * Jump operands are 1-based line numbers: the line at pcode[i] is line
+ * i + 1, and the final halt line is line pcode.length.
  */
 
 describe("encoder: statement.ts dispatcher", () => {
@@ -30,34 +34,20 @@ describe("encoder: statement.ts dispatcher", () => {
     const withoutPass = compileAndEncode("Python", "x = 1\ny = 2");
     assertEquals(withPass, withoutPass);
   });
-
-  it("reaches the forStatement arm of the dispatcher", () => {
-    // forStatement.ts itself is fully covered elsewhere (encode.test.ts);
-    // this is only here so statement.ts's own switch is fully exercised by
-    // this file's coverage run too.
-    const pcode = compileAndEncode("Python", "for i in range(3):\n    x = i");
-    assertEquals(includesCode(pcode, PCode.jump), true);
-    assertEquals(includesCode(pcode, PCode.ifno), true);
-  });
 });
 
 describe("encoder: statements/ifStatement.ts", () => {
   it("encodes a plain IF (no ELSE) with a single forward ifno jump and no jump", () => {
     const pcode = compileAndEncode("Python", "x = 0\nif True:\n    x = 1");
-    assertEquals(pcode, [
-      [
-        160, 12, 2, 2, 160, 0, 171, 160, 6, 3, 171, 7, 160, 7, 172, 160, 19,
-        186,
-      ],
-      [
-        15, 1, 128, 160, 2, 133, 160, 360, 132, 160, 32, 194, 160, 1, 171, 189,
-        160, 0, 2, 160, 1000, 2, 2, 2, 126, 125,
-      ],
-      [160, 0, 167, 19],
-      [160, 1, 177, 6],
-      [160, 1, 167, 19],
-      [178],
-    ]);
+    // the main program is the last four lines: "x = 0", the condition, the
+    // branch, and the final halt
+    const [assignment, condition, branch, halt] = pcode.slice(-4);
+    assertEquals(assignment, [PCode.ldin, 0, PCode.stvg, 19]); // 19 = "x"
+    // "True" is just LDIN 1, and the ifno jumps forward past the branch -
+    // here, to the halt line
+    assertEquals(condition, [PCode.ldin, 1, PCode.ifno, pcode.length]);
+    assertEquals(branch, [PCode.ldin, 1, PCode.stvg, 19]);
+    assertEquals(halt, [PCode.halt]);
     assertEquals(countOf(pcode, PCode.ifno), 1);
     assertEquals(countOf(pcode, PCode.jump), 0);
   });
@@ -67,22 +57,16 @@ describe("encoder: statements/ifStatement.ts", () => {
       "Python",
       "x = 0\nif True:\n    x = 1\nelse:\n    x = 2",
     );
-    assertEquals(pcode, [
-      [
-        160, 12, 2, 2, 160, 0, 171, 160, 6, 3, 171, 7, 160, 7, 172, 160, 19,
-        186,
-      ],
-      [
-        15, 1, 128, 160, 2, 133, 160, 360, 132, 160, 32, 194, 160, 1, 171, 189,
-        160, 0, 2, 160, 1000, 2, 2, 2, 126, 125,
-      ],
-      [160, 0, 167, 19],
-      [160, 1, 177, 7],
-      [160, 1, 167, 19],
-      [176, 8],
-      [160, 2, 167, 19],
-      [178],
-    ]);
+    const [condition, ifBranch, middleJump, elseBranch, halt] = pcode.slice(-5);
+    const haltLineNumber = pcode.length;
+    // the condition's ifno jumps into the ELSE branch (the line before the
+    // halt)...
+    assertEquals(condition, [PCode.ldin, 1, PCode.ifno, haltLineNumber - 1]);
+    assertEquals(ifBranch, [PCode.ldin, 1, PCode.stvg, 19]); // 19 = "x"
+    // ...and the "middle line" jumps unconditionally past that ELSE branch
+    assertEquals(middleJump, [PCode.jump, haltLineNumber]);
+    assertEquals(elseBranch, [PCode.ldin, 2, PCode.stvg, 19]);
+    assertEquals(halt, [PCode.halt]);
     // the IF-ELSE shape adds exactly one unconditional jump (the "middle
     // line") on top of the same single ifno the plain-IF form has
     assertEquals(countOf(pcode, PCode.ifno), 1);
@@ -93,12 +77,12 @@ describe("encoder: statements/ifStatement.ts", () => {
 describe("encoder: statements/procedureCall.ts", () => {
   it("encodes a native command call using the command's own opcode, not PCode.subr", () => {
     const pcode = compileAndEncode("Python", "forward(10)");
-    assertEquals(includesCode(pcode, PCode.subr), false);
+    assertFalse(includesCode(pcode, PCode.subr));
   });
 
   it("encodes a custom subroutine call using PCode.subr with the subroutine's index", () => {
     const pcode = compileAndEncode("Python", "def go():\n    pass\ngo()");
-    assertEquals(includesCode(pcode, PCode.subr), true);
+    assert(includesCode(pcode, PCode.subr));
   });
 
   // print()'s three named-argument behaviours match real Python, and the Delphi
@@ -117,14 +101,14 @@ describe("encoder: statements/procedureCall.ts", () => {
       [166, 1, 97, 203, 166, 1, 32, 203, 166, 1, 98, 203, 204, 190],
     );
     assertEquals(countOf(pcode, PCode.writ), 3); // "a", the separator, "b"
-    assertEquals(includesCode(pcode, PCode.newl), true);
+    assert(includesCode(pcode, PCode.newl));
   });
 
   it("Python print(): an explicit sep replaces the default, and is emitted once per gap", () => {
     const pcode = compileAndEncode("Python", 'print("a", "b", "c", sep="")');
     // sep="" still costs an LSTR 0 + WRIT per gap - two gaps, so five WRITs
     assertEquals(countOf(pcode, PCode.writ), 5);
-    assertEquals(includesCode(pcode, PCode.newl), true);
+    assert(includesCode(pcode, PCode.newl));
   });
 
   it("Python print(): a named 'end' replaces PCode.newl and IS itself written", () => {
@@ -132,7 +116,7 @@ describe("encoder: statements/procedureCall.ts", () => {
     // LSTR "a", WRIT, LSTR "!", WRIT - no NEWL
     assertEquals(pcode[2], [166, 1, 97, 203, 166, 1, 33, 203, 190]);
     assertEquals(countOf(pcode, PCode.writ), 2);
-    assertEquals(includesCode(pcode, PCode.newl), false);
+    assertFalse(includesCode(pcode, PCode.newl));
   });
 
   it("Python print(): a single argument emits no separator at all", () => {
@@ -247,36 +231,46 @@ describe("encoder: lists.ts (Python list methods in statement position)", () => 
       12,
       1,
     ]);
-    assertEquals(includesCode(pcode, PCode.stvg), false);
+    assertFalse(includesCode(pcode, PCode.stvg));
     assertEquals(runPcode(pcode).output.outputText, "[1, 2, 3]\n");
   });
 
-  // NOT TESTED, believed unreachable: both of lists.ts's "the receiver
-  // isn't a plain variable, so bail out and return null" guards
-  // (listProcedureCallCode's `receiver.expressionType !== "variable"` and
-  // listFunctionCallCode's equivalent ternary + `if (!variable)`). A
-  // dot-method call can only be parsed in two places - python/statement.ts
-  // (statement position) and parser/common/factor.ts (expression position)
-  // - and both require an identifier that resolves to a variable *first*,
-  // then build the receiver with makeVariableValue(). "[1,2,3].append(4)"
-  // and "y.copy().index(2)" are both rejected by the parser, well before
-  // the encoder sees anything.
+  // Genuinely unreachable, marked with deno-coverage-ignore in lists.ts:
   //
-  // ALSO NOT TESTED, but for a different reason - the three
-  // `variable.listElementKind ?? "integer"` fallbacks in lists.ts
-  // (listGrowthGuard, listProcedureCallCode, listFunctionCallCode). A list
-  // variable normally always reaches the encoder with a definite element
-  // kind, because python/parser.ts's checkForUncertainTypes rejects
-  // anything still uncertain. The one way round that is a program like
-  // "x = []" followed by "x = 5": parser/common/typeCheck.ts sets
-  // `isList = true` when it first infers from "[]", and the later scalar
-  // assignment then sets `typeIsCertain = true` *without* clearing
-  // `isList`, so "x" arrives at the encoder flagged as a list with no
-  // element kind (and "x.extend([1,2])" then compiles, emitting pcode that
-  // treats the integer 5 as a heap base address). That's a parser
-  // soundness hole, not an encoder behaviour worth pinning down with a
-  // test - deliberately left uncovered rather than enshrined. See this
-  // task's report.
+  // - Both "the receiver isn't a plain variable, so bail out and return
+  //   null" guards (listProcedureCallCode's `receiver.expressionType !==
+  //   "variable"` and listFunctionCallCode's equivalent ternary + `if
+  //   (!variable)`). A dot-method call can only be parsed in two places -
+  //   python/statement.ts (statement position) and parser/common/factor.ts
+  //   (expression position) - and both require an identifier that resolves
+  //   to a variable *first*, then build the receiver with
+  //   makeVariableValue(). "[1,2,3].append(4)" and "y.copy().index(2)" are
+  //   both rejected by the parser, well before the encoder sees anything.
+  //
+  // - The three `variable.listElementKind ?? "integer"` fallbacks
+  //   (listGrowthGuard, listProcedureCallCode, listFunctionCallCode). A
+  //   list variable always reaches the encoder with a definite element
+  //   kind: python/parser.ts's checkForUncertainTypes rejects any program
+  //   in which a hint-less "x = []" is never pinned to a kind, and
+  //   parser/common/typeCheck.ts rejects the one scalar-reassignment shape
+  //   ("x = []" then "x = 5") that could otherwise smuggle a kind-less
+  //   list-flagged variable past it. The test below pins both rejections,
+  //   so if either parser check is ever loosened, this fails and the
+  //   fallbacks need real tests.
+  it("the parser rejects every program shape that could reach lists.ts's kind-less-list fallbacks", () => {
+    // a hint-less "x = []" whose element kind nothing ever reveals
+    assertThrows(
+      () => compileAndEncode("Python", "x = []\nx.reverse()"),
+      Error,
+      "Could not infer the type of variable x.",
+    );
+    // a scalar reassignment cannot strip the pinned list-ness either
+    assertThrows(
+      () => compileAndEncode("Python", "x = []\nx = 5"),
+      Error,
+      "Type error: a list was expected.",
+    );
+  });
 });
 
 describe("encoder: statements/repeatStatement.ts vs statements/whileStatement.ts", () => {
@@ -301,20 +295,22 @@ describe("encoder: statements/repeatStatement.ts vs statements/whileStatement.ts
       "Pascal",
       "program Test;\nvar x: integer;\nbegin\nx := 0;\nrepeat\nx := x + 1;\nuntil x = 3;\nend.",
     );
-    assertEquals(pcode, [
-      [
-        160, 12, 2, 2, 160, 0, 171, 160, 6, 3, 171, 7, 160, 7, 172, 160, 19,
-        186,
-      ],
-      [
-        15, -1, 128, 160, 2, 133, 160, 360, 132, 160, 32, 194, 160, 1, 171, 189,
-        160, 0, 2, 160, 1000, 2, 2, 2, 126, 125,
-      ],
-      [160, 0, 167, 19],
-      [161, 19, 7, 167, 19],
-      [161, 19, 160, 3, 48, 177, 4],
-      [178],
+    const [body, condition, halt] = pcode.slice(-3);
+    // "x := x + 1" (19 = "x"; the + 1 folds to a single incr)
+    assertEquals(body, [PCode.ldvg, 19, PCode.incr, PCode.stvg, 19]);
+    // the condition sits at the END, and its ifno IS the back jump: false
+    // means "go round again", back to the body line
+    const bodyLineNumber = pcode.length - 2;
+    assertEquals(condition, [
+      PCode.ldvg,
+      19,
+      PCode.ldin,
+      3,
+      PCode.eqal,
+      PCode.ifno,
+      bodyLineNumber,
     ]);
+    assertEquals(halt, [PCode.halt]);
     assertEquals(countOf(pcode, PCode.ifno), 1);
     assertEquals(countOf(pcode, PCode.jump), 0);
   });
@@ -324,21 +320,23 @@ describe("encoder: statements/repeatStatement.ts vs statements/whileStatement.ts
       "Python",
       "x = 0\nwhile x < 3:\n    x = x + 1",
     );
-    assertEquals(pcode, [
-      [
-        160, 12, 2, 2, 160, 0, 171, 160, 6, 3, 171, 7, 160, 7, 172, 160, 19,
-        186,
-      ],
-      [
-        15, 1, 128, 160, 2, 133, 160, 360, 132, 160, 32, 194, 160, 1, 171, 189,
-        160, 0, 2, 160, 1000, 2, 2, 2, 126, 125,
-      ],
-      [160, 0, 167, 19],
-      [161, 19, 160, 3, 50, 177, 7],
-      [161, 19, 7, 167, 19],
-      [176, 4],
-      [178],
+    const [condition, body, backJump, halt] = pcode.slice(-4);
+    const conditionLineNumber = pcode.length - 3;
+    // the condition sits at the TOP, and its ifno jumps forward out of the
+    // loop, to the halt line
+    assertEquals(condition, [
+      PCode.ldvg,
+      19, // "x"
+      PCode.ldin,
+      3,
+      PCode.less,
+      PCode.ifno,
+      pcode.length,
     ]);
+    assertEquals(body, [PCode.ldvg, 19, PCode.incr, PCode.stvg, 19]);
+    // a separate unconditional jump closes the loop
+    assertEquals(backJump, [PCode.jump, conditionLineNumber]);
+    assertEquals(halt, [PCode.halt]);
     assertEquals(countOf(pcode, PCode.ifno), 1);
     assertEquals(countOf(pcode, PCode.jump), 1);
   });
@@ -373,36 +371,27 @@ describe("encoder: statements/breakStatement.ts & statements/continueStatement.t
   // continueStatement.ts) that the enclosing loop's own encoder
   // back-patches once it knows its real target lines (loopContext.ts) - so
   // the interesting thing to verify here is that the *target* ends up
-  // correct, not just that a jump exists. Expected arrays are exact
-  // copies of real compiler output (per this file's own header comment).
+  // correct, not just that a jump exists.
 
   it("a 'while' loop's break jump targets exactly the same line as the loop's own forward ifno (the loop's exit)", () => {
     const pcode = compileAndEncode(
       "Python",
       "x = 0\nwhile x < 3:\n    if x == 1:\n        break\n    x = x + 1",
     );
-    assertEquals(pcode, [
-      [
-        160, 12, 2, 2, 160, 0, 171, 160, 6, 3, 171, 7, 160, 7, 172, 160, 19,
-        186,
-      ],
-      [
-        15, 1, 128, 160, 2, 133, 160, 360, 132, 160, 32, 194, 160, 1, 171, 189,
-        160, 0, 2, 160, 1000, 2, 2, 2, 126, 125,
-      ],
-      [160, 0, 167, 19],
-      [161, 19, 160, 3, 50, 177, 9],
-      [161, 19, 160, 1, 48, 177, 7],
-      [176, 9],
-      [161, 19, 7, 167, 19],
-      [176, 4],
-      [178],
-    ]);
+    // the loop is the last six lines: condition, guarding if, break jump,
+    // increment, back-jump, halt
+    const [condition, ifCondition, breakJump, , backJump, halt] =
+      pcode.slice(-6);
+    const exitLineNumber = pcode.length; // the halt line, just past the loop
     // the while condition's own ifno and the break's unconditional jump
-    // both target line 9 - the loop's exit
-    const conditionLine = pcode[3];
-    const breakLine = pcode[5];
-    assertEquals(conditionLine.at(-1), breakLine.at(-1));
+    // both target the loop's exit
+    assertEquals(condition.slice(-2), [PCode.ifno, exitLineNumber]);
+    assertEquals(breakJump, [PCode.jump, exitLineNumber]);
+    // the guarding if skips just the break line itself (to the increment)
+    assertEquals(ifCondition.slice(-2), [PCode.ifno, pcode.length - 2]);
+    // and the loop's own back-jump targets the condition line
+    assertEquals(backJump, [PCode.jump, pcode.length - 5]);
+    assertEquals(halt, [PCode.halt]);
   });
 
   it("a 'while' loop's continue jump targets exactly the same line as the loop's own back-jump (the condition re-test)", () => {
@@ -410,29 +399,25 @@ describe("encoder: statements/breakStatement.ts & statements/continueStatement.t
       "Python",
       "x = 0\nc = 0\nwhile x < 3:\n    x = x + 1\n    if x == 2:\n        continue\n    c = c + 1",
     );
-    assertEquals(pcode, [
-      [
-        160, 12, 2, 2, 160, 0, 171, 160, 6, 3, 171, 7, 160, 8, 172, 160, 20,
-        186,
-      ],
-      [
-        15, 1, 128, 160, 2, 133, 160, 360, 132, 160, 32, 194, 160, 1, 171, 189,
-        160, 0, 2, 160, 1000, 2, 2, 2, 126, 125,
-      ],
-      [160, 0, 167, 19],
-      [160, 0, 167, 20],
-      [161, 19, 160, 3, 50, 177, 11],
-      [161, 19, 7, 167, 19],
-      [161, 19, 160, 2, 48, 177, 9],
-      [176, 5],
-      [161, 20, 7, 167, 20],
-      [176, 5],
-      [178],
+    // the loop is the last seven lines: condition, x-increment, guarding
+    // if, continue jump, c-increment, back-jump, halt
+    const [condition, , , continueJump, , backJump] = pcode.slice(-7);
+    const conditionLineNumber = pcode.length - 6;
+    // that line really is the loop condition ("x < 3", 19 = "x", exiting
+    // to the halt line)...
+    assertEquals(condition, [
+      PCode.ldvg,
+      19,
+      PCode.ldin,
+      3,
+      PCode.less,
+      PCode.ifno,
+      pcode.length,
     ]);
-    const backJumpLine = pcode[9];
-    const continueLine = pcode[7];
-    assertEquals(continueLine.at(-1), backJumpLine.at(-1));
-    assertEquals(continueLine.at(-1), 5);
+    // ...the loop's own back-jump targets it, and continue is encoded as
+    // exactly the same jump
+    assertEquals(backJump, [PCode.jump, conditionLineNumber]);
+    assertEquals(continueJump, [PCode.jump, conditionLineNumber]);
   });
 
   it("a 'for' loop's continue jump targets the increment step, not the condition - skipping it would infinite-loop", () => {
@@ -440,30 +425,27 @@ describe("encoder: statements/breakStatement.ts & statements/continueStatement.t
       "Python",
       "c = 0\nfor i in range(5):\n    if i == 2:\n        continue\n    c = c + 1",
     );
-    assertEquals(pcode, [
-      [
-        160, 12, 2, 2, 160, 0, 171, 160, 6, 3, 171, 7, 160, 8, 172, 160, 20,
-        186,
-      ],
-      [
-        15, 1, 128, 160, 2, 133, 160, 360, 132, 160, 32, 194, 160, 1, 171, 189,
-        160, 0, 2, 160, 1000, 2, 2, 2, 126, 125,
-      ],
-      [160, 0, 167, 19],
-      [160, 0, 167, 20],
-      [161, 20, 160, 5, 50, 177, 10],
-      [161, 20, 160, 2, 48, 177, 8],
-      [176, 9],
-      [161, 19, 7, 167, 19],
-      [161, 20, 7, 167, 20, 176, 5],
-      [178],
+    // the loop is the last six lines: condition, guarding if, continue
+    // jump, c-increment, "change" line, halt
+    const [condition, , continueJump, , changeLine, halt] = pcode.slice(-6);
+    const changeLineNumber = pcode.length - 1;
+    const conditionLineNumber = pcode.length - 5;
+    // the "change" line increments i (20 = "i") and only then jumps back
+    // to the condition...
+    assertEquals(changeLine, [
+      PCode.ldvg,
+      20,
+      PCode.incr,
+      PCode.stvg,
+      20,
+      PCode.jump,
+      conditionLineNumber,
     ]);
-    // the "change" line (increment i, then jump back to the condition) is
-    // exactly what continue targets - not the condition line (5)
-    const changeLine = pcode[8];
-    const continueLine = pcode[6];
-    assertEquals(continueLine.at(-1), 9);
-    assertEquals(changeLine[0], 161); // the change line really does start with the increment
+    // ...and continue targets that change line, not the condition line
+    assertEquals(continueJump, [PCode.jump, changeLineNumber]);
+    // (the condition, for its part, exits the loop to the halt line)
+    assertEquals(condition.slice(-2), [PCode.ifno, pcode.length]);
+    assertEquals(halt, [PCode.halt]);
   });
 
   it("a 'for' loop's break jump targets exactly the same line as the loop's own forward ifno (the loop's exit)", () => {
@@ -471,25 +453,18 @@ describe("encoder: statements/breakStatement.ts & statements/continueStatement.t
       "Python",
       "for i in range(5):\n    if i == 2:\n        break",
     );
-    assertEquals(pcode, [
-      [
-        160, 12, 2, 2, 160, 0, 171, 160, 6, 3, 171, 7, 160, 7, 172, 160, 19,
-        186,
-      ],
-      [
-        15, 1, 128, 160, 2, 133, 160, 360, 132, 160, 32, 194, 160, 1, 171, 189,
-        160, 0, 2, 160, 1000, 2, 2, 2, 126, 125,
-      ],
-      [160, 0, 167, 19],
-      [161, 19, 160, 5, 50, 177, 8],
-      [161, 19, 160, 2, 48, 177, 7],
-      [176, 8],
-      [161, 19, 7, 167, 19, 176, 4],
-      [178],
-    ]);
-    const conditionLine = pcode[3];
-    const breakLine = pcode[5];
-    assertEquals(conditionLine.at(-1), breakLine.at(-1));
+    // the loop is the last five lines: condition, guarding if, break jump,
+    // "change" line, halt
+    const [condition, ifCondition, breakJump, changeLine] = pcode.slice(-5);
+    const exitLineNumber = pcode.length; // the halt line
+    // the for condition's own ifno and the break's unconditional jump both
+    // target the loop's exit
+    assertEquals(condition.slice(-2), [PCode.ifno, exitLineNumber]);
+    assertEquals(breakJump, [PCode.jump, exitLineNumber]);
+    // the guarding if skips just the break line itself (to the change line)
+    assertEquals(ifCondition.slice(-2), [PCode.ifno, pcode.length - 1]);
+    // and the change line jumps back to the condition
+    assertEquals(changeLine.slice(-2), [PCode.jump, pcode.length - 4]);
   });
 
   it("a 'break' in a nested loop only patches the inner loop's exit, not the outer loop's", () => {
@@ -497,44 +472,17 @@ describe("encoder: statements/breakStatement.ts & statements/continueStatement.t
       "Python",
       "for i in range(3):\n    for j in range(3):\n        if j == 1:\n            break",
     );
-    assertEquals(pcode, [
-      [
-        160, 12, 2, 2, 160, 0, 171, 160, 6, 3, 171, 7, 160, 8, 172, 160, 20,
-        186,
-      ],
-      [
-        15, 1, 128, 160, 2, 133, 160, 360, 132, 160, 32, 194, 160, 1, 171, 189,
-        160, 0, 2, 160, 1000, 2, 2, 2, 126, 125,
-      ],
-      [160, 0, 167, 19],
-      [161, 19, 160, 3, 50, 177, 11],
-      [160, 0, 167, 20],
-      [161, 20, 160, 3, 50, 177, 10],
-      [161, 20, 160, 1, 48, 177, 9],
-      [176, 10],
-      [161, 20, 7, 167, 20, 176, 6],
-      [161, 19, 7, 167, 19, 176, 4],
-      [178],
-    ]);
-    const outerConditionLine = pcode[3];
-    const innerConditionLine = pcode[5];
-    const breakLine = pcode[7];
-    // the inner break targets the inner loop's own exit...
-    assertEquals(breakLine.at(-1), innerConditionLine.at(-1));
+    // the nested loops are the last eight lines: outer condition, inner
+    // init, inner condition, guarding if, break jump, inner change line,
+    // outer change line, halt
+    const [outerCondition, , innerCondition, , breakJump] = pcode.slice(-8);
+    // the inner break targets the inner loop's own exit (the outer loop's
+    // change line, just before the halt)...
+    assertEquals(innerCondition.slice(-2), [PCode.ifno, pcode.length - 1]);
+    assertEquals(breakJump, [PCode.jump, pcode.length - 1]);
     // ...which is a different (earlier) line than the outer loop's exit
-    assertEquals(outerConditionLine.at(-1) === breakLine.at(-1), false);
-  });
-
-  it("reaches the breakStatement/continueStatement arms of the statement.ts dispatcher", () => {
-    // belt-and-braces for this file's own coverage run, alongside the
-    // shape assertions above
-    const withBreak = compileAndEncode("Python", "while True:\n    break");
-    const withContinue = compileAndEncode(
-      "Python",
-      "while True:\n    continue",
-    );
-    assertEquals(includesCode(withBreak, PCode.jump), true);
-    assertEquals(includesCode(withContinue, PCode.jump), true);
+    // (the halt line)
+    assertEquals(outerCondition.slice(-2), [PCode.ifno, pcode.length]);
   });
 });
 
@@ -561,16 +509,12 @@ describe("encoder: statements/returnStatement.ts", () => {
       "int doubleIt (int n) {\nreturn n * 2;\n}\nvoid main () {\nint x;\nx = doubleIt(2);\n}",
     );
     for (const code of housekeeping) {
-      assertEquals(
-        includesCode(pcode, code),
-        true,
-        `expected ${PCode[code]} in pcode`,
-      );
+      assert(includesCode(pcode, code), `expected ${PCode[code]} in pcode`);
     }
     // the scalar (non-string) branch of variableAssignment.ts's
     // localVariableAssignment is used for the "!result"/result assignment
     // itself, i.e. no PCode.cstr from this return statement
-    assertEquals(includesCode(pcode, PCode.cstr), false);
+    assertFalse(includesCode(pcode, PCode.cstr));
   });
 
   it("TypeScript: a string-returning function's return statement", () => {
@@ -579,16 +523,12 @@ describe("encoder: statements/returnStatement.ts", () => {
       'function greet(): string { return "hi"; }\nvar y: string;\ny = greet();',
     );
     for (const code of housekeeping) {
-      assertEquals(
-        includesCode(pcode, code),
-        true,
-        `expected ${PCode[code]} in pcode`,
-      );
+      assert(includesCode(pcode, code), `expected ${PCode[code]} in pcode`);
     }
     // the string branch of localVariableAssignment is used here, so
     // PCode.cstr does appear (both for the return itself and for the
     // caller's own "y = ..." string assignment)
-    assertEquals(includesCode(pcode, PCode.cstr), true);
+    assert(includesCode(pcode, PCode.cstr));
   });
 });
 
@@ -598,18 +538,10 @@ describe("encoder: statements/variableAssignment.ts", () => {
       "Pascal",
       "program Test;\nbegin\nturtx := 100;\nend.",
     );
-    assertEquals(pcode, [
-      [
-        160, 12, 2, 2, 160, 0, 171, 160, 6, 3, 171, 7, 160, 6, 172, 160, 18,
-        186,
-      ],
-      [
-        15, -1, 128, 160, 2, 133, 160, 360, 132, 160, 32, 194, 160, 1, 171, 189,
-        160, 0, 2, 160, 1000, 2, 2, 2, 126, 125,
-      ],
-      [160, 100, 167, 13],
-      [178],
-    ]);
+    const [assignment, halt] = pcode.slice(-2);
+    // 13 = the turtx cell (turtle address 12 + 1)
+    assertEquals(assignment, [PCode.ldin, 100, PCode.stvg, 13]);
+    assertEquals(halt, [PCode.halt]);
   });
 
   it("global scalar (integer) assignment uses PCode.stvg, no string opcodes", () => {
@@ -617,19 +549,10 @@ describe("encoder: statements/variableAssignment.ts", () => {
       "Pascal",
       "program Test;\nvar x: integer;\nbegin\nx := 1;\nend.",
     );
-    assertEquals(pcode, [
-      [
-        160, 12, 2, 2, 160, 0, 171, 160, 6, 3, 171, 7, 160, 7, 172, 160, 19,
-        186,
-      ],
-      [
-        15, -1, 128, 160, 2, 133, 160, 360, 132, 160, 32, 194, 160, 1, 171, 189,
-        160, 0, 2, 160, 1000, 2, 2, 2, 126, 125,
-      ],
-      [160, 1, 167, 19],
-      [178],
-    ]);
-    assertEquals(includesCode(pcode, PCode.cstr), false);
+    const [assignment, halt] = pcode.slice(-2);
+    assertEquals(assignment, [PCode.ldin, 1, PCode.stvg, 19]); // 19 = "x"
+    assertEquals(halt, [PCode.halt]);
+    assertFalse(includesCode(pcode, PCode.cstr));
   });
 
   it("global plain string assignment uses PCode.ldvg + PCode.cstr (not the indexed/array path)", () => {
@@ -637,19 +560,20 @@ describe("encoder: statements/variableAssignment.ts", () => {
       "Pascal",
       "program Test;\nvar s: string;\nbegin\ns := 'hi';\nend.",
     );
-    assertEquals(pcode, [
-      [
-        160, 12, 2, 2, 160, 0, 171, 160, 6, 3, 171, 7, 160, 73, 172, 160, 85,
-        186,
-      ],
-      [
-        15, -1, 128, 160, 2, 133, 160, 360, 132, 160, 32, 194, 160, 1, 171, 189,
-        160, 0, 2, 160, 1000, 2, 2, 2, 126, 125,
-      ],
-      [164, 21, 167, 19, 160, 65, 167, 20],
-      [166, 2, 104, 105, 161, 19, 174, 190],
-      [178],
+    const [assignment, halt] = pcode.slice(-2);
+    // LSTR "hi" (104/105 = "h"/"i"), LDVG the string variable's address
+    // (19 = "s"), CSTR the string into it, then clear the temporary heap
+    assertEquals(assignment, [
+      PCode.lstr,
+      2,
+      104,
+      105,
+      PCode.ldvg,
+      19,
+      PCode.cstr,
+      PCode.hclr,
     ]);
+    assertEquals(halt, [PCode.halt]);
   });
 
   it("global integer array element assignment overwrites the trailing PCode.lptr with PCode.sptr", () => {
@@ -657,22 +581,30 @@ describe("encoder: statements/variableAssignment.ts", () => {
       "Pascal",
       "program Test;\nvar arr: array[1..3] of integer;\nbegin\narr[1] := 5;\nend.",
     );
-    assertEquals(pcode, [
-      [
-        160, 12, 2, 2, 160, 0, 171, 160, 6, 3, 171, 7, 160, 11, 172, 160, 23,
-        186,
-      ],
-      [
-        15, -1, 128, 160, 2, 133, 160, 360, 132, 160, 32, 194, 160, 1, 171, 189,
-        160, 0, 2, 160, 1000, 2, 2, 2, 126, 125,
-      ],
-      [164, 20, 167, 19, 160, 3, 167, 20],
-      [160, 5, 161, 19, 160, 1, 160, 1, 24, 3, 77, 23, 7, 171],
-      [178],
+    const [assignment, halt] = pcode.slice(-2);
+    // ldin 5 (the value), then the element-address calculation for arr[1]
+    // (base 19 = "arr"; index 1 minus lower bound 1, bounds-tested) -
+    // ending in sptr where a *read* of arr[1] would end in lptr
+    assertEquals(assignment, [
+      PCode.ldin,
+      5,
+      PCode.ldvg,
+      19,
+      PCode.ldin,
+      1,
+      PCode.ldin,
+      1,
+      PCode.subt,
+      PCode.swap,
+      PCode.test,
+      PCode.plus,
+      PCode.incr,
+      PCode.sptr,
     ]);
+    assertEquals(halt, [PCode.halt]);
     // overwritten, not appended: no PCode.lptr or PCode.cstr survive
-    assertEquals(includesCode(pcode, PCode.lptr), false);
-    assertEquals(includesCode(pcode, PCode.cstr), false);
+    assertFalse(includesCode(pcode, PCode.lptr));
+    assertFalse(includesCode(pcode, PCode.cstr));
   });
 
   it("global array-of-strings element assignment appends PCode.cstr after the PCode.lptr (not an overwrite)", () => {
@@ -680,30 +612,33 @@ describe("encoder: statements/variableAssignment.ts", () => {
       "Pascal",
       "program Test;\nvar arr: array[1..3] of string;\nbegin\narr[1] := 'hi';\nend.",
     );
-    assertEquals(pcode, [
-      [
-        160, 12, 2, 2, 160, 0, 171, 160, 6, 3, 171, 7, 160, 209, 172, 160, 221,
-        186,
-      ],
-      [
-        15, -1, 128, 160, 2, 133, 160, 360, 132, 160, 32, 194, 160, 1, 171, 189,
-        160, 0, 2, 160, 1000, 2, 2, 2, 126, 125,
-      ],
-      [164, 20, 167, 19, 160, 3, 167, 20],
-      [164, 25, 167, 21, 160, 65, 167, 24],
-      [164, 91, 167, 22, 160, 65, 167, 90],
-      [164, 157, 167, 23, 160, 65, 167, 156],
-      [
-        166, 2, 104, 105, 161, 19, 160, 1, 160, 1, 24, 3, 77, 23, 7, 170, 174,
-        190,
-      ],
-      [178],
+    const [assignment, halt] = pcode.slice(-2);
+    // LSTR "hi", then the same element-address calculation as the integer
+    // case - but both survive here: PCode.lptr (loads the element's
+    // address) then PCode.cstr (writes the string at that address), unlike
+    // the plain integer-array case above where lptr gets overwritten to
+    // sptr
+    assertEquals(assignment, [
+      PCode.lstr,
+      2,
+      104, // "h"
+      105, // "i"
+      PCode.ldvg,
+      19, // "arr"
+      PCode.ldin,
+      1,
+      PCode.ldin,
+      1,
+      PCode.subt,
+      PCode.swap,
+      PCode.test,
+      PCode.plus,
+      PCode.incr,
+      PCode.lptr,
+      PCode.cstr,
+      PCode.hclr,
     ]);
-    // both survive here: PCode.lptr (loads the element's address) then
-    // PCode.cstr (writes the string at that address), unlike the plain
-    // integer-array case above where lptr gets overwritten to sptr
-    assertEquals(includesCode(pcode, PCode.lptr), true);
-    assertEquals(includesCode(pcode, PCode.cstr), true);
+    assertEquals(halt, [PCode.halt]);
   });
 
   it("global string char-index assignment ('s[1] := ...') takes the same sptr path as a plain array, via the type===string clause", () => {
@@ -711,20 +646,26 @@ describe("encoder: statements/variableAssignment.ts", () => {
       "Pascal",
       "program Test;\nvar s: string;\nbegin\ns[1] := 'x';\nend.",
     );
-    assertEquals(pcode, [
-      [
-        160, 12, 2, 2, 160, 0, 171, 160, 6, 3, 171, 7, 160, 73, 172, 160, 85,
-        186,
-      ],
-      [
-        15, -1, 128, 160, 2, 133, 160, 360, 132, 160, 32, 194, 160, 1, 171, 189,
-        160, 0, 2, 160, 1000, 2, 2, 2, 126, 125,
-      ],
-      [164, 21, 167, 19, 160, 65, 167, 20],
-      [160, 120, 160, 1, 8, 161, 19, 77, 23, 7, 171],
-      [178],
+    const [assignment, halt] = pcode.slice(-2);
+    // ldin 120 (= "x", the character being assigned), then index 1
+    // decremented to an offset, bounds-tested against the string at 19
+    // (= "s"), and written through sptr - the same overwrite-the-lptr
+    // ending as a plain array element
+    assertEquals(assignment, [
+      PCode.ldin,
+      120,
+      PCode.ldin,
+      1,
+      PCode.decr,
+      PCode.ldvg,
+      19,
+      PCode.test,
+      PCode.plus,
+      PCode.incr,
+      PCode.sptr,
     ]);
-    assertEquals(includesCode(pcode, PCode.cstr), false);
+    assertEquals(halt, [PCode.halt]);
+    assertFalse(includesCode(pcode, PCode.cstr));
   });
 
   it("pointer variable assignment (non-string) uses PCode.poke", () => {
@@ -733,25 +674,13 @@ describe("encoder: statements/variableAssignment.ts", () => {
     // this exercises the isPointer branch, which is checked before the
     // isGlobal/local split further down variableAssignment's dispatcher
     const pcode = compileAndEncode("C", "void main () {\nint* p;\np = 5;\n}");
-    assertEquals(pcode, [
-      [
-        160, 13, 2, 2, 160, 0, 171, 160, 6, 3, 171, 7, 160, 6, 172, 160, 19,
-        186,
-      ],
-      [
-        15, -1, 128, 160, 2, 133, 160, 360, 132, 160, 32, 194, 160, 1, 171, 189,
-        160, 0, 2, 160, 1000, 2, 2, 2, 126, 125,
-      ],
-      [176, 9],
-      [181, 1],
-      [187, 12, 1],
-      [165, 12, 1, 160, 1, 172],
-      [162, 12, 1, 160, 5, 124],
-      [188, 12, 182, 180],
-      [179, 4],
-      [178],
-    ]);
-    assertEquals(includesCode(pcode, PCode.cstr), false);
+    // the assignment is the last line of main's body, followed by main's
+    // memr/plsr/retn housekeeping, the top-level call to main, and the halt
+    const [assignment] = pcode.slice(-4);
+    // ldvv loads the pointer's own cell (subroutine address 12, variable
+    // address 1), then the value, then POKE writes through it
+    assertEquals(assignment, [PCode.ldvv, 12, 1, PCode.ldin, 5, PCode.poke]);
+    assertFalse(includesCode(pcode, PCode.cstr));
   });
 
   it("pointer variable assignment (string) uses PCode.cstr instead of PCode.poke", () => {
@@ -759,26 +688,23 @@ describe("encoder: statements/variableAssignment.ts", () => {
       "C",
       'void main () {\nstring* p;\np = "hi";\n}',
     );
-    assertEquals(pcode, [
-      [
-        160, 13, 2, 2, 160, 0, 171, 160, 6, 3, 171, 7, 160, 6, 172, 160, 19,
-        186,
-      ],
-      [
-        15, -1, 128, 160, 2, 133, 160, 360, 132, 160, 32, 194, 160, 1, 171, 189,
-        160, 0, 2, 160, 1000, 2, 2, 2, 126, 125,
-      ],
-      [176, 10],
-      [181, 1],
-      [187, 12, 1],
-      [165, 12, 1, 160, 1, 172],
-      [165, 12, 3, 168, 12, 1, 160, 65, 168, 12, 2],
-      [162, 12, 1, 166, 2, 104, 105, 174, 190],
-      [188, 12, 182, 180],
-      [179, 4],
-      [178],
+    // as in the non-string case, the assignment is the last line of main's
+    // body, four lines from the end
+    const [assignment] = pcode.slice(-4);
+    // ldvv the pointer's cell, LSTR "hi" (104/105 = "h"/"i"), then cstr
+    // (and a heap clear) instead of poke
+    assertEquals(assignment, [
+      PCode.ldvv,
+      12,
+      1,
+      PCode.lstr,
+      2,
+      104,
+      105,
+      PCode.cstr,
+      PCode.hclr,
     ]);
-    assertEquals(includesCode(pcode, PCode.poke), false);
+    assertFalse(includesCode(pcode, PCode.poke));
   });
 
   it("reference (var) parameter assignment uses PCode.stvr, not PCode.stvg/stvv", () => {
@@ -786,24 +712,12 @@ describe("encoder: statements/variableAssignment.ts", () => {
       "Pascal",
       "program Test;\nprocedure go(var n: integer);\nbegin\nn := 5;\nend;\nbegin\nend.",
     );
-    assertEquals(pcode, [
-      [
-        160, 13, 2, 2, 160, 0, 171, 160, 6, 3, 171, 7, 160, 6, 172, 160, 19,
-        186,
-      ],
-      [
-        15, -1, 128, 160, 2, 133, 160, 360, 132, 160, 32, 194, 160, 1, 171, 189,
-        160, 0, 2, 160, 1000, 2, 2, 2, 126, 125,
-      ],
-      [176, 9],
-      [181, 1],
-      [187, 12, 1],
-      [168, 12, 1],
-      [160, 5, 169, 12, 1],
-      [188, 12, 182, 180],
-      [178],
-    ]);
-    assertEquals(includesCode(pcode, PCode.stvr), true);
+    // the assignment is the last line of go's body, followed by go's
+    // memr/plsr/retn housekeeping and the (empty) main program's halt
+    const [assignment] = pcode.slice(-3);
+    // stvr writes straight through the reference (subroutine address 12,
+    // variable address 1)
+    assertEquals(assignment, [PCode.ldin, 5, PCode.stvr, 12, 1]);
   });
 
   it("a reference (var) STRING parameter is excluded from referenceVariableAssignment and falls through to the local-string path", () => {
@@ -814,8 +728,8 @@ describe("encoder: statements/variableAssignment.ts", () => {
       "Pascal",
       "program Test;\nprocedure go(var s: string);\nbegin\ns := 'hi';\nend;\nbegin\nend.",
     );
-    assertEquals(includesCode(pcode, PCode.stvr), false);
-    assertEquals(includesCode(pcode, PCode.cstr), true);
+    assertFalse(includesCode(pcode, PCode.stvr));
+    assert(includesCode(pcode, PCode.cstr));
   });
 
   it("local scalar (integer) assignment uses PCode.stvv", () => {
@@ -823,25 +737,11 @@ describe("encoder: statements/variableAssignment.ts", () => {
       "Pascal",
       "program Test;\nprocedure go;\nvar x: integer;\nbegin\nx := 5;\nend;\nbegin\nend.",
     );
-    assertEquals(pcode, [
-      [
-        160, 13, 2, 2, 160, 0, 171, 160, 6, 3, 171, 7, 160, 6, 172, 160, 19,
-        186,
-      ],
-      [
-        15, -1, 128, 160, 2, 133, 160, 360, 132, 160, 32, 194, 160, 1, 171, 189,
-        160, 0, 2, 160, 1000, 2, 2, 2, 126, 125,
-      ],
-      [176, 9],
-      [181, 1],
-      [187, 12, 1],
-      [165, 12, 1, 160, 1, 172],
-      [160, 5, 168, 12, 1],
-      [188, 12, 182, 180],
-      [178],
-    ]);
-    assertEquals(includesCode(pcode, PCode.stvv), true);
-    assertEquals(includesCode(pcode, PCode.cstr), false);
+    // the assignment is the last line of go's body, followed by go's
+    // memr/plsr/retn housekeeping and the (empty) main program's halt
+    const [assignment] = pcode.slice(-3);
+    assertEquals(assignment, [PCode.ldin, 5, PCode.stvv, 12, 1]);
+    assertFalse(includesCode(pcode, PCode.cstr));
   });
 
   it("local string assignment uses PCode.ldvv + PCode.cstr", () => {
@@ -849,25 +749,22 @@ describe("encoder: statements/variableAssignment.ts", () => {
       "Pascal",
       "program Test;\nprocedure go;\nvar s: string;\nbegin\ns := 'hi';\nend;\nbegin\nend.",
     );
-    assertEquals(pcode, [
-      [
-        160, 13, 2, 2, 160, 0, 171, 160, 6, 3, 171, 7, 160, 6, 172, 160, 19,
-        186,
-      ],
-      [
-        15, -1, 128, 160, 2, 133, 160, 360, 132, 160, 32, 194, 160, 1, 171, 189,
-        160, 0, 2, 160, 1000, 2, 2, 2, 126, 125,
-      ],
-      [176, 10],
-      [181, 1],
-      [187, 12, 67],
-      [165, 12, 1, 160, 67, 172],
-      [165, 12, 3, 168, 12, 1, 160, 65, 168, 12, 2],
-      [166, 2, 104, 105, 162, 12, 1, 174, 190],
-      [188, 12, 182, 180],
-      [178],
+    // the assignment is the last line of go's body, three lines from the
+    // end (housekeeping, halt)
+    const [assignment] = pcode.slice(-3);
+    // the same shape as the global case above, with the LDVG swapped for
+    // an LDVV (subroutine address 12, variable address 1)
+    assertEquals(assignment, [
+      PCode.lstr,
+      2,
+      104, // "h"
+      105, // "i"
+      PCode.ldvv,
+      12,
+      1,
+      PCode.cstr,
+      PCode.hclr,
     ]);
-    assertEquals(includesCode(pcode, PCode.ldvv), true);
   });
 
   it("local integer array element assignment overwrites the trailing PCode.lptr with PCode.sptr", () => {
@@ -875,25 +772,29 @@ describe("encoder: statements/variableAssignment.ts", () => {
       "Pascal",
       "program Test;\nprocedure go;\nvar arr: array[1..3] of integer;\nbegin\narr[1] := 5;\nend;\nbegin\nend.",
     );
-    assertEquals(pcode, [
-      [
-        160, 13, 2, 2, 160, 0, 171, 160, 6, 3, 171, 7, 160, 6, 172, 160, 19,
-        186,
-      ],
-      [
-        15, -1, 128, 160, 2, 133, 160, 360, 132, 160, 32, 194, 160, 1, 171, 189,
-        160, 0, 2, 160, 1000, 2, 2, 2, 126, 125,
-      ],
-      [176, 10],
-      [181, 1],
-      [187, 12, 5],
-      [165, 12, 1, 160, 5, 172],
-      [165, 12, 2, 168, 12, 1, 160, 3, 168, 12, 2],
-      [160, 5, 162, 12, 1, 160, 1, 160, 1, 24, 3, 77, 23, 7, 171],
-      [188, 12, 182, 180],
-      [178],
+    // the assignment is the last line of go's body, three lines from the
+    // end (housekeeping, halt)
+    const [assignment] = pcode.slice(-3);
+    // the same element-address calculation as the global case, based on an
+    // LDVV instead of an LDVG, and again ending in sptr
+    assertEquals(assignment, [
+      PCode.ldin,
+      5,
+      PCode.ldvv,
+      12,
+      1,
+      PCode.ldin,
+      1,
+      PCode.ldin,
+      1,
+      PCode.subt,
+      PCode.swap,
+      PCode.test,
+      PCode.plus,
+      PCode.incr,
+      PCode.sptr,
     ]);
-    assertEquals(includesCode(pcode, PCode.cstr), false);
+    assertFalse(includesCode(pcode, PCode.cstr));
   });
 
   it("local array-of-strings element assignment appends PCode.cstr after the PCode.lptr", () => {
@@ -901,32 +802,33 @@ describe("encoder: statements/variableAssignment.ts", () => {
       "Pascal",
       "program Test;\nprocedure go;\nvar arr: array[1..3] of string;\nbegin\narr[1] := 'hi';\nend;\nbegin\nend.",
     );
-    assertEquals(pcode, [
-      [
-        160, 13, 2, 2, 160, 0, 171, 160, 6, 3, 171, 7, 160, 6, 172, 160, 19,
-        186,
-      ],
-      [
-        15, -1, 128, 160, 2, 133, 160, 360, 132, 160, 32, 194, 160, 1, 171, 189,
-        160, 0, 2, 160, 1000, 2, 2, 2, 126, 125,
-      ],
-      [176, 13],
-      [181, 1],
-      [187, 12, 203],
-      [165, 12, 1, 160, 203, 172],
-      [165, 12, 2, 168, 12, 1, 160, 3, 168, 12, 2],
-      [165, 12, 7, 168, 12, 3, 160, 65, 168, 12, 6],
-      [165, 12, 73, 168, 12, 4, 160, 65, 168, 12, 72],
-      [165, 12, 139, 168, 12, 5, 160, 65, 168, 12, 138],
-      [
-        166, 2, 104, 105, 162, 12, 1, 160, 1, 160, 1, 24, 3, 77, 23, 7, 170,
-        174, 190,
-      ],
-      [188, 12, 182, 180],
-      [178],
+    // the assignment is the last line of go's body, three lines from the
+    // end (housekeeping, halt)
+    const [assignment] = pcode.slice(-3);
+    // as in the global array-of-strings case, both the lptr (loading the
+    // element's address) and the appended cstr (writing the string there)
+    // survive
+    assertEquals(assignment, [
+      PCode.lstr,
+      2,
+      104, // "h"
+      105, // "i"
+      PCode.ldvv,
+      12,
+      1,
+      PCode.ldin,
+      1,
+      PCode.ldin,
+      1,
+      PCode.subt,
+      PCode.swap,
+      PCode.test,
+      PCode.plus,
+      PCode.incr,
+      PCode.lptr,
+      PCode.cstr,
+      PCode.hclr,
     ]);
-    assertEquals(includesCode(pcode, PCode.lptr), true);
-    assertEquals(includesCode(pcode, PCode.cstr), true);
   });
 
   it("local integer list element assignment takes the sptr path, with no hstr/hfix fix-up", () => {
@@ -964,8 +866,8 @@ describe("encoder: statements/variableAssignment.ts", () => {
       PCode.plus,
       PCode.sptr,
     ]);
-    assertEquals(pcode[7].includes(PCode.hstr), false);
-    assertEquals(pcode[7].includes(PCode.hfix), false);
+    assertFalse(pcode[7].includes(PCode.hstr));
+    assertFalse(pcode[7].includes(PCode.hfix));
     assertEquals(runPcode(pcode).output.outputText, "[9, 2]\n");
   });
 

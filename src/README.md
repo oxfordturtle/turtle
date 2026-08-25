@@ -56,8 +56,13 @@ source text
   → analyser/    usage tables, for the Usage tab
 ```
 
-`formatter/` is a stub. It is exported from no barrel and has no tests; if it is
-ever finished, it gets tests then.
+`formatter/` is a stub, but an _exported_ one: `formatProgram`,
+`formatStatement`, `formatExpression` and `formatType` all come out of the
+barrel, and nine of its branches return the literal string `"TODO"` while
+`formatProgram` returns `"program"`. What it does today — the finished arms and
+the placeholders alike — is pinned in `test/core/compiler/formatter.test.ts`,
+marked `[known limitation]`, so finishing it trips those tests rather than
+passing silently. See `TODO.md` §2.2.
 
 ### The parser
 
@@ -260,11 +265,16 @@ Nothing in this app declares `context` any more.
 
 ## `client/` — the browser
 
-`index.ts` is the entry point and the one place where startup order matters:
-install the ports, restore the file memory, initialise the settings, run the
-page-wide passes, subscribe the last two to the settings store. The islands
-hydrate on a microtask after this module's body, so the first render of every
-display already has the right program and settings in it.
+`index.ts` exports `init()`, the one place where startup order matters: install
+the ports, restore the file memory, initialise the settings, run the page-wide
+passes, subscribe the last two to the settings store. The islands hydrate on a
+microtask after this module's body, so the first render of every display already
+has the right program and settings in it.
+
+`main.ts` is the bundle entry (`build.ts` points at it) and does nothing but
+call `init()`. The split is what lets the jsdom test layer run the real startup
+— `mountRoute` calls the same `init()` after injecting a route's markup — rather
+than keeping a mirror of it that can drift.
 
 `adapters/` implements the machine's outbound ports, plus keyboard and mouse
 input — which is a _driving_ port, the one that calls in rather than out. The
@@ -317,7 +327,8 @@ the compiler actually implements.
 
 - No filesystem adapter, so the file-processing opcodes have nothing real behind
   them in the browser.
-- `core/compiler/formatter/` is a stub.
+- `core/compiler/formatter/` is a stub — exported and pinned, but unimplemented
+  (see above, and `TODO.md` §2.2).
 - Undo, Redo, Cut, Copy and Paste in the Edit menu report "not implemented".
   They need either `document.execCommand`, which is deprecated and unspecified,
   or an undo stack that would have to replace the browser's rather than sit

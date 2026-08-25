@@ -1,7 +1,7 @@
 import { describe, it } from "@std/testing/bdd";
-import { assertEquals, assertMatch } from "@std/assert";
+import { assertEquals, assertFalse, assertMatch } from "@std/assert";
 import { isRunning, type MachineOptions } from "@/core/machine.ts";
-import { PCode, runPcode, runToInt } from "./_helpers.ts";
+import { PCode, runPcode, runToInt } from "./lib/helpers.ts";
 
 /**
  * Coverage for `src/core/machine/runtime.ts`'s runtime error conditions:
@@ -34,7 +34,7 @@ describe("machine/runtime: error handling", () => {
       assertMatch(output.runtimeErrors[0].message, expectedMessage);
     }
     assertEquals(output.stateChanges.at(-1), "halted");
-    assertEquals(isRunning(), false);
+    assertFalse(isRunning());
     return output;
   };
 

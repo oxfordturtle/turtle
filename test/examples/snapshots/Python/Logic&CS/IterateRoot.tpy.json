@@ -1,0 +1,39 @@
+{
+  "schemaVersion": 1,
+  "runMode": "readline",
+  "pcode": {
+    "lines": 35,
+    "hash": "d29772ec8f1c8428"
+  },
+  "hitIterationCap": false,
+  "consoleText": "CALCULATION OF APPROXIMATE SQUARE ROOTS, BY ITERATION\n\nWhich square root (<2148) would you like to calculate? 10\n\n\n   guess    10/guess\n\n   1.000     10.000        sum = 11.000    average = 5.500\n\n   5.500      1.818        sum = 7.318     average = 3.659\n\n   3.659      2.733        sum = 6.392     average = 3.196\n\n   3.196      3.129        sum = 6.325     average = 3.163\n\n   3.163      3.162        sum = 6.325     average = 3.163\n\n\nThe square root of 10 is approximately 3.163\n",
+  "outputText": "CALCULATION OF APPROXIMATE SQUARE ROOTS, BY ITERATION\n\nWhich square root (<2148) would you like to calculate? \n\n   guess    10/guess\n\n   1.000     10.000        sum = 11.000    average = 5.500\n\n   5.500      1.818        sum = 7.318     average = 3.659\n\n   3.659      2.733        sum = 6.392     average = 3.196\n\n   3.196      3.129        sum = 6.325     average = 3.163\n\n   3.163      3.162        sum = 6.325     average = 3.163\n\n\nThe square root of 10 is approximately 3.163\n",
+  "runtimeErrors": [],
+  "turtle": {
+    "x": 500,
+    "y": 500,
+    "d": 0,
+    "a": 360,
+    "t": 2,
+    "c": "#000"
+  },
+  "canvas": {
+    "callCount": 6,
+    "byMethod": {
+      "setResolution": 2,
+      "setVirtualCanvas": 2,
+      "clear": 1,
+      "setCursor": 1
+    },
+    "logHash": "d982706e7ecfaa0e",
+    "head": [
+      "setResolution([1000,1000,false])",
+      "setVirtualCanvas([0,0,1000,1000])",
+      "setResolution([1000,1000,false])",
+      "clear([\"#FFFFFF\"])",
+      "setVirtualCanvas([0,0,1000,1000])",
+      "setCursor([1])"
+    ],
+    "tail": []
+  }
+}

@@ -1,7 +1,7 @@
 import { describe, it } from "@std/testing/bdd";
-import { assertEquals, assertExists } from "@std/assert";
+import { assert, assertEquals, assertExists, assertFalse } from "@std/assert";
 import { tokenize } from "@/core/compiler.ts";
-import { LANGUAGES } from "./_languages.ts";
+import { LANGUAGES } from "./lib/languages.ts";
 
 const withoutSpacing = (tokens: ReturnType<typeof tokenize>) =>
   tokens.filter((t) => t.type !== "spaces" && t.type !== "newline");
@@ -74,11 +74,8 @@ describe("tokenize", () => {
       // specific tests above. This only asserts that the lexical-scanning stage
       // itself terminates.
       const tokens = tokenize("A=[0]*(n)\ncaption=['a','b']\n", "Python");
-      assertEquals(tokens.length > 0, true);
-      assertEquals(
-        tokens.some((t) => t.type === "illegal"),
-        false,
-      );
+      assert(tokens.length > 0);
+      assertFalse(tokens.some((t) => t.type === "illegal"));
     });
 
     for (const language of LANGUAGES) {
@@ -137,10 +134,7 @@ describe("tokenize", () => {
     for (const language of ["BASIC", "C", "Java", "TypeScript"] as const) {
       it(`tokenizes operators and delimiters in ${language}`, () => {
         const tokens = withoutSpacing(tokenize("x+y", language));
-        assertEquals(
-          tokens.some((t) => t.type === "operator" && t.content === "+"),
-          true,
-        );
+        assert(tokens.some((t) => t.type === "operator" && t.content === "+"));
       });
 
       it(`tokenizes a parenthesis delimiter in ${language}`, () => {
@@ -282,36 +276,24 @@ describe("tokenize", () => {
   describe("booleans", () => {
     it("tokenizes BASIC TRUE and FALSE", () => {
       const tokens = withoutSpacing(tokenize("TRUE FALSE", "BASIC"));
-      assertEquals(
-        tokens.every((t) => t.type === "boolean"),
-        true,
-      );
+      assert(tokens.every((t) => t.type === "boolean"));
     });
 
     it("tokenizes Python True and False", () => {
       const tokens = withoutSpacing(tokenize("True False", "Python"));
-      assertEquals(
-        tokens.every((t) => t.type === "boolean"),
-        true,
-      );
+      assert(tokens.every((t) => t.type === "boolean"));
     });
 
     for (const language of ["C", "Java", "TypeScript"] as const) {
       it(`tokenizes ${language} true and false`, () => {
         const tokens = withoutSpacing(tokenize("true false", language));
-        assertEquals(
-          tokens.every((t) => t.type === "boolean"),
-          true,
-        );
+        assert(tokens.every((t) => t.type === "boolean"));
       });
     }
 
     it("tokenizes Pascal booleans case-insensitively", () => {
       const tokens = withoutSpacing(tokenize("true True TRUE false", "Pascal"));
-      assertEquals(
-        tokens.every((t) => t.type === "boolean"),
-        true,
-      );
+      assert(tokens.every((t) => t.type === "boolean"));
     });
   });
 

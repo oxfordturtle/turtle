@@ -95,8 +95,13 @@ const parseStatement = (
           statement = makeContinueStatement();
           break;
 
+        // deno-coverage-ignore-start -- unreachable: the cases above are
+        // exhaustive over C's keyword table (constants/keywords.ts: if, else,
+        // for, while, do, const, return, break, continue), and the tokenizer
+        // only emits keyword tokens for names in that table
         default:
           throw new CompilerError("Statement cannot begin with {lex}.", lexeme);
+        // deno-coverage-ignore-stop
       }
       break;
 

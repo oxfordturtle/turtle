@@ -27,10 +27,19 @@ export const highlightCodeBlocks = (): void => {
     "code[data-language]",
   ) as NodeListOf<HTMLElement>;
   for (const block of Array.from(blocks)) {
+    // textContent, not innerText: identical for these blocks (the server
+    // renders them as plain escaped text, with real newlines and no markup),
+    // and unlike innerText it exists in jsdom, which is what lets the layer 2
+    // suite run this pass. A browser smoke test double-checks the rendered
+    // result in real Chrome.
+    // deno-coverage-ignore-start -- the `?? ""` fallback is unreachable:
+    // `textContent` is null only on a document or doctype node, and this
+    // query only ever yields elements.
     block.innerHTML = highlight(
-      block.innerText,
+      block.textContent ?? "",
       block.dataset.language as Language,
     );
+    // deno-coverage-ignore-stop
   }
 };
 

@@ -122,12 +122,17 @@ function parameters(lexemes: Lexemes, subroutine: Subroutine): Variable[] {
     }
   }
 
+  // deno-coverage-ignore-start -- unreachable: the loop above only exits when
+  // the current lexeme is ")" (a dry stream re-enters the loop, where the
+  // identifier check inside variable() throws first), so the current lexeme
+  // is always ")" here
   if (lexemes.get()?.content !== ")") {
     throw new CompilerError(
       "Closing bracket missing after method parameters.",
       lexemes.get(-1),
     );
   }
+  // deno-coverage-ignore-stop
   lexemes.next();
 
   return parameters;

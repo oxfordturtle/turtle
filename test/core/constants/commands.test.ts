@@ -1,5 +1,5 @@
 import { describe, it } from "@std/testing/bdd";
-import { assertEquals } from "@std/assert";
+import { assert, assertEquals } from "@std/assert";
 import { commands, languages } from "@/core/constants.ts";
 
 describe("commands", () => {
@@ -13,7 +13,7 @@ describe("commands", () => {
       const hasAName = languages.some(
         (language) => command.names[language] !== null,
       );
-      assertEquals(hasAName, true, command.id);
+      assert(hasAName, command.id);
     }
   });
 
@@ -29,22 +29,14 @@ describe("commands", () => {
 
   it("assigns every command to one of the twelve known categories", () => {
     for (const command of commands) {
-      assertEquals(
-        command.category >= 0 && command.category <= 11,
-        true,
-        command.id,
-      );
+      assert(command.category >= 0 && command.category <= 11, command.id);
     }
   });
 
   it("gives every parameter a positive length", () => {
     for (const command of commands) {
       for (const parameter of command.parameters) {
-        assertEquals(
-          parameter.length >= 1,
-          true,
-          `${command.id}.${parameter.name}`,
-        );
+        assert(parameter.length >= 1, `${command.id}.${parameter.name}`);
       }
     }
   });
@@ -57,7 +49,7 @@ describe("commands", () => {
     // at 9.5% function coverage despite being imported everywhere.
     for (const command of commands) {
       const pcode = command.code(0);
-      assertEquals(Array.isArray(pcode), true, command.id);
+      assert(Array.isArray(pcode), command.id);
       for (const value of pcode) {
         assertEquals(typeof value, "number", command.id);
       }
@@ -70,7 +62,7 @@ describe("commands", () => {
     // second, distinct address too so both code paths run for real.
     for (const command of commands) {
       const pcode = command.code(12345);
-      assertEquals(Array.isArray(pcode), true, command.id);
+      assert(Array.isArray(pcode), command.id);
     }
   });
 });

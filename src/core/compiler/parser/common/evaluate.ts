@@ -152,12 +152,21 @@ const evaluate = (
         case "mult":
           return (left as number) * (right as number);
 
-        // lists are never compile-time constants
+        // deno-coverage-ignore-start -- unreachable: an "lmul" compound's
+        // left operand is always a list expression (common/expression.ts only
+        // reroutes "mult" to "lmul" when isListExpression(left) holds), and
+        // evaluating any list operand throws before the operator switch is
+        // reached - a list literal hits the "listLiteral" case below, a list
+        // variable or function call hits the "variable"/"function" cases
+        // above, and a nested "lmul" recurses to the same dead end - so this
+        // arm, and the two breaks that fall through to the final throw below,
+        // can never run. Lists are never compile-time constants.
         case "lmul":
           break;
       }
       break;
     }
+    // deno-coverage-ignore-stop
 
     case "listLiteral":
       if (context === "constant") {
@@ -165,6 +174,13 @@ const evaluate = (
           "Constant value cannot be a list.",
           expression.lexeme,
         );
+        // deno-coverage-ignore-start -- unreachable: list literals are
+        // Python-only syntax (common/factor.ts), and "constant" is the only
+        // one of the four evaluate contexts Python reaches - it has no
+        // string-size or array-size specification, and its FOR-step (the
+        // third "range" argument, python/statements/forStatement.ts) is
+        // type-checked as an integer, which rejects a list, before evaluate
+        // is ever called
       } else if (context === "string") {
         throw new CompilerError(
           "String size specification cannot be a list.",
@@ -181,15 +197,24 @@ const evaluate = (
           expression.lexeme,
         );
       }
+    // deno-coverage-ignore-stop
 
+    // deno-coverage-ignore-start -- unreachable: exhaustiveness guard, dead by
+    // TypeScript's own check ("satisfies never" would not compile if any
+    // Expression variant were missing above)
     default:
       return expression satisfies never;
   }
+  // deno-coverage-ignore-stop
 
+  // deno-coverage-ignore-start -- unreachable: only the "lmul" breaks above
+  // fall through to here, and those are themselves unreachable (see the
+  // justification on the "lmul" arm)
   throw new CompilerError(
     "This expression cannot be evaluated as a constant.",
     expression.lexeme,
   );
+  // deno-coverage-ignore-stop
 };
 
 export default evaluate;

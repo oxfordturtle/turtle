@@ -5,9 +5,9 @@ import {
   q,
   qa,
   settle,
-} from "../_setup.ts";
-import { assertEquals } from "@std/assert";
-import { beforeEach, describe, it } from "@std/testing/bdd";
+} from "../lib/setup.ts";
+import { assert, assertEquals, assertFalse } from "@std/assert";
+import { afterEach, beforeEach, describe, it } from "@std/testing/bdd";
 
 // Mode visibility is decided in two different ways at once, and they must not
 // fight.
@@ -47,14 +47,16 @@ beforeEach(async () => {
   await mountRoute("/");
 });
 
+// Rule 6: every test ends with Womble having reported nothing.
+afterEach(assertNoWombleLogs);
+
 describe("changing the mode", () => {
   it("hides the panes that don't belong to it", async () => {
     await setMode("simple");
-    assertEquals(pane("pcode").includes("hidden"), true);
-    assertEquals(pane("usage").includes("hidden"), true);
-    assertEquals(pane("canvas").includes("hidden"), false);
-    assertEquals(pane("output").includes("hidden"), false);
-    assertNoWombleLogs();
+    assert(pane("pcode").includes("hidden"));
+    assert(pane("usage").includes("hidden"));
+    assertFalse(pane("canvas").includes("hidden"));
+    assertFalse(pane("output").includes("hidden"));
   });
 
   it("shows them again in a mode they do belong to", async () => {
@@ -68,7 +70,7 @@ describe("changing the mode", () => {
       "memory",
       "options",
     ]) {
-      assertEquals(pane(tab).includes("hidden"), false);
+      assertFalse(pane(tab).includes("hidden"));
     }
   });
 
@@ -87,11 +89,10 @@ describe("changing the mode", () => {
   it("falls back to the canvas when the active tab goes away", async () => {
     system().tab = "pcode";
     await settle();
-    assertEquals(pane("pcode").includes("active"), true);
+    assert(pane("pcode").includes("active"));
     await setMode("simple");
     assertEquals(system().tab, "canvas");
-    assertEquals(pane("canvas").includes("active"), true);
-    assertNoWombleLogs();
+    assert(pane("canvas").includes("active"));
   });
 
   it("leaves the active tab alone when it survives the change", async () => {
@@ -111,12 +112,10 @@ describe("changing the mode", () => {
     const swept = qa("[data-mode]").filter((element: Element) =>
       (element.getAttribute("data-mode") ?? "").split(",").includes("simple"),
     );
-    assertEquals(
+    assert(
       swept.every((element: Element) => !element.classList.contains("hidden")),
-      true,
     );
-    assertEquals(pane("pcode").includes("hidden"), true);
-    assertNoWombleLogs();
+    assert(pane("pcode").includes("hidden"));
   });
 });
 
@@ -127,7 +126,6 @@ describe("choosing a tab", () => {
     await change(select);
     assertEquals(system().tab, "memory");
     assertEquals(qa(".system-tab-pane.active").length, 1);
-    assertEquals(pane("memory").includes("active"), true);
-    assertNoWombleLogs();
+    assert(pane("memory").includes("active"));
   });
 });

@@ -1,0 +1,52 @@
+{
+  "schemaVersion": 1,
+  "runMode": "bounded",
+  "pcode": {
+    "lines": 20,
+    "hash": "7f8642a8545b9283"
+  },
+  "hitIterationCap": false,
+  "consoleText": "",
+  "outputText": "",
+  "runtimeErrors": [],
+  "turtle": {
+    "x": 500,
+    "y": 500,
+    "d": 0,
+    "a": 360,
+    "t": 2,
+    "c": "#0000ff"
+  },
+  "canvas": {
+    "callCount": 15,
+    "byMethod": {
+      "setResolution": 2,
+      "setVirtualCanvas": 2,
+      "clear": 1,
+      "drawArc": 1,
+      "drawText": 1,
+      "drawLine": 5,
+      "drawPolygon": 2,
+      "setCursor": 1
+    },
+    "logHash": "46e7b369335440dc",
+    "head": [
+      "setResolution([1000,1000,false])",
+      "setVirtualCanvas([0,0,1000,1000])",
+      "setResolution([1000,1000,false])",
+      "clear([\"#FFFFFF\"])",
+      "setVirtualCanvas([0,0,1000,1000])",
+      "drawArc([{\"x\":500,\"y\":500,\"d\":0,\"a\":360,\"t\":2,\"c\":\"#ff0000\"},20,20,true])",
+      "drawText([{\"x\":500,\"y\":500,\"d\":0,\"a\":360,\"t\":2,\"c\":\"#8a2be2\"},\"You are here\",4,36])",
+      "drawLine([{\"x\":790,\"y\":530,\"d\":0,\"a\":360,\"t\":2,\"c\":\"#0000ff\"},830,530])",
+      "drawLine([{\"x\":830,\"y\":530,\"d\":0,\"a\":360,\"t\":2,\"c\":\"#0000ff\"},858,502])",
+      "drawLine([{\"x\":858,\"y\":502,\"d\":0,\"a\":360,\"t\":2,\"c\":\"#0000ff\"},858,462])",
+      "drawLine([{\"x\":858,\"y\":462,\"d\":0,\"a\":360,\"t\":2,\"c\":\"#0000ff\"},830,434])",
+      "drawLine([{\"x\":830,\"y\":434,\"d\":0,\"a\":360,\"t\":2,\"c\":\"#0000ff\"},790,434])",
+      "drawPolygon([{\"x\":500,\"y\":500,\"d\":0,\"a\":360,\"t\":2,\"c\":\"#0000ff\"},[[790,434],[500,500]],false])",
+      "drawPolygon([{\"x\":535,\"y\":505,\"d\":0,\"a\":360,\"t\":2,\"c\":\"#0000ff\"},[[500,500],[530,480],[535,505]],true])",
+      "setCursor([1])"
+    ],
+    "tail": []
+  }
+}

@@ -1,0 +1,39 @@
+{
+  "schemaVersion": 1,
+  "runMode": "bounded",
+  "pcode": {
+    "lines": 320,
+    "hash": "b216900db92df5ca"
+  },
+  "hitIterationCap": false,
+  "consoleText": "4 sorting methods will be compared, each of them being used to\nsort randomised arrays of 100 items (10 times), while keeping\ntrack of the numbers of comparisons and swaps required.\nIf sorting fails, the program will halt and show the array.\n\n     asz fzt vwp euc hrb wza dul omu fmp tbr \n     rqg dve fqr ydu uga awt lmg hhg clm qsj \n     xvf ogh mus dxo ghn ebf uwc dhq xgk vzs \n     zwi emq wce yig gxu qov elo mbe ujp amy \n     cdd zdp xhj gyz vrg rrw muk sbo ulr lrn \n     gmf auw dng fgx mxi zxm gam xpx jrn xtf \n     mme uvf tht ezc qld ohb faa cec fap yrr \n     enn hzl pet wzk nnu bop fqj egk ewr kgx \n     lqw xqw pbn jsb dgz cxl jyk ecn eco rqn \n     oco axd dbf vxm nnq swp yul dgz xep rjg \n     \n\nBubblesort:      9900 comparisons  2361 swaps%\nSelectionsort:   4950 comparisons    91 swaps%\nInsertionsort:   2075 comparisons  1976 swaps%\nQuicksort:        792 comparisons   553 swaps%\n\nBubblesort:      9900 comparisons  2189 swaps%\nSelectionsort:   4950 comparisons    97 swaps%\nInsertionsort:   2406 comparisons  2307 swaps%\nQuicksort:        665 comparisons   476 swaps%\n\nBubblesort:      9900 comparisons  2389 swaps%\nSelectionsort:   4950 comparisons    97 swaps%\nInsertionsort:   2407 comparisons  2308 swaps%\nQuicksort:        667 comparisons   451 swaps%\n\nBubblesort:      9900 comparisons  2329 swaps%\nSelectionsort:   4950 comparisons    95 swaps%\nInsertionsort:   2503 comparisons  2404 swaps%\nQuicksort:        623 comparisons   384 swaps%\n\nBubblesort:      9900 comparisons  2359 swaps%\nSelectionsort:   4950 comparisons    97 swaps%\nInsertionsort:   2506 comparisons  2407 swaps%\nQuicksort:        575 comparisons   376 swaps%\n\nBubblesort:      9900 comparisons  2352 swaps%\nSelectionsort:   4950 comparisons    98 swaps%\nInsertionsort:   2728 comparisons  2629 swaps%\nQuicksort:        603 comparisons   330 swaps%\n\nBubblesort:      9900 comparisons  2677 swaps%\nSelectionsort:   4950 comparisons    93 swaps%\nInsertionsort:   2794 comparisons  2695 swaps%\nQuicksort:        688 comparisons   458 swaps%\n\nBubblesort:      9900 comparisons  2180 swaps%\nSelectionsort:   4950 comparisons    97 swaps%\nInsertionsort:   2380 comparisons  2281 swaps%\nQuicksort:        609 comparisons   399 swaps%\n\nBubblesort:      9900 comparisons  2296 swaps%\nSelectionsort:   4950 comparisons    96 swaps%\nInsertionsort:   2437 comparisons  2338 swaps%\nQuicksort:        611 comparisons   371 swaps%\n\nBubblesort:      9900 comparisons  2693 swaps%\nSelectionsort:   4950 comparisons    89 swaps%\nInsertionsort:   2833 comparisons  2734 swaps%\nQuicksort:        584 comparisons   389 swaps%\n\nAverages from sorting 100 items, over 10 trials\n\n               COMPARISONS    SWAPS\nBubblesort:       9900.0     2382.5\nSelectionsort:    4950.0       95.0\nInsertionsort:    2506.9     2407.9\nQuicksort:         641.7      418.7\n\n     amy asz auw awt axd bop cdd cec clm cxl \n     dbf dgz dgz dhq dng dul dve dxo ebf ecn \n     eco egk elo emq enn euc ewr ezc faa fap \n     fgx fmp fqj fqr fzt gam ghn gmf gxu gyz \n     hhg hrb hzl jrn jsb jyk kgx lmg lqw lrn \n     mbe mme muk mus mxi nnq nnu oco ogh ohb \n     omu pbn pet qld qov qsj rjg rqg rqn rrw \n     sbo swp tbr tht uga ujp ulr uvf uwc vrg \n     vwp vxm vzs wce wza wzk xep xgk xhj xpx \n     xqw xtf xvf ydu yig yrr yul zdp zwi zxm \n     \n",
+  "outputText": "Averages from sorting 100 items, over 10 trials\n\n               COMPARISONS    SWAPS\nBubblesort:       9900.0     2382.5\nSelectionsort:    4950.0       95.0\nInsertionsort:    2506.9     2407.9\nQuicksort:         641.7      418.7\n\n     amy asz auw awt axd bop cdd cec clm cxl \n     dbf dgz dgz dhq dng dul dve dxo ebf ecn \n     eco egk elo emq enn euc ewr ezc faa fap \n     fgx fmp fqj fqr fzt gam ghn gmf gxu gyz \n     hhg hrb hzl jrn jsb jyk kgx lmg lqw lrn \n     mbe mme muk mus mxi nnq nnu oco ogh ohb \n     omu pbn pet qld qov qsj rjg rqg rqn rrw \n     sbo swp tbr tht uga ujp ulr uvf uwc vrg \n     vwp vxm vzs wce wza wzk xep xgk xhj xpx \n     xqw xtf xvf ydu yig yrr yul zdp zwi zxm \n     \n",
+  "runtimeErrors": [],
+  "turtle": {
+    "x": 500,
+    "y": 500,
+    "d": 0,
+    "a": 360,
+    "t": 2,
+    "c": "#000"
+  },
+  "canvas": {
+    "callCount": 6,
+    "byMethod": {
+      "setResolution": 2,
+      "setVirtualCanvas": 2,
+      "clear": 1,
+      "setCursor": 1
+    },
+    "logHash": "d982706e7ecfaa0e",
+    "head": [
+      "setResolution([1000,1000,false])",
+      "setVirtualCanvas([0,0,1000,1000])",
+      "setResolution([1000,1000,false])",
+      "clear([\"#FFFFFF\"])",
+      "setVirtualCanvas([0,0,1000,1000])",
+      "setCursor([1])"
+    ],
+    "tail": []
+  }
+}

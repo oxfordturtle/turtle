@@ -1,13 +1,9 @@
 import { describe, it } from "@std/testing/bdd";
-import { assertEquals, assertThrows } from "@std/assert";
-import { encode, lexify, parse, tokenize } from "@/core/compiler.ts";
-import { defaultMachineOptions, run } from "@/core/machine.ts";
+import { assertEquals } from "@std/assert";
 import {
-  fakeCanvas,
-  fakeFiles,
-  fakeOutput,
-  fakeTimers,
-} from "../machine/_fakes.ts";
+  assertCompilerError,
+  runSourceToText,
+} from "../machine/lib/helpers.ts";
 
 /**
  * Python string slicing, including the open-ended forms.
@@ -27,34 +23,11 @@ import {
  * len(s)) are exactly what a behavioural test pins down best.
  */
 describe("compiler: Python string slices", () => {
-  const runPython = (code: string): string => {
-    const pcode = encode(
-      parse(lexify(tokenize(code, "Python"), "Python"), "Python"),
-    );
-    const output = fakeOutput();
-    const timers = fakeTimers();
-    run(
-      pcode,
-      defaultMachineOptions,
-      timers,
-      output,
-      fakeCanvas(),
-      fakeFiles(),
-    );
-    timers.flush(); // console writes are queued, not immediate
-    return output.outputText;
-  };
-
   const sliceOf = (expression: string): string =>
-    runPython(`s='abcdef'\nprint(${expression})`).replace(/\n$/, "");
-
-  const assertCompilerError = (code: string, message: string) => {
-    assertThrows(
-      () => encode(parse(lexify(tokenize(code, "Python"), "Python"), "Python")),
-      Error,
-      message,
+    runSourceToText("Python", `s='abcdef'\nprint(${expression})`).replace(
+      /\n$/,
+      "",
     );
-  };
 
   describe("both bounds given (pre-existing behaviour)", () => {
     it("takes the half-open range [a, b)", () => {
@@ -94,7 +67,10 @@ describe("compiler: Python string slices", () => {
       // it - this catches a base/target mix-up if that re-push ever grabs
       // the wrong variable
       assertEquals(
-        runPython("s='abc'\nt='wxyz'\nprint(t[1:])").replace(/\n$/, ""),
+        runSourceToText("Python", "s='abc'\nt='wxyz'\nprint(t[1:])").replace(
+          /\n$/,
+          "",
+        ),
         "xyz",
       );
     });
@@ -120,7 +96,10 @@ describe("compiler: Python string slices", () => {
     });
 
     it("returns empty for an empty string", () => {
-      assertEquals(runPython("s=''\nprint(s[:])").replace(/\n$/, ""), "");
+      assertEquals(
+        runSourceToText("Python", "s=''\nprint(s[:])").replace(/\n$/, ""),
+        "",
+      );
     });
   });
 
@@ -136,19 +115,31 @@ describe("compiler: Python string slices", () => {
 
   describe("errors", () => {
     it("rejects a step slice with a message naming the step", () => {
-      assertCompilerError("s='abcdef'\nprint(s[1:5:2])", "Slices with a step");
+      assertCompilerError(
+        "Python",
+        "s='abcdef'\nprint(s[1:5:2])",
+        "Slices with a step",
+      );
     });
 
     it("rejects a step slice with the start omitted too", () => {
-      assertCompilerError("s='abcdef'\nprint(s[::2])", "Slices with a step");
+      assertCompilerError(
+        "Python",
+        "s='abcdef'\nprint(s[::2])",
+        "Slices with a step",
+      );
     });
 
     it("rejects a non-integer bound", () => {
-      assertCompilerError("s='abcdef'\nprint(s[:'x'])", "Type error");
+      assertCompilerError("Python", "s='abcdef'\nprint(s[:'x'])", "Type error");
     });
 
     it("reports a missing closing bracket after an open-ended slice", () => {
-      assertCompilerError("s='abcdef'\nprint(s[1:", "Closing bracket");
+      assertCompilerError(
+        "Python",
+        "s='abcdef'\nprint(s[1:",
+        "Closing bracket",
+      );
     });
   });
 
@@ -162,7 +153,10 @@ describe("compiler: Python string slices", () => {
    */
   describe("on a string element of a list", () => {
     const listSliceOf = (expression: string): string =>
-      runPython(`p=['abcdef','xy']\nprint(${expression})`).replace(/\n$/, "");
+      runSourceToText(
+        "Python",
+        `p=['abcdef','xy']\nprint(${expression})`,
+      ).replace(/\n$/, "");
 
     it("slices with both bounds given", () => {
       assertEquals(listSliceOf("p[0][1:3]"), "bc");
@@ -199,20 +193,20 @@ describe("compiler: Python string slices", () => {
 
     it("accepts a computed element index", () => {
       assertEquals(
-        runPython("p=['abcdef','xy']\ni=1\nprint(p[i-1][2:4])").replace(
-          /\n$/,
-          "",
-        ),
+        runSourceToText(
+          "Python",
+          "p=['abcdef','xy']\ni=1\nprint(p[i-1][2:4])",
+        ).replace(/\n$/, ""),
         "cd",
       );
     });
 
     it("reaches the string inside a list of lists", () => {
       assertEquals(
-        runPython("q=[['ab','cd'],['ef','gh']]\nprint(q[1][0][1:])").replace(
-          /\n$/,
-          "",
-        ),
+        runSourceToText(
+          "Python",
+          "q=[['ab','cd'],['ef','gh']]\nprint(q[1][0][1:])",
+        ).replace(/\n$/, ""),
         "f",
       );
     });
@@ -223,20 +217,28 @@ describe("compiler: Python string slices", () => {
 
     it("leaves a chained method call on the element working", () => {
       assertEquals(
-        runPython("p=['abcdef','xy']\nprint(str(p[0].find('c')))").replace(
-          /\n$/,
-          "",
-        ),
+        runSourceToText(
+          "Python",
+          "p=['abcdef','xy']\nprint(str(p[0].find('c')))",
+        ).replace(/\n$/, ""),
         "2",
       );
     });
 
     it("rejects subscripting an element of a list of integers", () => {
-      assertCompilerError("n=[1,2,3]\nx=n[0][1]", "not a list of strings");
+      assertCompilerError(
+        "Python",
+        "n=[1,2,3]\nx=n[0][1]",
+        "not a list of strings",
+      );
     });
 
     it("rejects slicing an element of a list of integers", () => {
-      assertCompilerError("n=[1,2,3]\nx=n[0][1:2]", "not a list of strings");
+      assertCompilerError(
+        "Python",
+        "n=[1,2,3]\nx=n[0][1:2]",
+        "not a list of strings",
+      );
     });
 
     it("rejects subscripting a sublist of a list of lists of integers", () => {
@@ -244,17 +246,26 @@ describe("compiler: Python string slices", () => {
       // list index (which works); it is the *third* that has nothing left
       // to index
       assertCompilerError(
+        "Python",
         "q=[[1,2],[3,4]]\nx=q[0][1][0]",
         "not a list of strings",
       );
     });
 
     it("rejects a step slice on an element", () => {
-      assertCompilerError("p=['abcdef']\nx=p[0][1:5:2]", "Slices with a step");
+      assertCompilerError(
+        "Python",
+        "p=['abcdef']\nx=p[0][1:5:2]",
+        "Slices with a step",
+      );
     });
 
     it("reports a missing closing bracket after an element slice", () => {
-      assertCompilerError("p=['abcdef']\nx=p[0][1:2", "Closing bracket");
+      assertCompilerError(
+        "Python",
+        "p=['abcdef']\nx=p[0][1:2",
+        "Closing bracket",
+      );
     });
   });
 });

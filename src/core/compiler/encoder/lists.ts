@@ -88,6 +88,9 @@ const listGrowthGuard = (
   options: Options,
 ): number[][] => {
   const variable = receiver.variable;
+  // The "integer" fallback is unreachable: see the matching note in
+  // listProcedureCallCode below.
+  // deno-coverage-ignore
   const lp = encodeLp(variable.listElementKind ?? "integer");
   const loadBase = () =>
     expression(makeVariableValue(receiver.lexeme, variable), program, options);
@@ -148,10 +151,24 @@ export const listProcedureCallCode = (
   // the receiver is always a plain, unindexed variable reference: both paths
   // that reach a dot-call construct it that way
   const receiver = args[0];
+  // deno-coverage-ignore-start -- unreachable: both parse paths that build a
+  // dot-method call (python/statement.ts in statement position, and
+  // parser/common/factor.ts in expression position) resolve an identifier to a
+  // variable first and build the receiver with makeVariableValue(); a literal
+  // or call-result receiver ("[1,2,3].append(4)") is rejected by the parser
+  // long before the encoder runs
   if (receiver.expressionType !== "variable") {
     return null;
   }
+  // deno-coverage-ignore-stop
   const variable = receiver.variable;
+  // The "integer" fallback is unreachable: a list variable always reaches the
+  // encoder with a pinned element kind, because python/parser.ts's
+  // checkForUncertainTypes rejects any program in which a hint-less "x = []"
+  // is never followed by something that reveals the kind, and
+  // parser/common/typeCheck.ts rejects a scalar reassignment ("x = 5") that
+  // would otherwise leave "x" list-flagged but kind-less.
+  // deno-coverage-ignore
   const lp = encodeLp(variable.listElementKind ?? "integer");
 
   const pcode: number[][] = [];
@@ -244,11 +261,18 @@ export const listFunctionCallCode = (
   }
 
   const receiver = args[0];
+  // deno-coverage-ignore-start -- the ternary's undefined arm and the null
+  // return are unreachable, for the same reason as listProcedureCallCode's
+  // receiver guard above: every parsed dot-call receiver is a VariableValue
   const variable =
     receiver.expressionType === "variable" ? receiver.variable : undefined;
   if (!variable) {
     return null;
   }
+  // deno-coverage-ignore-stop
+  // The "integer" fallback is unreachable: see the matching note in
+  // listProcedureCallCode above.
+  // deno-coverage-ignore
   const lp = encodeLp(variable.listElementKind ?? "integer");
 
   const pcode: number[][] = [];

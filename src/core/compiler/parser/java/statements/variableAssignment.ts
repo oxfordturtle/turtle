@@ -31,12 +31,18 @@ const parseVariableAssignment = (
           lexemes.next();
         }
       }
+      // deno-coverage-ignore-start -- unreachable: the index-collecting loop
+      // only exits early on a dry stream, which would require an index
+      // expression to have consumed the program's final "}" -- but
+      // parseExpression() can never consume a "}" (it always throws on one),
+      // and program.ts guarantees that final "}" is there
       if (!lexemes.get()) {
         throw new CompilerError(
           'Closing bracket "]" needed after array indexes.',
           lexemes.get(-1),
         );
       }
+      // deno-coverage-ignore-stop
       lexemes.next();
     } else if (variable.type === "string") {
       lexemes.next();
@@ -72,12 +78,17 @@ const parseVariableAssignment = (
   }
 
   const assignmentLexeme = lexemes.get();
+  // deno-coverage-ignore-start -- unreachable: the last consumed lexeme is
+  // the variable's identifier or an index's closing "]", neither of which can
+  // be the program's final lexeme (program.ts guarantees that's "}"), so the
+  // stream cannot be dry here
   if (!assignmentLexeme) {
     throw new CompilerError(
       'Variable must be followed by assignment operator "=".',
       lexemes.get(-1),
     );
   }
+  // deno-coverage-ignore-stop
   if (
     assignmentLexeme.type !== "operator" ||
     assignmentLexeme.content !== "="
@@ -89,12 +100,16 @@ const parseVariableAssignment = (
   }
   lexemes.next();
 
+  // deno-coverage-ignore-start -- unreachable: the last consumed lexeme is
+  // "=", which can never be the program's final lexeme (program.ts guarantees
+  // that's "}"), so the stream cannot be dry here
   if (!lexemes.get()) {
     throw new CompilerError(
       `Variable "${variable.name}" must be assigned a value.`,
       lexemes.get(-1),
     );
   }
+  // deno-coverage-ignore-stop
   let value = parseExpression(lexemes, routine);
   const variableValue = makeVariableValue(variableLexeme, variable);
   variableValue.indexes.push(...indexes);
