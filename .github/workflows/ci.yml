@@ -31,5 +31,4 @@ jobs:
         with:
           deno-version: v2.x
       - run: deno task build
-      - run: deno run -A npm:playwright-core@1.49 install --with-deps chromium
       - run: deno task test:ui:browser
