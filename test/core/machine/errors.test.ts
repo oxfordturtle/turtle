@@ -29,9 +29,9 @@ describe("machine/runtime: error handling", () => {
     const { output } = runPcode(pcode, optionsOverrides);
     assertEquals(output.runtimeErrors.length, 1);
     if (typeof expectedMessage === "string") {
-      assertEquals(output.runtimeErrors[0].message, expectedMessage);
+      assertEquals(output.runtimeErrors[0]?.message, expectedMessage);
     } else {
-      assertMatch(output.runtimeErrors[0].message, expectedMessage);
+      assertMatch(output.runtimeErrors[0]?.message!, expectedMessage);
     }
     assertEquals(output.stateChanges.at(-1), "halted");
     assertFalse(isRunning());
@@ -68,199 +68,123 @@ describe("machine/runtime: error handling", () => {
       );
     });
 
-    // Every other pcode below pops the evaluation stack as its very first
-    // action, regardless of how many operands it ultimately expects - so
-    // an entirely empty stack always fails on the first pop, for all of
-    // them, the same way. Table-driven rather than ~130 near-identical `it`
-    // blocks. Confirmed by reading every "else { throw ... }"
-    // branch in runtime.ts's switch that uses this exact message.
+    // Every operator that consumes operands now does so through
+    // `memory.popValue` - or `peekValue`/`popString`, which are built on it -
+    // so the empty-stack guard is one branch in one place. This used to be a
+    // table of ~130 opcode names sweeping the ~166 hand-written copies of that
+    // guard one at a time; with the copies gone, so is the reason to enumerate
+    // them.
+    //
+    // What is still worth checking is that each structurally *different* way of
+    // reaching the shared guard reaches it: a plain pop, a multi-operand pop, a
+    // pointer resolved through the heap, a peek that leaves the stack alone,
+    // the memory stack's own pop, and the operators that read an inline operand
+    // or suspend on a port - either of which could otherwise happen before the
+    // stack is ever touched.
+    // The third element is the instruction's inline operands, which have to be
+    // there: reading a word past the end of a line is itself an error now, and
+    // would be reported instead of the one under test.
     const stackEmptyOpcodes = [
-      "drop",
-      "dupl",
-      "swap",
-      "rota",
-      "roll",
-      "incr",
-      "decr",
-      "abs",
-      "sign",
-      "rand",
-      "seed",
-      "shft",
-      "not",
-      "and",
-      "or",
-      "xor",
-      "andl",
-      "orl",
-      "subt",
-      "mult",
-      "divr",
-      "div",
-      "mod",
-      "divf",
-      "modf",
-      "divm",
-      "lerp",
-      "hyp",
-      "root",
-      "powr",
-      "log",
-      "alog",
-      "ln",
-      "exp",
-      "sin",
-      "cos",
-      "tan",
-      "asin",
-      "acos",
-      "atan",
-      "pi",
-      "eqal",
-      "noeq",
-      "less",
-      "more",
-      "lseq",
-      "mreq",
-      "maxi",
-      "mini",
-      "seql",
-      "sneq",
-      "sles",
-      "smor",
-      "sleq",
-      "smeq",
-      "smax",
-      "smin",
-      "case",
-      "copy",
-      "dels",
-      "inss",
-      "poss",
-      "repl",
-      "scat",
-      "slen",
-      "smul",
-      "spad",
-      "trim",
-      "ctst",
-      "ernf",
-      "ctos",
-      "sasc",
-      "itos",
-      "hexs",
-      "sval",
-      "svdf",
-      "qtos",
-      "qval",
-      "pcoh",
-      "poke",
-      "canv",
-      "reso",
-      "udat",
-      "setx",
-      "sety",
-      "setd",
-      "angl",
-      "thik",
-      "pen",
-      "colr",
-      "toxy",
-      "mvxy",
-      "drxy",
-      "fwrd",
-      "back",
-      "left",
-      "rght",
-      "turn",
-      "blnk",
-      "rcol",
-      "fill",
-      "pixc",
-      "pixs",
-      "rgb",
-      "frgt",
-      "poly",
-      "pfil",
-      "circ",
-      "blot",
-      "elps",
-      "eblt",
-      "box",
-      "stvg",
-      "stvv",
-      "stvr",
-      "lptr",
-      "sptr",
-      "zptr",
-      "cptr",
-      "cstr",
-      "hstr",
-      "ifno",
-      "plrj",
-      "stmt",
-      "memc",
-      "stat",
-      "iclr",
-      "bufr",
-      "read",
-      "tdet",
-      "curs",
-      "kech",
-      "outp",
-      "disp",
-      "writ",
-      "tset",
-      "wait",
-      // list operators (LIHP excluded - it never pops the stack, it only
-      // pushes): each reads its inline lp/size operand (if it needs one at
-      // all) before popping, but since none of them read that inline value
-      // through a stack-dependent path, an absent trailing operand is
-      // harmless here - they still fail on the first stack pop exactly
-      // like every op above.
-      "lapp",
-      "lcpy",
-      "ldel",
-      "lext",
-      "lidx",
-      "lins",
-      "lmul",
-      "lprt",
-      "lrem",
-      "lrev",
-      "liad",
-      // core file-processing operators - each
-      // pops its arguments and validates them *before* suspending on the
-      // FileSystem port (see runtime.ts's suspendFor), so an empty stack is
-      // still caught synchronously, exactly like every op above.
-      "chdr",
-      "file",
-      "open",
-      "clos",
-      "fbeg",
-      "eof",
-      "eoln",
-      "frds",
-      "frln",
-      "fwrs",
-      "fwln",
-      // directory/search/move file-processing operators - same "pop and
-      // validate before suspending" shape as the operators above.
-      "diry",
-      "ffnd",
-      "fdir",
-      "fnxt",
-      "fmov",
+      ["drop", "pops one value and discards it", []],
+      ["subt", "pops two, failing on the first", []],
+      ["lerp", "pops four, failing on the first", []],
+      ["trim", "pops a pointer and resolves it through the heap", []],
+      ["scat", "pops both pointers before resolving either", []],
+      ["ctst", "peeks rather than pops", []],
+      ["ernf", "peeks rather than pops", []],
+      [
+        "memc",
+        "pops the *memory* stack, which reports the same message",
+        [0, 0],
+      ],
+      [
+        "lapp",
+        "a list operator, which steps past its inline lp operand first",
+        [0],
+      ],
+      ["liad", "a list operator that reads an inline size operand first", [0]],
+      ["chdr", "a file operator: pops and validates before suspending", []],
+      ["fmov", "a file operator with three operands", []],
+      ["wait", "suspends, but only after popping its delay", []],
     ] as const;
 
-    for (const op of stackEmptyOpcodes) {
-      it(`${op.toUpperCase()} throws when the stack is empty`, () => {
+    for (const [op, shape, operands] of stackEmptyOpcodes) {
+      it(`${op.toUpperCase()} throws when the stack is empty (${shape})`, () => {
         expectError(
-          [[PCode[op]], [PCode.halt]],
+          [[PCode[op], ...operands], [PCode.halt]],
           "Stack operation called on empty stack.",
         );
       });
     }
+
+    // [known bug] TODO.md 1.1: MIXC, TEST and CONS are the only three arms in
+    // the switch that guard their operands with an `if` and no `else`. Every
+    // other operator throws on an empty stack; these three fall through and
+    // carry on as if nothing happened. It reads as an
+    // omission rather than a decision, and it is invisible to the coverage
+    // gate: Deno derives branch coverage from V8's block ranges, and V8 emits
+    // a range only where the inner count *differs* from the enclosing one.
+    // Because the guarded body runs on every execution of either arm today,
+    // no range is emitted, no BRDA pair is generated, and the untaken false
+    // path is never counted as a miss - the 100% gate simply cannot see it.
+    // (The tests below give all three arms a false execution, so from now on
+    // the pairs do exist and both sides are covered.) The assertions are
+    // what the code does, not what it should do: making any one of them throw
+    // - the consistent behaviour - trips these tests rather than passing
+    // silently.
+    //
+    // CONS was missed by Phase 1, which recorded only MIXC and TEST; it was
+    // found in Phase 2 while sweeping the guards, and is pinned here for the
+    // same reason as the other two.
+    describe("[known bug] MIXC, TEST and CONS are silent no-ops instead", () => {
+      it("MIXC on an empty stack does nothing at all and the program runs on", () => {
+        const { output } = runPcode([
+          [PCode.mixc],
+          [PCode.ldin, 7],
+          [PCode.itos],
+          [PCode.writ],
+          [PCode.halt],
+        ]);
+        assertEquals(output.runtimeErrors, []);
+        assertEquals(output.outputText, "7");
+      });
+
+      it("MIXC given only two of its four operands is equally silent", () => {
+        const { output } = runPcode([
+          [PCode.ldin, 1],
+          [PCode.ldin, 2],
+          [PCode.mixc],
+          [PCode.halt],
+        ]);
+        assertEquals(output.runtimeErrors, []);
+      });
+
+      it("TEST on an empty stack does nothing at all", () => {
+        const { output } = runPcode([[PCode.test], [PCode.halt]]);
+        assertEquals(output.runtimeErrors, []);
+      });
+
+      it("CONS on an empty stack does nothing at all and the program runs on", () => {
+        const { output } = runPcode([
+          [PCode.cons],
+          [PCode.ldin, 7],
+          [PCode.itos],
+          [PCode.writ],
+          [PCode.halt],
+        ]);
+        assertEquals(output.runtimeErrors, []);
+        assertEquals(output.outputText, "7");
+      });
+
+      it("CONS given only one of its two operands is equally silent", () => {
+        const { output } = runPcode([
+          [PCode.ldin, 1],
+          [PCode.cons],
+          [PCode.halt],
+        ]);
+        assertEquals(output.runtimeErrors, []);
+      });
+    });
   });
 
   describe("ROLL", () => {
@@ -316,14 +240,19 @@ describe("machine/runtime: error handling", () => {
   });
 
   describe("Python string tests", () => {
-    it("CTST throws when the string isn't exactly one character", () => {
+    // [known bug] TODO.md 1.3: both messages are placeholders, each carrying
+    // its own `TODO: better error message` in runtime.ts. They are what a
+    // student sees, and neither says what was wrong or where. The exact
+    // strings are asserted so that improving them is a deliberate change that
+    // trips these tests, rather than a silent edit.
+    it("[known bug] CTST throws a placeholder message when the string isn't exactly one character", () => {
       expectError(
         [[PCode.lstr, 2, 104, 105], [PCode.ctst], [PCode.halt]],
         "String is not a character.",
       );
     });
 
-    it("ERNF throws when its argument is negative", () => {
+    it("[known bug] ERNF throws a placeholder message when its argument is negative", () => {
       expectError([[PCode.ldin, -1], [PCode.ernf], [PCode.halt]], "Not found.");
     });
   });
@@ -368,6 +297,27 @@ describe("machine/runtime: error handling", () => {
           [PCode.halt],
         ],
         /^Array index out of range/,
+      );
+    });
+
+    // [known bug] TODO.md 1.2: the arm carries a `TODO: make range check a
+    // runtime option` comment, but `MachineOptions.rangeCheckArrays` already
+    // exists, defaults to true, and is threaded all the way from the Run menu
+    // through `program.ts` into the machine - TEST just never consults it.
+    // Same shape as TODO.md 3.9's seven dead `EncoderOptions`: a control the
+    // student can turn off that changes nothing. Wiring it up trips this test.
+    it("[known bug] range-checks anyway when rangeCheckArrays is turned off", () => {
+      expectError(
+        [
+          [PCode.ldin, 5],
+          [PCode.stvg, 500],
+          [PCode.ldin, 6],
+          [PCode.ldin, 500],
+          [PCode.test],
+          [PCode.halt],
+        ],
+        "Array index out of range (6, 5).",
+        { rangeCheckArrays: false },
       );
     });
   });
@@ -438,7 +388,12 @@ describe("machine/runtime: error handling", () => {
     );
   });
 
-  it("TDET throws when given an out-of-range input code", () => {
+  // [known bug] TODO.md 1.5: the message reads "invalid input state.code",
+  // which is not a thing a student has. A `code` -> `state.code` rename swept
+  // through this string literal as well as the identifiers; it should read
+  // "invalid input code". The mangled text is asserted exactly, so fixing it
+  // trips this test rather than passing silently.
+  it("[known bug] TDET throws a rename-mangled message when given an out-of-range input code", () => {
     expectError(
       [[PCode.ldin, 999], [PCode.ldin, 0], [PCode.tdet], [PCode.halt]],
       "Detect called with invalid input state.code: 999.",
@@ -450,6 +405,20 @@ describe("machine/runtime: error handling", () => {
       [[PCode.ldin, 100], [PCode.stmt], [PCode.memc, 990, 5], [PCode.halt]],
       "Memory stack has overflowed into memory heap. Probable cause is unterminated recursion.",
       { stackSize: 100 },
+    );
+  });
+
+  // [known bug] TODO.md 1.11: `MachineOptions.preventStackCollision` exists,
+  // defaults to true, and is threaded from the Run menu through `program.ts`
+  // into the machine - and nothing in `src/core/machine/` ever reads it. MEMC
+  // bounds-checks the new frame against `options.stackSize` whatever the flag
+  // says. Exactly 1.2's shape (`TEST` and `rangeCheckArrays`): a control the
+  // student can turn off that changes nothing. Honouring it trips this test.
+  it("[known bug] MEMC checks anyway when preventStackCollision is turned off", () => {
+    expectError(
+      [[PCode.ldin, 100], [PCode.stmt], [PCode.memc, 990, 5], [PCode.halt]],
+      "Memory stack has overflowed into memory heap. Probable cause is unterminated recursion.",
+      { stackSize: 100, preventStackCollision: false },
     );
   });
 
@@ -496,6 +465,30 @@ describe("machine/runtime: error handling", () => {
     );
   });
 
+  it("throws when an instruction is short of the operands it declares", () => {
+    // LDIN reads one operand, and there is no word after it to read - the
+    // sibling of the jump above, and the reason `cycle.operand()` checks
+    expectError([[PCode.ldin]], /run past the end of a line/);
+  });
+
+  it("throws when a pointer points outside main memory", () => {
+    // LPTR dereferences the address on top of the stack; -1 is not one.
+    // Before this was checked, main[-1] read `undefined` and turned every
+    // sum downstream into NaN.
+    expectError(
+      [[PCode.ldin, -1], [PCode.lptr], [PCode.halt]],
+      "Memory address out of range (-1).",
+    );
+  });
+
+  it("throws when ROLL is given a depth the stack cannot reach", () => {
+    // ROLL pops its own argument first, so this leaves nothing to rotate
+    expectError(
+      [[PCode.ldin, 1], [PCode.roll], [PCode.halt]],
+      "Stack operation called on empty stack.",
+    );
+  });
+
   describe("list operators", () => {
     // primary coverage (every operator, every resolved design decision) is
     // in lists.test.ts - this is just the one distinct MachineError kind
@@ -511,6 +504,66 @@ describe("machine/runtime: error handling", () => {
         ],
         "List has reached its maximum capacity of 1 items.",
       );
+    });
+  });
+
+  // [known bug] TODO.md 1.6 and 1.7, which meet in one test. `memory.copy`
+  // dispatches to `copyForward`/`copyBackward`, which recurse once per word -
+  // so a large CPTR blows the JavaScript call stack. Its own neighbour
+  // `memory.zero` was made iterative for exactly this reason, and says so in
+  // a comment ("recursion cannot survive" thousands of words); `copy` has the
+  // identical exposure and contradicts it. The threshold is wherever V8's
+  // stack happens to run out - around 12k-20k words on a typical machine, so
+  // the length below is well past it in either direction.
+  //
+  // What the student then sees is the second bug: `execute()`'s catch does
+  // `ports.output.notifyRuntimeError(error as Error)`, blind-casting an
+  // `unknown`. An internal V8 `RangeError` is reported verbatim, exactly as
+  // if it were an error in the student's own program. `MachineError` exists
+  // and would let the two be told apart, but is never used to discriminate
+  // and isn't exported from the barrel.
+  //
+  // Both assertions are what the code does, not what it should do. Making
+  // `copy` iterative trips the first; discriminating on `MachineError` in the
+  // catch trips the second.
+  describe("[known bug] CPTR recurses per word, and the internal error leaks to the student", () => {
+    const hugeCopy = (source: number, target: number): number[][] => [
+      [PCode.ldin, source],
+      [PCode.ldin, target],
+      [PCode.ldin, 100000], // words - far past any plausible stack depth
+      [PCode.cptr],
+      [PCode.halt],
+    ];
+
+    it("overflows the call stack copying forward (target below source)", () => {
+      const output = expectError(
+        hugeCopy(700000, 600000),
+        "Maximum call stack size exceeded",
+      );
+      // not a MachineError: an internal V8 error, surfaced unchanged
+      assertEquals(output.runtimeErrors[0]?.constructor.name, "RangeError");
+    });
+
+    it("overflows the call stack copying backward (target above source)", () => {
+      const output = expectError(
+        hugeCopy(600000, 700000),
+        "Maximum call stack size exceeded",
+      );
+      assertEquals(output.runtimeErrors[0]?.constructor.name, "RangeError");
+    });
+
+    it("copies without complaint at a length the recursion can survive", () => {
+      // the contrast case: same operation, 1,000 words instead of 100,000
+      const { output } = runPcode([
+        [PCode.ldin, 42],
+        [PCode.stvg, 600000],
+        [PCode.ldin, 600000],
+        [PCode.ldin, 700000],
+        [PCode.ldin, 1000],
+        [PCode.cptr],
+        [PCode.halt],
+      ]);
+      assertEquals(output.runtimeErrors, []);
     });
   });
 
@@ -552,7 +605,7 @@ describe("machine/runtime: error handling", () => {
       const { output } = runPcode(pcode);
       assertEquals(output.runtimeErrors.length, 1);
       assertEquals(
-        output.runtimeErrors[0].message,
+        output.runtimeErrors[0]?.message,
         "Stack operation called on empty stack.",
       );
       assertEquals(output.stateChanges.at(-1), "halted");
@@ -568,7 +621,7 @@ describe("machine/runtime: error handling", () => {
       const { output } = runPcode(pcode);
       assertEquals(output.runtimeErrors.length, 1);
       assertEquals(
-        output.runtimeErrors[0].message,
+        output.runtimeErrors[0]?.message,
         "Stack operation called on empty stack.",
       );
       assertEquals(output.outputText, "");
@@ -603,7 +656,7 @@ describe("machine/runtime: error handling", () => {
       const { output } = runPcode(pcode);
       assertEquals(output.runtimeErrors.length, 1);
       assertEquals(
-        output.runtimeErrors[0].message,
+        output.runtimeErrors[0]?.message,
         "Stack operation called on empty stack.",
       );
       assertEquals(output.outputText, "");

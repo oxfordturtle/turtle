@@ -3,6 +3,27 @@ import { defaultMachineOptions } from "@/core/machine.ts";
 
 export type Property = (typeof properties)[number];
 
+/**
+ * `defaults` is `as const`, so its literal types describe a *default* rather
+ * than a *value*: `language` would be `"Python"` rather than `string`. Arrays
+ * widen to `readonly unknown[]`: `unknown` because a value that has been
+ * through a JSON round trip has lost its element type - which is why the file
+ * memory has a `restoreFile` at all - and `readonly` because the default an
+ * unset property falls back to is this module's own array, not a copy.
+ */
+type Widen<T> = T extends boolean
+  ? boolean
+  : T extends number
+    ? number
+    : T extends string
+      ? string
+      : T extends readonly unknown[]
+        ? readonly unknown[]
+        : T;
+
+/** The type stored under each property - what `load` returns and `save` takes. */
+export type PropertyValues = { [P in Property]: Widen<(typeof defaults)[P]> };
+
 export const properties = [
   // whether user's saved settings have been loaded in this session
   "savedSettingsHaveBeenLoaded",

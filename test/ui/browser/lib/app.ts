@@ -82,9 +82,10 @@ export const pixel = (
     ([x, y]) => {
       const canvas = document.querySelector("canvas") as HTMLCanvasElement;
       const data = canvas.getContext("2d")!.getImageData(x, y, 1, 1).data;
-      return [data[0], data[1], data[2]] as [number, number, number];
+      // one pixel is always four bytes of RGBA
+      return [data[0]!, data[1]!, data[2]!] as [number, number, number];
     },
-    [x, y],
+    [x, y] as [number, number],
   );
 
 /** Types `code` into the editor, replacing whatever was there. */

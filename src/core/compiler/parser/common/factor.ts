@@ -480,8 +480,9 @@ const parseFactor = (lexemes: Lexemes, routine: Routine): Expression => {
         const elements: Expression[] = [];
         while (lexemes.get() && lexemes.get()?.content !== "]") {
           let element = parseExpression(lexemes, routine);
-          if (elements.length > 0) {
-            if (isListExpression(elements[0])) {
+          const first = elements[0];
+          if (first !== undefined) {
+            if (isListExpression(first)) {
               // checked directly: typeCheck's scalar ladder doesn't apply to
               // list-vs-list comparisons
               if (!isListExpression(element)) {
@@ -490,7 +491,7 @@ const parseFactor = (lexemes: Lexemes, routine: Routine): Expression => {
                   element.lexeme,
                 );
               }
-              const firstKind = getListElementKind(elements[0]);
+              const firstKind = getListElementKind(first);
               const thisKind = getListElementKind(element);
               if (
                 firstKind !== undefined &&
@@ -503,11 +504,7 @@ const parseFactor = (lexemes: Lexemes, routine: Routine): Expression => {
                 );
               }
             } else {
-              element = typeCheck(
-                routine.language,
-                element,
-                getType(elements[0]),
-              );
+              element = typeCheck(routine.language, element, getType(first));
             }
           }
           elements.push(element);
@@ -533,17 +530,18 @@ const parseFactor = (lexemes: Lexemes, routine: Routine): Expression => {
           );
         }
         lexemes.next();
+        const firstElement = elements[0];
         const isListOfLists =
-          elements.length > 0 && isListExpression(elements[0]);
+          firstElement !== undefined && isListExpression(firstElement);
         const listElementKind = isListOfLists
           ? "integer" // opaque sublist pointers, regardless of the sublists' own element kind
-          : elements.length > 0
-            ? getType(elements[0]) === "string"
+          : firstElement !== undefined
+            ? getType(firstElement) === "string"
               ? "string"
               : "integer"
             : undefined;
         const innerListElementKind = isListOfLists
-          ? getListElementKind(elements[0])
+          ? getListElementKind(firstElement)
           : undefined;
         return makeListLiteral(
           openLexeme,

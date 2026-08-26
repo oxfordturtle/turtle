@@ -16,7 +16,7 @@ import type {
   WhileStatement,
 } from "@/core/compiler.ts";
 import { assertCompilerError } from "../../machine/lib/helpers.ts";
-import { bodyStatements, parseProgram } from "./lib/programs.ts";
+import { parseProgram } from "./lib/programs.ts";
 
 /**
  * BASIC-specific parser tests: syntax that's too divergent for the shared
@@ -45,7 +45,7 @@ describe("parse: BASIC", () => {
     it("ignores a comment as a pass statement", () => {
       const program = parseProgram("BASIC", "REM hello\nEND");
       assertEquals(program.statements.length, 1);
-      assertEquals(program.statements[0].statementType, "passStatement");
+      assertEquals(program.statements[0]?.statementType, "passStatement");
     });
 
     it("throws on anything but a subroutine definition after END", () => {
@@ -61,8 +61,8 @@ describe("parse: BASIC", () => {
       // line break, so the comment doesn't need a separator before it
       const program = parseProgram("BASIC", "x% = 1 REM why not\ny% = 2\nEND");
       assertEquals(program.statements.length, 2);
-      assertEquals(program.statements[0].statementType, "variableAssignment");
-      assertEquals(program.statements[1].statementType, "variableAssignment");
+      assertEquals(program.statements[0]?.statementType, "variableAssignment");
+      assertEquals(program.statements[1]?.statementType, "variableAssignment");
     });
 
     it("throws when a statement begins with a literal value", () => {
@@ -124,8 +124,8 @@ describe("parse: BASIC", () => {
       );
       assertEquals(program.subroutines.length, 1);
       const sub = program.subroutines[0];
-      assertEquals(sub.name, "PROCgo");
-      assert(sub.variables.some((v) => v.isParameter));
+      assertEquals(sub?.name, "PROCgo");
+      assert(sub?.variables.some((v) => v.isParameter));
     });
 
     it("parses an FN function with a return statement", () => {
@@ -134,7 +134,7 @@ describe("parse: BASIC", () => {
         "x% = FNdouble(2)\nEND\nDEF FNdouble(n%)\n=n% * 2",
       );
       const sub = program.subroutines[0];
-      const returnStatement = sub.statements.find(
+      const returnStatement = sub?.statements.find(
         (s) => s.statementType === "returnStatement",
       ) as ReturnStatement | undefined;
       assertExists(returnStatement);
@@ -145,7 +145,7 @@ describe("parse: BASIC", () => {
         "BASIC",
         "PROCgo(1, 2)\nEND\nDEF PROCgo(a%, b%)\na% = b%\nENDPROC",
       );
-      const sub = program.subroutines[0];
+      const sub = program.subroutines[0]!;
       const parameters = sub.variables.filter((v) => v.isParameter);
       assertEquals(
         parameters.map((v) => v.name),
@@ -159,10 +159,10 @@ describe("parse: BASIC", () => {
         "BASIC",
         "x% = 0\nPROCgo(x%)\nEND\nDEF PROCgo(RETURN n%)\nn% = 1\nENDPROC",
       );
-      const parameter = program.subroutines[0].variables[0];
-      assertEquals(parameter.name, "n%");
-      assert(parameter.isParameter);
-      assert(parameter.isReferenceParameter);
+      const parameter = program.subroutines[0]?.variables[0];
+      assertEquals(parameter?.name, "n%");
+      assert(parameter?.isParameter);
+      assert(parameter?.isReferenceParameter);
     });
 
     it("parses an array parameter (empty brackets after the name)", () => {
@@ -170,11 +170,11 @@ describe("parse: BASIC", () => {
         "BASIC",
         "DIM a%(5)\nPROCgo(a%)\nEND\nDEF PROCgo(arr%())\narr%(0) = 1\nENDPROC",
       );
-      const parameter = program.subroutines[0].variables[0];
-      assertEquals(parameter.name, "arr%");
-      assert(parameter.isParameter);
+      const parameter = program.subroutines[0]?.variables[0];
+      assertEquals(parameter?.name, "arr%");
+      assert(parameter?.isParameter);
       // dummy dimensions - the real ones come from the argument at call time
-      assertEquals(parameter.arrayDimensions, [[0, 0]]);
+      assertEquals(parameter?.arrayDimensions, [[0, 0]]);
     });
 
     it("throws when an array parameter's brackets aren't empty", () => {
@@ -192,17 +192,17 @@ describe("parse: BASIC", () => {
       );
       const sub = program.subroutines[0];
       assertEquals(
-        sub.statements.map((s) => s.statementType),
+        sub?.statements.map((s) => s.statementType),
         ["variableAssignment", "returnStatement"],
       );
     });
 
     it('parses a string function (name ending in "$")', () => {
       const program = parseProgram("BASIC", 'x$ = FNs$\nEND\nDEF FNs$\n="hi"');
-      const result = program.subroutines[0].variables[0];
-      assertEquals(result.name, "!result");
-      assertEquals(result.type, "string");
-      assertEquals(result.stringLength, 64);
+      const result = program.subroutines[0]?.variables[0];
+      assertEquals(result?.name, "!result");
+      assertEquals(result?.type, "string");
+      assertEquals(result?.stringLength, 64);
     });
 
     it('parses a string function with an explicit string length ("$16")', () => {
@@ -210,10 +210,10 @@ describe("parse: BASIC", () => {
         "BASIC",
         'x$16 = FNs$16\nEND\nDEF FNs$16\n="hi"',
       );
-      const result = program.subroutines[0].variables[0];
-      assertEquals(result.name, "!result");
-      assertEquals(result.type, "string");
-      assertEquals(result.stringLength, 16);
+      const result = program.subroutines[0]?.variables[0];
+      assertEquals(result?.name, "!result");
+      assertEquals(result?.type, "string");
+      assertEquals(result?.stringLength, 16);
     });
 
     it('throws if a function has no "=<expression>" line', () => {
@@ -311,7 +311,7 @@ describe("parse: BASIC", () => {
       );
       const sub = program.subroutines[0];
       assertEquals(
-        sub.variables.map((v) => [v.name, v.type]),
+        sub?.variables.map((v) => [v.name, v.type]),
         [
           ["a%", "boolint"],
           ["b$", "string"],
@@ -338,10 +338,10 @@ describe("parse: BASIC", () => {
       const sub = program.subroutines[0];
       // a PRIVATE variable is stored globally (so it persists between
       // calls) but tagged as belonging to its declaring subroutine
-      assertEquals(sub.variables.length, 0);
+      assertEquals(sub?.variables.length, 0);
       const privateVariable = program.variables[0];
-      assertEquals(privateVariable.name, "p%");
-      assertEquals(privateVariable.private, sub);
+      assertEquals(privateVariable?.name, "p%");
+      assertEquals(privateVariable?.private, sub);
     });
 
     it("throws on a nested subroutine definition", () => {
@@ -362,7 +362,7 @@ describe("parse: BASIC", () => {
     it("parses a CONST declaration", () => {
       const program = parseProgram("BASIC", "CONST size% = 5\nEND");
       assertEquals(program.constants.length, 1);
-      assertEquals(program.constants[0].value, 5);
+      assertEquals(program.constants[0]?.value, 5);
     });
 
     it("parses a DIM array declaration", () => {
@@ -484,7 +484,7 @@ describe("parse: BASIC", () => {
       assertEquals(ifStatement.statementType, "ifStatement");
       assertEquals(ifStatement.ifStatements.length, 1);
       assertEquals(
-        ifStatement.ifStatements[0].statementType,
+        ifStatement.ifStatements[0]?.statementType,
         "variableAssignment",
       );
     });
@@ -498,7 +498,7 @@ describe("parse: BASIC", () => {
       const ifStatement = program.statements[0] as IfStatement;
       assertEquals(ifStatement.elseStatements.length, 1);
       assertEquals(
-        ifStatement.elseStatements[0].statementType,
+        ifStatement.elseStatements[0]?.statementType,
         "variableAssignment",
       );
     });
@@ -618,7 +618,7 @@ describe("parse: BASIC", () => {
         program.variables.map((v) => v.name),
         ["i%"],
       );
-      assertEquals(program.subroutines[0].variables.length, 0);
+      assertEquals(program.subroutines[0]?.variables.length, 0);
     });
 
     it("doesn't let a comment between the loop initialisation and the body swallow the body", () => {
@@ -634,7 +634,7 @@ describe("parse: BASIC", () => {
       assertExists(forStatement);
       assertEquals(forStatement.statements.length, 1);
       assertEquals(
-        forStatement.statements[0].statementType,
+        forStatement.statements[0]?.statementType,
         "variableAssignment",
       );
     });
@@ -700,7 +700,7 @@ describe("parse: BASIC", () => {
       assertExists(forStatement);
       assertEquals(forStatement.statements.length, 1);
       assertEquals(
-        forStatement.statements[0].statementType,
+        forStatement.statements[0]?.statementType,
         "variableAssignment",
       );
     });
@@ -752,7 +752,7 @@ describe("parse: BASIC", () => {
       assertExists(whileStatement);
       assertEquals(whileStatement.statements.length, 1);
       assertEquals(
-        whileStatement.statements[0].statementType,
+        whileStatement.statements[0]?.statementType,
         "variableAssignment",
       );
     });
@@ -768,7 +768,7 @@ describe("parse: BASIC", () => {
       assertExists(repeatStatement);
       assertEquals(repeatStatement.statements.length, 1);
       assertEquals(
-        repeatStatement.statements[0].statementType,
+        repeatStatement.statements[0]?.statementType,
         "variableAssignment",
       );
     });
@@ -816,7 +816,7 @@ describe("parse: BASIC", () => {
       assertExists(whileStatement);
       assertEquals(whileStatement.statements.length, 1);
       assertEquals(
-        whileStatement.statements[0].statementType,
+        whileStatement.statements[0]?.statementType,
         "variableAssignment",
       );
     });
@@ -837,7 +837,7 @@ describe("parse: BASIC", () => {
       assertExists(repeatStatement);
       assertEquals(repeatStatement.statements.length, 1);
       assertEquals(
-        repeatStatement.statements[0].statementType,
+        repeatStatement.statements[0]?.statementType,
         "variableAssignment",
       );
     });

@@ -35,7 +35,7 @@ export default (
   const pcode: number[][] = [];
 
   merge(pcode, expression(baseVariableExp, program, options)); // base
-  merge(pcode, expression(exp.indexes[0], program, options)); // base, i
+  merge(pcode, expression(exp.indexes[0]!, program, options)); // base, i
   merge(pcode, [[PCode.dupl, PCode.ldin, 0, PCode.less]]); // base, i, (i<0 ? 1 : 0)
   merge(pcode, expression(baseVariableExp, program, options)); // base, i, neg, base
   merge(pcode, [[PCode.lptr, PCode.mult, PCode.plus]]); // base, i2 = i + neg*length
@@ -48,7 +48,7 @@ export default (
   for (let level = 1; level < exp.indexes.length; level += 1) {
     merge(pcode, [[PCode.lptr]]); // base (this level's sublist pointer)
     merge(pcode, [[PCode.dupl]]); // base, base
-    merge(pcode, expression(exp.indexes[level], program, options)); // base, base, i
+    merge(pcode, expression(exp.indexes[level]!, program, options)); // base, base, i
     merge(pcode, [[PCode.dupl, PCode.ldin, 0, PCode.less]]); // base, base, i, (i<0 ? 1 : 0)
     merge(pcode, [[PCode.ldin, 4, PCode.roll]]); // base, i, neg, base
     merge(pcode, [[PCode.lptr, PCode.mult, PCode.plus]]); // base, i2 = i + neg*length

@@ -134,6 +134,6 @@ describe("the commands table", () => {
     await settle();
     const basic = listed();
     assert(basic.length > 0);
-    assertEquals(basic[0], python[0].toUpperCase());
+    assertEquals(basic[0], python[0]?.toUpperCase());
   });
 });

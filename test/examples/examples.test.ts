@@ -44,7 +44,7 @@ describe("example programs", () => {
         assertEquals(record.runtimeErrors, []);
       } else {
         assertEquals(record.runtimeErrors.length, 1);
-        assertMatch(record.runtimeErrors[0], expectedError);
+        assertMatch(record.runtimeErrors[0]!, expectedError);
       }
       if (runMode === "asyncFiles") {
         assertEquals(record.hitIterationCap, false);

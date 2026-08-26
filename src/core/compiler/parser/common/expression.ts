@@ -128,12 +128,13 @@ const parseExpression = (
   if (level >= levels.length) {
     return parseFactor(lexemes, routine);
   }
+  const thisLevel = levels[level]!; // in range, by the check just above
 
   // recursing at the *same* level rather than the next is what makes "not not
   // x" parse
-  if (levels[level].unary) {
+  if (thisLevel.unary) {
     const lexeme = lexemes.get();
-    const op = lexeme && operator(lexeme, levels[level]);
+    const op = lexeme && operator(lexeme, thisLevel);
     if (!op) {
       return parseExpression(lexemes, routine, level + 1);
     }
@@ -166,9 +167,9 @@ const parseExpression = (
     );
   }
 
-  while (lexemes.get() && operator(lexemes.get() as Lexeme, levels[level])) {
+  while (lexemes.get() && operator(lexemes.get() as Lexeme, thisLevel)) {
     const lexeme = lexemes.get() as OperatorLexeme;
-    let op = operator(lexeme, levels[level]) as Operator;
+    let op = operator(lexeme, thisLevel) as Operator;
 
     lexemes.next();
 

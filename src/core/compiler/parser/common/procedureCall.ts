@@ -67,7 +67,7 @@ export const parseMethodProcedureCall = (
       routine.language,
       method,
       variableValue,
-      method.parameters[0],
+      method.parameters[0]!, // a method declares its receiver
     );
   } catch {
     throw new CompilerError(

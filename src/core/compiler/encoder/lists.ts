@@ -149,8 +149,8 @@ export const listProcedureCallCode = (
   }
 
   // the receiver is always a plain, unindexed variable reference: both paths
-  // that reach a dot-call construct it that way
-  const receiver = args[0];
+  // that reach a dot-call construct it that way, and a dot-call always has one
+  const receiver = args[0]!;
   // deno-coverage-ignore-start -- unreachable: both parse paths that build a
   // dot-method call (python/statement.ts in statement position, and
   // parser/common/factor.ts in expression position) resolve an identifier to a
@@ -191,8 +191,9 @@ export const listProcedureCallCode = (
     // LIDX checks first. That needs (list, value) twice, duplicated with PICK
     // rather than by re-evaluating expressions that may have side effects.
     // PICK is 1-indexed from the top, so PICK 2 is the item below it.
-    merge(pcode, expression(args[0], program, options));
-    merge(pcode, expression(args[1], program, options));
+    // the parser has checked ".remove" takes exactly its two arguments
+    merge(pcode, expression(args[0]!, program, options));
+    merge(pcode, expression(args[1]!, program, options));
     merge(pcode, [[PCode.pick, 2, PCode.pick, 2]]); // list, value, list, value
     merge(pcode, [[PCode.lidx, lp]]); // list, value, index
     merge(pcode, [[PCode.ernf, PCode.drop]]); // list, value (throws if index was -1; ERNF peeks rather than pops, so no DUPL needed)
@@ -221,7 +222,7 @@ export const listProcedureCallCode = (
     }
     merge(tail, argCode);
   });
-  merge(tail, [[command.code(0)[0], lp]]);
+  merge(tail, [[command.code(0)[0]!, lp]]);
   // only these three touch new cells or store new pointers, so only these three
   // need promoting out of temporary heap space; ".reverse"/".del" rearrange
   // already-promoted pointers within an unchanged block
@@ -247,11 +248,11 @@ export const listFunctionCallCode = (
   // every other case here it doesn't gate on command.listOperand. A string
   // argument falls through to the ordinary SLEN path.
   if (command.listBehavior === "length") {
-    if (!isListExpression(args[0])) {
+    if (!isListExpression(args[0]!)) {
       return null;
     }
     const pcode: number[][] = [];
-    merge(pcode, expression(args[0], program, options));
+    merge(pcode, expression(args[0]!, program, options));
     merge(pcode, [[PCode.lptr]]);
     return pcode;
   }
@@ -260,7 +261,7 @@ export const listFunctionCallCode = (
     return null;
   }
 
-  const receiver = args[0];
+  const receiver = args[0]!; // a dot-call always has a receiver
   // deno-coverage-ignore-start -- the ternary's undefined arm and the null
   // return are unreachable, for the same reason as listProcedureCallCode's
   // receiver guard above: every parsed dot-call receiver is a VariableValue
@@ -293,7 +294,7 @@ export const listFunctionCallCode = (
   for (const arg of args) {
     merge(pcode, expression(arg, program, options));
   }
-  merge(pcode, [[command.code(0)[0], lp]]);
+  merge(pcode, [[command.code(0)[0]!, lp]]);
 
   if (command.listBehavior === "index") {
     // LIDX pushes -1 rather than throwing where real Python raises; ERNF peeks,

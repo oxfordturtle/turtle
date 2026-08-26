@@ -1,6 +1,5 @@
 import { PCode } from "@/core/constants.ts";
 import type { Language } from "@/core/constants.ts";
-import type { Operator } from "../../lexer/types.ts";
 import type { CompoundExpression } from "../../parser/definitions/expressions/compoundExpression.ts";
 import type { Program } from "../../parser/definitions/routines/program.ts";
 import { encodeLp } from "../lists.ts";
@@ -160,6 +159,6 @@ const operator = (
       ];
 
     default:
-      return [PCode[op as any] as any as PCode];
+      return [PCode[op]];
   }
 };

@@ -120,7 +120,8 @@ export const typeLexeme = (token: Token): TypeLexeme => {
   return {
     ...lexeme(token.line, token.character, token.content),
     type: "type",
-    subtype: subtypes[token.content.toLowerCase()],
+    // the tokenizer only produces a "type" token for these words
+    subtype: subtypes[token.content.toLowerCase()]!,
   };
 };
 
@@ -172,7 +173,8 @@ export const operatorLexeme = (
   return {
     ...lexeme(token.line, token.character, token.content),
     type: "operator",
-    subtype: subtypes[token.content.toLowerCase()],
+    // the tokenizer only produces an "operator" token for these symbols
+    subtype: subtypes[token.content.toLowerCase()]!,
   };
 };
 
@@ -282,8 +284,9 @@ const escapes: Record<string, string> = {
  * error here would newly reject programs that work today.
  */
 const unescape = (body: string): string =>
-  body.replace(/\\([\s\S])/g, (match, character: string) =>
-    character in escapes ? escapes[character] : match,
+  body.replace(
+    /\\([\s\S])/g,
+    (match, character: string) => escapes[character] ?? match,
   );
 
 export const stringLexeme = (

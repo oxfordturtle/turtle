@@ -174,7 +174,7 @@ describe("parse: shared statement-kind behavior", () => {
         assertExists(call);
         assertEquals(call.statementType, "procedureCall");
         assertEquals(call.arguments.length, 1);
-        assertEquals(call.arguments[0].expressionType, "integer");
+        assertEquals(call.arguments[0]?.expressionType, "integer");
       });
     }
   });
@@ -203,7 +203,7 @@ describe("parse: shared statement-kind behavior", () => {
         assertEquals(program.constants.length, 1);
         // 7, not 8: "*" binds tighter than "+", so this also pins the
         // operator precedence the folding is done against
-        assertEquals(program.constants[0].value, 7);
+        assertEquals(program.constants[0]?.value, 7);
       });
     }
   });

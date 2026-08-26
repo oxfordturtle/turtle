@@ -37,17 +37,17 @@ export const relativeJump = (distance: number): number => {
  */
 export const resolve = (pcode: number[][]): void => {
   for (let line = 0; line < pcode.length; line += 1) {
+    const words = pcode[line]!;
     let i = 0;
-    while (i < pcode[line].length) {
-      const code = pcode[line][i];
-      if (
-        (code === PCode.jump || code === PCode.ifno) &&
-        pcode[line][i + 1] < 0
-      ) {
-        pcode[line][i + 1] = line - pcode[line][i + 1] + 1;
+    while (i < words.length) {
+      // in range by the loop condition, as is the operand every opcode
+      // reached here carries after it
+      const code = words[i]!;
+      if ((code === PCode.jump || code === PCode.ifno) && words[i + 1]! < 0) {
+        words[i + 1] = line - words[i + 1]! + 1;
       }
       const args = pcodeArgs(code);
-      i += args === -1 ? pcode[line][i + 1] + 2 : args + 1;
+      i += args === -1 ? words[i + 1]! + 2 : args + 1;
     }
   }
 };

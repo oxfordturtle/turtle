@@ -3,6 +3,7 @@ import { assert, assertEquals } from "@std/assert";
 import { encode, lexify, parse, tokenize } from "@/core/compiler.ts";
 import { defaultMachineOptions, dump, run } from "@/core/machine.ts";
 import { fakeCanvas, fakeFiles, fakeOutput, fakeTimers } from "./lib/fakes.ts";
+import { PCode, runPcode, str } from "./lib/helpers.ts";
 
 /**
  * Coverage for `src/core/machine/memory.ts`'s `dump()`, driven entirely by
@@ -17,13 +18,14 @@ import { fakeCanvas, fakeFiles, fakeOutput, fakeTimers } from "./lib/fakes.ts";
  *   (and, once implemented, lists) live.
  * - `heapBase` is `options.stackSize` (the boundary between the two regions).
  *
- * `heapClear()`, and the `heapClearPending`-gated branch inside
- * `delayedHeapClear()` that would call it, are confirmed genuinely
- * unreachable right now (not just untested): `heapClear()`'s only would-be
- * external caller is `runtime.ts`'s HCLR case, which is a commented-out
- * no-op (`//memory.heapClear()` - see runtime.test.ts's "HCLR is a
- * documented no-op" test), and nothing else in `src/` sets
- * `heapClearPending`. Confirmed by grepping for callers, not assumed.
+ * `heapClear()` is reached from `runtime.ts`'s HCLR case, gated on
+ * `options.activateHCLR` - which defaults to `true`, so the gate is open in
+ * every ordinary run. (An older version of this comment described that case
+ * as a commented-out no-op; it no longer is.) `heapClear()` defers to
+ * `heapClearPending` whenever the evaluation stack is non-empty, and
+ * `delayedHeapClear()` at the top of `execute()` consumes it. That flag is
+ * the one piece of module state `init()` does not reset - see the pinned
+ * `[known bug]` at the bottom of this file.
  */
 describe("machine/memory: dump()", () => {
   const compileAndRun = (
@@ -171,5 +173,58 @@ describe("machine/memory: heap temp-space reclaim", () => {
 
   it("leaves a plain string variable's own slicing unaffected", () => {
     assertEquals(outputOf("s='bcef'\nprint(s[: 1]+'A'+s[2:])"), "bAef");
+  });
+});
+
+/**
+ * `memory.init()` resets six of the module's seven private `let`s. The
+ * seventh, `heapClearPending`, is not in the list - and the list is
+ * hand-maintained against the declarations directly above it, so nothing
+ * would catch the omission.
+ *
+ * That flag is reachable: HCLR with a non-empty evaluation stack sets it (see
+ * runtime.test.ts's deferred-clear test), and `options.activateHCLR` defaults
+ * to `true`. A program that halts before the next `execute()` therefore ends
+ * with the flag still raised, and it survives into the following `run()`.
+ *
+ * It happens to be harmless today, and that is exactly what is pinned below:
+ * `delayedHeapClear()` consumes the stale flag on the new run's very first
+ * `execute()`, at which point `init()` has just set `heapTemp === heapPerm`,
+ * so the clear it performs is a no-op. The margin is one instruction - any
+ * change that allocates on the heap before the first `delayedHeapClear()`,
+ * or that defers the flag past it, turns a latent bug into a live one, and
+ * trips this test.
+ */
+describe("machine/memory: [known bug] init() does not reset heapClearPending", () => {
+  // leaves the flag raised: HCLR runs with 1 still on the stack, so the
+  // clear is deferred, and the program halts before any second execute()
+  const leaveClearPending = (): void => {
+    runPcode([[PCode.ldin, 1], [PCode.hclr], [PCode.halt]]);
+  };
+
+  // allocates a permanent heap string and then a temporary one, so its dump
+  // would visibly lose the temporary half to an unwanted heap clear
+  const allocator = (): number[][] => [
+    str("hi"),
+    [PCode.hfix],
+    str("there"),
+    [PCode.halt],
+  ];
+
+  it("the flag survives the run, but the next run is unaffected by it", () => {
+    runPcode(allocator());
+    const fromClean = dump();
+
+    leaveClearPending();
+    runPcode(allocator());
+    const afterStaleFlag = dump();
+
+    assertEquals(afterStaleFlag, fromClean);
+    // and the heap really does hold both strings, so the comparison above
+    // isn't two identically-empty dumps agreeing with each other
+    assertEquals(
+      afterStaleFlag.heap,
+      [2, 104, 105, 5, 116, 104, 101, 114, 101],
+    );
   });
 });

@@ -339,7 +339,7 @@ describe("the syntax tab", () => {
     );
     // the fixture's fifteen lexemes, with its one comment filtered out
     assertEquals(rows.length, 15);
-    assertFalse(rows.some((row: string[]) => row[2].includes("greet")));
+    assertFalse(rows.some((row: string[]) => row[2]!.includes("greet")));
     // a lexeme with no subtype: the comment line's newline
     assertEquals(rows[0], ["1", "1", "[newline]", "newline"]);
     // one with a subtype, highlighted as code
@@ -393,11 +393,11 @@ describe("the run settings tab", () => {
 
   it("puts an edited number into the settings store, as a number", async () => {
     await showTab("options");
-    inputs()[0].value = "7";
-    await change(inputs()[0]);
+    inputs()[0]!.value = "7";
+    await change(inputs()[0]!);
     assertEquals(settings.getSettings().drawCountMax, 7);
-    inputs()[3].value = "20000";
-    await change(inputs()[3]);
+    inputs()[3]!.value = "20000";
+    await change(inputs()[3]!);
     assertEquals(settings.getSettings().stackSize, 20000);
   });
 
@@ -405,6 +405,6 @@ describe("the run settings tab", () => {
     await showTab("options");
     settings.setSetting("codeCountMax", 123);
     await settle();
-    assertEquals(inputs()[1].value, "123");
+    assertEquals(inputs()[1]?.value, "123");
   });
 });

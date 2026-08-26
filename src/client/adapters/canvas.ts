@@ -58,7 +58,7 @@ const clear = (colour: string): void => {
 const setCursor = (code: number): void => {
   if (!canvas) return;
   const corrected = code < 0 || code > 15 ? 1 : code;
-  canvas.style.cursor = cursors[corrected].css;
+  canvas.style.cursor = cursors[corrected]!.css; // clamped to the 16 there are
 };
 
 // the Canvas 2D spec ignores an assignment of zero to lineWidth, leaving it at
@@ -165,7 +165,7 @@ const drawText = (
   if (!context) return;
   context.textBaseline = "hanging";
   context.fillStyle = turtle.c;
-  context.font = `${size}pt ${fonts[font & 0xf].css}`;
+  context.font = `${size}pt ${fonts[font & 0xf]!.css}`; // 16 fonts, 16 codes
   if ((font & 0x10) > 0) {
     // bold text
     context.font = `bold ${context.font}`;
@@ -188,7 +188,8 @@ const drawText = (
 const readPixel = (x: number, y: number): number => {
   if (!context) return 0;
   const image = context.getImageData(x, y, 1, 1);
-  return image.data[0] * 65536 + image.data[1] * 256 + image.data[2];
+  // one pixel is always four bytes of RGBA
+  return image.data[0]! * 65536 + image.data[1]! * 256 + image.data[2]!;
 };
 
 const writePixel = (
@@ -225,10 +226,12 @@ const floodFill = (
   const dy = [-1, 0, 0, 1];
   let i = 0;
   let offset = (y * canvas.width + x) * 4;
+  // every offset below is derived from a point inside the canvas, so it lands
+  // on one of img.data's RGBA quadruples
   const c3 =
-    256 * 256 * img.data[offset] +
-    256 * img.data[offset + 1] +
-    img.data[offset + 2];
+    256 * 256 * img.data[offset]! +
+    256 * img.data[offset + 1]! +
+    img.data[offset + 2]!;
   let nextX: number;
   let nextY: number;
   let nextC: number;
@@ -243,15 +246,15 @@ const floodFill = (
     ty = pixStack.pop() as number;
     tx = pixStack.pop() as number;
     for (i = 0; i < 4; i += 1) {
-      nextX = tx + dx[i];
-      nextY = ty + dy[i];
+      nextX = tx + dx[i]!;
+      nextY = ty + dy[i]!;
       test1 = nextX > 0 && nextX <= canvas.width;
       test2 = nextY > 0 && nextY <= canvas.height;
       if (test1 && test2) {
         offset = (nextY * canvas.width + nextX) * 4;
-        nextC = 256 * 256 * img.data[offset];
-        nextC += 256 * img.data[offset + 1];
-        nextC += img.data[offset + 2];
+        nextC = 256 * 256 * img.data[offset]!;
+        nextC += 256 * img.data[offset + 1]!;
+        nextC += img.data[offset + 2]!;
         test1 = nextC !== fillColour;
         test2 = nextC !== boundaryColour || !boundaryMode;
         test3 = nextC === c3 || boundaryMode;

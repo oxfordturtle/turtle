@@ -20,7 +20,7 @@ export default (
       ),
     );
     if (exp.indexes.length > 0) {
-      const indexExp = expression(exp.indexes[0], program, options);
+      const indexExp = expression(exp.indexes[0]!, program, options);
       merge(pcode, indexExp);
       if (program.language === "Pascal") {
         merge(pcode, [[PCode.decr]]); // Pascal indexes strings from 1 instead of 0

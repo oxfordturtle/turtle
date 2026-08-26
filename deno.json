@@ -4,6 +4,7 @@
     "start": "deno run --watch --allow-read --allow-net app.ts",
     "fmt": "deno run -A npm:prettier@3.4.2 --write .",
     "fmt:check": "deno run -A npm:prettier@3.4.2 --check .",
+    "lint": "deno lint",
     "test": "deno test --allow-read --allow-env test/core/ test/ui/ssr/ test/ui/dom/ tools/",
     "test:core": "deno test --allow-read test/core/",
     "test:ui": "deno test --allow-read --allow-env test/ui/ssr/ test/ui/dom/",
@@ -35,7 +36,13 @@
     "playwright-core": "npm:playwright-core@1.62.1",
     "@fortawesome/fontawesome-free/": "npm:/@fortawesome/fontawesome-free@6.7.2/"
   },
+  "lint": {
+    "rules": {
+      "include": ["no-shadow"]
+    }
+  },
   "compilerOptions": {
-    "lib": ["deno.window", "dom", "dom.iterable"]
+    "lib": ["deno.window", "dom", "dom.iterable"],
+    "noUncheckedIndexedAccess": true
   }
 }

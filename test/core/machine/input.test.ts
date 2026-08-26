@@ -199,6 +199,38 @@ describe("machine/input", () => {
       assertFalse(output.calls.some((c) => c.method === "backspaceConsole"));
     });
 
+    it("a full buffer drops further characters silently, keeping the earliest", () => {
+      // 2 usable slots, backed by 3 physical cells: the third character finds
+      // the write pointer's next position already at the read pointer, which
+      // means full rather than empty, and is dropped
+      const { timers, output } = startPaused(
+        [[PCode.ldin, 10], [PCode.read], [PCode.writ]],
+        allocateBuffer(2),
+      );
+      updateKeyDown(97, "a", false, false, false);
+      updateKeyDown(98, "b", false, false, false);
+      updateKeyDown(99, "c", false, false, false);
+      timers.flush();
+      assertEquals(output.outputText, "ab");
+    });
+
+    it("a dropped character isn't echoed to the console either", () => {
+      const { output } = startPaused([], allocateBuffer(2));
+      updateKeyDown(97, "a", false, false, false);
+      updateKeyDown(98, "b", false, false, false);
+      updateKeyDown(99, "c", false, false, false);
+      assertEquals(output.consoleText, "ab");
+    });
+
+    it("Backspace before BUFR has allocated a buffer is a no-op", () => {
+      // main[1] is still 0, so there is no buffer to un-buffer from - the
+      // same guard the printable-character path takes
+      const { output } = startPaused([]);
+      updateKeyDown(8, "Backspace", false, false, false);
+      assertEquals(output.consoleText, "");
+      assertFalse(output.calls.some((c) => c.method === "backspaceConsole"));
+    });
+
     it("Backspace wraps back to the physical end once the write pointer has wrapped to the start", () => {
       // same 2-slot wrap as "the ring buffer wraps around" below: after
       // typing 'a', reading it back, then typing 'b' and 'c', the write

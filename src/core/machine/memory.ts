@@ -1,5 +1,5 @@
-import type { MachineOptions, MemoryDump } from "./types.ts";
-import { MachineError } from "./utils.ts";
+import type { MachineOptions, MemoryDump, TurtleState } from "./types.ts";
+import { MachineError } from "./error.ts";
 
 export const main: number[] = [];
 export const keys: number[] = [];
@@ -30,7 +30,72 @@ const turtaIndex = 4;
 const turttIndex = 5;
 const turtcIndex = 6;
 
-export function init(options: MachineOptions): void {
+/**
+ * The evaluation stack's typed accessors. Every operator that consumes operands
+ * goes through these rather than calling `stack.pop()` and testing for
+ * `undefined` itself: the check is identical in every case, and concentrating
+ * it here is what makes it a single branch the coverage gate can actually see.
+ *
+ * There is deliberately no `popPair`/`popTriple` returning several values at
+ * once. A tuple-returning helper reads better, but it allocates an array per
+ * instruction, and `execute()` runs up to `options.codeCountMax` instructions
+ * per block: measured on the example suite, the array-heavy programs ran 11-17x
+ * slower with one (`BASIC/Cellular/IteratedPD.tbas`, 1.1s -> 18.5s). Operators
+ * that need several operands call `popValue` once each, in pop order - which
+ * also removes any chance of silently reversing a subtraction's operands.
+ */
+
+/** pops one value, throwing if the evaluation stack is empty */
+export const popValue = (): number => {
+  const value = stack.pop();
+  if (value === undefined) {
+    throw new MachineError("Stack operation called on empty stack.");
+  }
+  return value;
+};
+
+/**
+ * Reads the value `depth` below the top of the stack without popping it,
+ * throwing if the stack is not that deep. CTST and ERNF test a value the
+ * compiler goes on to reuse, so they must not consume it.
+ */
+export const peekValue = (depth = 0): number => {
+  const value = stack.at(-1 - depth);
+  if (value === undefined) {
+    throw new MachineError("Stack operation called on empty stack.");
+  }
+  return value;
+};
+
+/**
+ * Pops the memory stack, throwing if it is empty.
+ *
+ * MEMC reports the *evaluation* stack's message here even though it is the
+ * memory stack that ran out - preserved verbatim, because `errors.test.ts` and
+ * the example snapshots both record the exact text.
+ */
+export const popMemoryStack = (): number => {
+  const value = memoryStack.pop();
+  if (value === undefined) {
+    throw new MachineError("Stack operation called on empty stack.");
+  }
+  return value;
+};
+
+/**
+ * Pops a pointer and resolves it through getHeapString.
+ *
+ * Only for an operator whose string is its *deepest* operand, so that the
+ * resolution still happens after every other operand has been popped:
+ * getHeapString frees the temporary heap above the string it reads, so when two
+ * pointers are involved the shallower must be resolved first. Those operators
+ * pop both pointers and call getHeapString themselves, in that order.
+ */
+export const popString = (): string => {
+  return getHeapString(popValue());
+};
+
+export const init = (options: MachineOptions): void => {
   main.length = 0x200000;
   keys.length = 0x100;
   query.length = 0x10;
@@ -49,73 +114,111 @@ export function init(options: MachineOptions): void {
   heapTemp = heapBase;
   heapPerm = heapTemp;
   heapMax = heapTemp;
-}
+};
 
-export function peek(address: number): number {
-  return main[address];
-}
+/**
+ * Reads one word of main memory, throwing if the address is outside it.
+ *
+ * The mirror of `popValue`, and the reason it exists: `main[address]` is every
+ * bit as out-of-bounds-prone as `stack.pop()`, but until
+ * `noUncheckedIndexedAccess` was turned on it was the half of the pair the type
+ * checker let through unguarded. `init()` sizes `main` to its full 0x200000
+ * words and zero-fills them, so the only address that can miss is one outside
+ * that range - an unassigned or corrupted pointer - which used to read
+ * `undefined` and poison every sum downstream with NaN. Concentrating the check
+ * here keeps it a single branch the coverage gate can see.
+ *
+ * Writes need no equivalent: assigning past the end of a JS array grows it, and
+ * `main` is only ever indexed by an address the machine itself produced.
+ */
+export const peek = (address: number): number => {
+  const value = main[address];
+  if (value === undefined) {
+    throw new MachineError(`Memory address out of range (${address}).`);
+  }
+  return value;
+};
 
-export function peekAddressOffset(address: number, offset: number): number {
-  return main[main[address] + offset];
-}
+/**
+ * The input arrays' read accessors.
+ *
+ * Unlike `main`, these two cannot be missed by accident: `init()` sizes and
+ * fills them, and every code that reaches them has already been checked against
+ * the STAT/ICLR/TDET protocol's bounds (`QUERY_CODE_MIN`..`KEY_CODE_COUNT`) or
+ * is one of `input.ts`'s own named `QUERY_*` constants. A runtime guard here
+ * would be a branch no test could reach, so the assertion states the invariant
+ * instead - once, rather than at each of the ten call sites.
+ *
+ * The one code not checked anywhere is the `keyCode` a keyup carries straight
+ * from the DOM. A keyup above 255 with no keydown before it would read past the
+ * array; that is the pre-existing behaviour, not something the assertion
+ * introduced, and it stores a NaN exactly as it always has.
+ */
+export const readQuery = (code: number): number => query[code]!;
 
-export function pokeAddressOffset(
+export const readKey = (code: number): number => keys[code]!;
+
+export const peekAddressOffset = (address: number, offset: number): number => {
+  return peek(peek(address) + offset);
+};
+
+export const pokeAddressOffset = (
   address: number,
   offset: number,
   value: number,
-): void {
-  main[main[address] + offset] = value;
-}
+): void => {
+  main[peek(address) + offset] = value;
+};
 
-export function getTurtX(): number {
+export const getTurtX = (): number => {
   return peekAddressOffset(0, turtxIndex);
-}
+};
 
-export function getTurtY(): number {
+export const getTurtY = (): number => {
   return peekAddressOffset(0, turtyIndex);
-}
+};
 
-export function getTurtD(): number {
+export const getTurtD = (): number => {
   return peekAddressOffset(0, turtdIndex);
-}
+};
 
-export function getTurtA(): number {
+export const getTurtA = (): number => {
   return peekAddressOffset(0, turtaIndex);
-}
+};
 
-export function getTurtT(): number {
+export const getTurtT = (): number => {
   return peekAddressOffset(0, turttIndex);
-}
+};
 
-export function getTurtC(): number {
+export const getTurtC = (): number => {
   return peekAddressOffset(0, turtcIndex);
-}
+};
 
-export function setTurtX(turtx: number) {
+export const setTurtX = (turtx: number): void => {
   pokeAddressOffset(0, turtxIndex, turtx);
-}
+};
 
-export function setTurtY(turty: number) {
+export const setTurtY = (turty: number): void => {
   pokeAddressOffset(0, turtyIndex, turty);
-}
+};
 
-export function setTurtD(turtd: number) {
+export const setTurtD = (turtd: number): void => {
   pokeAddressOffset(0, turtdIndex, turtd);
-}
+};
 
-export function setTurtA(turta: number) {
+export const setTurtA = (turta: number): void => {
   pokeAddressOffset(0, turtaIndex, turta);
-}
+};
 
-export function setTurtT(turtt: number) {
+export const setTurtT = (turtt: number): void => {
   pokeAddressOffset(0, turttIndex, turtt);
-}
+};
 
-export function setTurtC(turtc: number) {
+export const setTurtC = (turtc: number): void => {
   pokeAddressOffset(0, turtcIndex, turtc);
-}
+};
 
-export function getTurtle() {
+export const getTurtle = (): TurtleState => {
   return {
     x: getTurtX(),
     y: getTurtY(),
@@ -124,41 +227,41 @@ export function getTurtle() {
     t: getTurtT(),
     c: getTurtC(),
   };
-}
+};
 
-export function getHeapGlobal(): number {
+export const getHeapGlobal = (): number => {
   return heapGlobal;
-}
+};
 
-export function setHeapGlobal(value: number): void {
+export const setHeapGlobal = (value: number): void => {
   heapGlobal = value;
-}
+};
 
-export function getHeapPerm(): number {
+export const getHeapPerm = (): number => {
   return heapPerm;
-}
+};
 
-export function setStackTop(value: number): void {
+export const setStackTop = (value: number): void => {
   stackTop = Math.max(value, stackTop);
-}
+};
 
-export function getHeapTemp(): number {
+export const getHeapTemp = (): number => {
   return heapTemp;
-}
+};
 
-export function setHeapTemp(value: number): void {
+export const setHeapTemp = (value: number): void => {
   heapTemp = value;
-}
+};
 
-export function setHeapMax(value: number): void {
+export const setHeapMax = (value: number): void => {
   heapMax = Math.max(value, heapMax);
-}
+};
 
-export function heapFix(): void {
+export const heapFix = (): void => {
   heapPerm = heapTemp;
-}
+};
 
-export function heapClear(): void {
+export const heapClear = (): void => {
   // deferred while the evaluation stack is non-empty: a part-evaluated
   // expression may still be holding pointers into the temporary heap
   if (stack.length === 0) {
@@ -166,23 +269,23 @@ export function heapClear(): void {
   } else {
     heapClearPending = true;
   }
-}
+};
 
-export function delayedHeapClear(): void {
+export const delayedHeapClear = (): void => {
   if (heapClearPending) {
     heapClearPending = false;
     heapClear();
   }
-}
+};
 
 /** resets the heap to its true base, discarding global heap strings and the keyboard buffer too */
-export function heapReset(): void {
+export const heapReset = (): void => {
   heapTemp = heapBase;
   heapPerm = heapBase;
   main[1] = 0; // delete keyboard buffer
-}
+};
 
-export function makeHeapString(string: string): void {
+export const makeHeapString = (string: string): void => {
   const stringArray = Array.from(string).map((c) => c.charCodeAt(0));
   stack.push(heapTemp + 1);
   heapTemp += 1;
@@ -192,13 +295,13 @@ export function makeHeapString(string: string): void {
     main[heapTemp] = code;
   }
   heapMax = Math.max(heapTemp, heapMax);
-}
+};
 
-export function getHeapString(address: number): string {
+export const getHeapString = (address: number): string => {
   if (address === 0) {
     throw new MachineError("String pointer unassigned.");
   }
-  const length = main[address];
+  const length = peek(address);
   const start = address + 1;
   const charArray = main.slice(start, start + length);
   const string = charArray.map((c) => String.fromCharCode(c)).join("");
@@ -215,41 +318,42 @@ export function getHeapString(address: number): string {
     heapTemp = address + length;
   }
   return string;
-}
+};
 
-export function zero(start: number, length: number): void {
+export const zero = (start: number, length: number): void => {
   // iterative, not recursive: a few large global arrays need thousands of words
   // zeroed in one call, which a frame-per-word recursion cannot survive
   for (let i = 0; i < length; i += 1) {
     main[start + i] = 0;
   }
-}
+};
 
 /** a proper memmove: safe for overlapping ranges in either direction */
-export function copy(source: number, target: number, length: number): void {
+export const copy = (source: number, target: number, length: number): void => {
   if (target > source) {
     copyBackward(source, target, length);
   } else {
     copyForward(source, target, length);
   }
-}
+};
 
-function copyForward(source: number, target: number, length: number): void {
+const copyForward = (source: number, target: number, length: number): void => {
   if (length > 0) {
-    main[target] = main[source];
+    main[target] = peek(source);
     copyForward(source + 1, target + 1, length - 1);
   }
-}
+};
 
-function copyBackward(source: number, target: number, length: number): void {
+const copyBackward = (source: number, target: number, length: number): void => {
   if (length > 0) {
-    main[target + length - 1] = main[source + length - 1];
+    main[target + length - 1] = peek(source + length - 1);
     copyBackward(source, target, length - 1);
   }
-}
+};
 
-export function dump(): MemoryDump {
-  const stack = main.slice(0, stackTop + 1);
-  const heap = main.slice(heapBase + 1, heapMax + 1);
-  return { stack, heap, heapBase: heapBase + 1 };
-}
+export const dump = (): MemoryDump => ({
+  // the *memory* stack region of main, not this module's evaluation `stack`
+  stack: main.slice(0, stackTop + 1),
+  heap: main.slice(heapBase + 1, heapMax + 1),
+  heapBase: heapBase + 1,
+});

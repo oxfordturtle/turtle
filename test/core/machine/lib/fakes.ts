@@ -570,7 +570,7 @@ export const fakeFiles = (): FakeFiles => {
       if (entry?.kind !== "search" || entry.index >= entry.matches.length) {
         return Promise.resolve("");
       }
-      const match = entry.matches[entry.index];
+      const match = entry.matches[entry.index]!; // in range by the check above
       entry.index += 1;
       return Promise.resolve(match);
     },

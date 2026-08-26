@@ -85,24 +85,27 @@ const assemble = (
   index: number,
   decimal: boolean,
 ): string[] => {
-  const hit = PCode[line[index]];
-  const pcode = hit ? [hit.toUpperCase()] : [cell(line[index], decimal)];
+  // the caller only recurses while `index` is still within the line, and an
+  // instruction's arguments follow it there
+  const code = line[index]!;
+  const hit = PCode[code];
+  const pcode = hit ? [hit.toUpperCase()] : [cell(code, decimal)];
   let args = 0;
   if (hit) {
-    if (pcodeArgs(line[index]) < 0) {
+    if (pcodeArgs(code) < 0) {
       // A negative argument count means a string: the next value is its
       // length, and that many character codes follow.
-      const length = line[index + 1];
+      const length = line[index + 1]!;
       pcode.push(cell(length, decimal));
       args += 1;
       while (args <= length) {
         args += 1;
-        pcode.push(String.fromCharCode(line[index + args]));
+        pcode.push(String.fromCharCode(line[index + args]!));
       }
     } else {
-      while (args < pcodeArgs(line[index])) {
+      while (args < pcodeArgs(code)) {
         args += 1;
-        pcode.push(cell(line[index + args], decimal));
+        pcode.push(cell(line[index + args]!, decimal));
       }
     }
   }

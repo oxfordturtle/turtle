@@ -1,10 +1,19 @@
-import { defaults, type Property } from "../constants/properties.ts";
+import {
+  defaults,
+  type Property,
+  type PropertyValues,
+} from "../constants/properties.ts";
 
-export function load(property: Property): any {
+export function load<P extends Property>(property: P): PropertyValues[P] {
   const fromStorage = sessionStorage.getItem(property);
-  return fromStorage !== null ? JSON.parse(fromStorage) : defaults[property];
+  return fromStorage !== null
+    ? JSON.parse(fromStorage)
+    : (defaults[property] as PropertyValues[P]);
 }
 
-export function save(property: Property, value: any): void {
+export function save<P extends Property>(
+  property: P,
+  value: PropertyValues[P],
+): void {
   sessionStorage.setItem(property, JSON.stringify(value));
 }

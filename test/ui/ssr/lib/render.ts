@@ -103,7 +103,7 @@ export const FAILED_TO_RENDER = "failed to render";
 export const customTags = (markup: string): Set<string> =>
   new Set(
     Array.from(markup.matchAll(/<([a-z][a-z0-9]*-[a-z0-9-]*)[\s/>]/g)).map(
-      (match) => match[1],
+      (match) => match[1]!,
     ),
   );
 
@@ -119,7 +119,7 @@ export const islandNames = async (): Promise<Set<string>> => {
   for await (const path of sourceFiles("src/islands")) {
     const source = await Deno.readTextFile(path);
     for (const match of source.matchAll(/define\("([a-z][a-z0-9-]*)"/g)) {
-      names.add(match[1]);
+      names.add(match[1]!);
     }
   }
   return names;
@@ -137,7 +137,7 @@ export const settingAttributes = async (): Promise<Set<string>> => {
   for await (const path of sourceFiles("src")) {
     const source = await Deno.readTextFile(path);
     for (const match of source.matchAll(/setting="([^"$]*)"/g)) {
-      names.add(match[1]);
+      names.add(match[1]!);
     }
   }
   return names;
@@ -146,7 +146,7 @@ export const settingAttributes = async (): Promise<Set<string>> => {
 /** Every `setting="..."` value in a page of markup. */
 export const settingsNamed = (markup: string): Set<string> =>
   new Set(
-    Array.from(markup.matchAll(/setting="([^"]*)"/g), (match) => match[1]),
+    Array.from(markup.matchAll(/setting="([^"]*)"/g), (match) => match[1]!),
   );
 
 async function* sourceFiles(directory: string): AsyncGenerator<string> {

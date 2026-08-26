@@ -119,7 +119,7 @@ describe("lexify", () => {
         );
         const commentIndex = lexemes.findIndex((l) => l.type === "comment");
         assertExists(lexemes[commentIndex + 1]);
-        assertEquals(lexemes[commentIndex + 1].type, "newline");
+        assertEquals(lexemes[commentIndex + 1]?.type, "newline");
       });
     }
 
@@ -148,7 +148,7 @@ describe("lexify", () => {
         const code =
           language === "BASIC" ? "IF" : language === "Pascal" ? "IF" : "if";
         const lexemes = lexify(tokenize(code, language), language);
-        assertEquals(lexemes[0].type, "keyword");
+        assertEquals(lexemes[0]?.type, "keyword");
       });
     }
 
@@ -161,7 +161,7 @@ describe("lexify", () => {
               ? "number"
               : "int";
         const lexemes = lexify(tokenize(code, language), language);
-        assertEquals(lexemes[0].type, "type");
+        assertEquals(lexemes[0]?.type, "type");
       });
     }
   });
@@ -297,29 +297,29 @@ describe("lexify", () => {
   describe("integer literals", () => {
     it("parses a binary literal with radix 2", () => {
       const lexemes = lexify(tokenize("0b101", "Python"), "Python");
-      const literal = lexemes[0];
-      assertEquals(literal.type, "literal");
+      const literal = lexemes[0]!;
+      assertEquals(literal?.type, "literal");
       assertEquals("radix" in literal ? literal.radix : undefined, 2);
       assertEquals("value" in literal ? literal.value : undefined, 5);
     });
 
     it("parses an octal literal with radix 8", () => {
       const lexemes = lexify(tokenize("0o17", "Python"), "Python");
-      const literal = lexemes[0];
+      const literal = lexemes[0]!;
       assertEquals("radix" in literal ? literal.radix : undefined, 8);
       assertEquals("value" in literal ? literal.value : undefined, 15);
     });
 
     it("parses a hexadecimal literal with radix 16", () => {
       const lexemes = lexify(tokenize("0x1A", "Python"), "Python");
-      const literal = lexemes[0];
+      const literal = lexemes[0]!;
       assertEquals("radix" in literal ? literal.radix : undefined, 16);
       assertEquals("value" in literal ? literal.value : undefined, 26);
     });
 
     it("parses a plain decimal literal with radix 10 (no prefix to strip)", () => {
       const lexemes = lexify(tokenize("42", "Python"), "Python");
-      const literal = lexemes[0];
+      const literal = lexemes[0]!;
       assertEquals("radix" in literal ? literal.radix : undefined, 10);
       assertEquals("value" in literal ? literal.value : undefined, 42);
     });

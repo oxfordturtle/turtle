@@ -322,7 +322,7 @@ describe("machine/runtime: execute()", () => {
         [PCode.plus],
         [PCode.halt],
       ]);
-      assert(/overflow/i.test(overflowPlus.output.runtimeErrors[0].message));
+      assert(/overflow/i.test(overflowPlus.output.runtimeErrors[0]?.message!));
 
       const overflowSubt = runPcode([
         [PCode.ldin, -2147483648],
@@ -330,7 +330,7 @@ describe("machine/runtime: execute()", () => {
         [PCode.subt],
         [PCode.halt],
       ]);
-      assert(/overflow/i.test(overflowSubt.output.runtimeErrors[0].message));
+      assert(/overflow/i.test(overflowSubt.output.runtimeErrors[0]?.message!));
 
       const overflowMult = runPcode([
         [PCode.ldin, 2147483647],
@@ -338,7 +338,7 @@ describe("machine/runtime: execute()", () => {
         [PCode.mult],
         [PCode.halt],
       ]);
-      assert(/overflow/i.test(overflowMult.output.runtimeErrors[0].message));
+      assert(/overflow/i.test(overflowMult.output.runtimeErrors[0]?.message!));
 
       // stays within range: no error
       assertEquals(
@@ -727,6 +727,62 @@ describe("machine/runtime: execute()", () => {
       );
     });
 
+    // [known bug] TODO.md 1.4: COPY, DELS and INSS are transcribed from
+    // Pascal's 1-based `Copy(s, index, count)` using the deprecated
+    // `String.prototype.substr`, whose first argument counts *backwards from
+    // the end* when negative. So a 0 or negative index - which Delphi clamps
+    // to 1 - silently extracts or splices from the wrong end of the string
+    // instead. The assertions below are what the code does, not what it
+    // should do. They also pin the exact hazard in swapping `substr` for
+    // `slice`/`substring`, which clamp negatives differently again: a
+    // like-for-like replacement would change all three of these answers.
+    describe("[known bug] substr's negative-index behaviour at index <= 0", () => {
+      it("COPY at index 0 takes the last character instead of the first", () => {
+        // substr(-1, 3) on "hello" - Delphi's Copy("hello", 0, 3) is "hel"
+        assertEquals(
+          runToString(
+            str("hello"),
+            [PCode.ldin, 0],
+            [PCode.ldin, 3],
+            [PCode.copy],
+          ),
+          "o",
+        );
+        // and it keeps counting back as the index goes further negative
+        assertEquals(
+          runToString(
+            str("hello"),
+            [PCode.ldin, -1],
+            [PCode.ldin, 3],
+            [PCode.copy],
+          ),
+          "lo",
+        );
+      });
+
+      it("DELS at index 0 deletes from the wrong place", () => {
+        // substr(0, -1) is "" and substr(1) is "ello", so the head is lost
+        // and only one character is actually removed
+        assertEquals(
+          runToString(
+            str("hello"),
+            [PCode.ldin, 0],
+            [PCode.ldin, 2],
+            [PCode.dels],
+          ),
+          "ello",
+        );
+      });
+
+      it("INSS at index 0 discards all but the last character of the target", () => {
+        // substr(0, -1) is "" and substr(-1) is "o", so "hell" vanishes
+        assertEquals(
+          runToString(str("XY"), str("hello"), [PCode.ldin, 0], [PCode.inss]),
+          "XYo",
+        );
+      });
+    });
+
     it("POSS finds a 1-based substring position (0 if not found)", () => {
       assertEquals(runToInt(str("World"), str("Hello World"), [PCode.poss]), 7);
       assertEquals(runToInt(str("xyz"), str("Hello World"), [PCode.poss]), 0);
@@ -1036,7 +1092,7 @@ describe("machine/runtime: execute()", () => {
       ]);
       assertEquals(output.runtimeErrors.length, 1);
       assertEquals(
-        output.runtimeErrors[0].message,
+        output.runtimeErrors[0]?.message,
         "Cannot parse $GG to integer.",
       );
       assertEquals(
@@ -1090,6 +1146,34 @@ describe("machine/runtime: execute()", () => {
         runToInt([PCode.ldin, 1], [PCode.ldin, 42], [PCode.memw]),
         1,
       );
+    });
+
+    // [known bug] TODO.md 1.12: `MachineOptions.traceOnRun` exists, and is
+    // threaded from the Run menu through `program.ts` into the machine - and
+    // nothing in `src/core/machine/` ever reads it, so turning tracing on
+    // changes nothing a student can see. Same shape as TODO.md 1.2 and 1.11:
+    // a control that does nothing.
+    //
+    // Pinned as an equality between two runs of the same program rather than
+    // as an assertion about one of them, because what tracing *should* emit is
+    // an open question - a console log per instruction is only the likeliest
+    // answer. Whatever it turns out to be, it has to make these two call
+    // streams differ, and this test then trips.
+    it("[known bug] traceOnRun changes nothing about a run", () => {
+      const pcode = [
+        [PCode.ldin, 1],
+        [PCode.ldin, 42],
+        [PCode.trac],
+        [PCode.itos],
+        [PCode.writ],
+        [PCode.halt],
+      ];
+      const off = runPcode(pcode, { traceOnRun: false });
+      const on = runPcode(pcode, { traceOnRun: true });
+      assertEquals(on.output.calls, off.output.calls);
+      // the program's own "1" (WRIT writes to both), and not a line more
+      assertEquals(on.output.outputText, "1");
+      assertEquals(on.output.consoleText, "1");
     });
 
     it("DUMP calls updateMemoryDisplay, and selects the memory tab if configured to", () => {
@@ -2145,7 +2229,7 @@ describe("machine/runtime: execute()", () => {
         [PCode.dump],
         [PCode.halt],
       ]);
-      assertEquals(output.memoryDumps[0].stack.length, 1001);
+      assertEquals(output.memoryDumps[0]?.stack.length, 1001);
     });
 
     it("MEMC allocates a new frame (linking it to the previous top) and MEMR releases it", () => {
@@ -2663,7 +2747,7 @@ describe("machine/runtime: compiled programs, end to end", () => {
       const pcode = compileToPcode("Python", code);
       const { output } = runPcode(pcode);
       assertEquals(output.runtimeErrors.length, 1);
-      assert(/index out of range/i.test(output.runtimeErrors[0].message));
+      assert(/index out of range/i.test(output.runtimeErrors[0]?.message!));
     });
 
     it("raises a runtime error for a too-negative index (past the start of the list)", () => {
@@ -2671,7 +2755,7 @@ describe("machine/runtime: compiled programs, end to end", () => {
       const pcode = compileToPcode("Python", code);
       const { output } = runPcode(pcode);
       assertEquals(output.runtimeErrors.length, 1);
-      assert(/index out of range/i.test(output.runtimeErrors[0].message));
+      assert(/index out of range/i.test(output.runtimeErrors[0]?.message!));
     });
 
     it("raises a runtime error writing past the end of the list", () => {
@@ -2760,7 +2844,7 @@ describe("machine/runtime: compiled programs, end to end", () => {
       const pcode = compileToPcode("Python", code);
       const { output } = runPcode(pcode);
       assertEquals(output.runtimeErrors.length, 1);
-      assert(/maximum capacity/i.test(output.runtimeErrors[0].message));
+      assert(/maximum capacity/i.test(output.runtimeErrors[0]?.message!));
     });
 
     it(".copy() returns an independent list (mutating the copy doesn't affect the original)", () => {
@@ -2874,7 +2958,7 @@ describe("machine/runtime: compiled programs, end to end", () => {
       const { output } = runPcode(pcode);
       assertEquals(output.runtimeErrors.length, 1);
       assertEquals(
-        output.runtimeErrors[0].message,
+        output.runtimeErrors[0]?.message,
         'Invalid list index in ".del" method.',
       );
     });
@@ -2885,7 +2969,7 @@ describe("machine/runtime: compiled programs, end to end", () => {
       const { output } = runPcode(pcode);
       assertEquals(output.runtimeErrors.length, 1);
       assertEquals(
-        output.runtimeErrors[0].message,
+        output.runtimeErrors[0]?.message,
         'Invalid list index in ".del" method.',
       );
     });
@@ -3205,7 +3289,7 @@ describe("machine/runtime: compiled programs, end to end", () => {
         assertEquals(output.outputText, "\nxy\n");
       });
 
-      it("Cellular/IteratedPD.tpy's util string (chr(3*n)*3 etc.) has the correct length and content", async () => {
+      it("Cellular/IteratedPD.tpy's util string (chr(3*n)*3 etc.) has the correct length and content", () => {
         // mirrors the file's own "util" construction line, computed by
         // hand for n=1 (the file's actual first use) to serve as an oracle
         const n = 1;

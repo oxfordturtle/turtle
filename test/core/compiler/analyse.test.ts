@@ -71,7 +71,7 @@ describe("analyse", () => {
             name: expectedName,
             level: 1,
             count: 1,
-            lines: category!.expressions[0].lines,
+            lines: category!.expressions[0]?.lines,
           },
         ]);
       });

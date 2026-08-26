@@ -172,6 +172,43 @@ export type RuntimeState = {
   runToken: number;
 };
 
+/**
+ * Everything an operator needs that is not module-global state: the outbound
+ * ports, the run's options, and the four things only `execute()`'s own loop can
+ * do for it.
+ *
+ * Built **once per `execute()` call, never per instruction.** The loop runs up
+ * to `options.codeCountMax` (100,000) instructions per block, and an allocation
+ * on that path costs whole seconds - see MACHINE_REFACTOR.md's Phase 2 record,
+ * where a tuple-returning pop helper made the example suite 11-17x slower.
+ */
+export type Cycle = Readonly<{
+  options: MachineOptions;
+  canvas: Canvas;
+  output: Output;
+  timers: Timers;
+  files: FileSystem;
+
+  /** reads the next inline operand, advancing the program counter past it */
+  operand(): number;
+
+  /** records a draw against this block's draw budget */
+  drew(): void;
+
+  /**
+   * Spends the draw budget outright, ending the block after this instruction so
+   * the canvas is repainted before the next one starts.
+   */
+  forceUpdate(): void;
+
+  /**
+   * Stops the loop and returns from `execute()` without rescheduling it. For an
+   * operator that has already advanced the program counter itself and arranged
+   * its own resumption - via `suspendFor`, or a timer callback.
+   */
+  suspend(): void;
+}>;
+
 export type VirtualCanvas = {
   startx: number;
   starty: number;
@@ -193,24 +230,12 @@ export type Turtle = {
 
 export type TurtleProperty = keyof Turtle;
 
-export type Memory = {
-  main: number[];
-  keys: number[];
-  query: number[];
-  coords: [number, number][];
-  stack: number[];
-  memoryStack: number[];
-  returnStack: number[];
-  subroutineStack: number[];
-  tryStack: [number, number][];
-  stackTop: number;
-  heapGlobal: number;
-  heapBase: number;
-  heapTemp: number;
-  heapPerm: number;
-  heapMax: number;
-  heapClearPending: boolean;
-};
+/**
+ * The turtle exactly as `main` stores it, with `c` still a raw colour value.
+ * `Turtle` is the outward-facing shape the canvas and output ports see, in
+ * which `c` has been formatted as a hex string.
+ */
+export type TurtleState = Omit<Turtle, "c"> & { c: number };
 
 export type MemoryDump = {
   stack: number[];

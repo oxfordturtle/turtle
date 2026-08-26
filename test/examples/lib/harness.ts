@@ -345,11 +345,11 @@ export const runExample = async (
     return {
       runMode: "readline",
       pcode,
-      result: runWithReadlines(pcode, READLINE_INPUTS[entry.path]),
+      result: runWithReadlines(pcode, READLINE_INPUTS[entry.path]!),
     };
   }
   if (entry.path in KEYPRESS_INPUTS) {
-    const { presses, finalMaxIterations } = KEYPRESS_INPUTS[entry.path];
+    const { presses, finalMaxIterations } = KEYPRESS_INPUTS[entry.path]!;
     return {
       runMode: "keypress",
       pcode,

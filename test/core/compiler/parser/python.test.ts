@@ -36,7 +36,7 @@ describe("parse: Python", () => {
 
     it("ignores a comment as a pass statement", () => {
       const program = parseProgram("Python", "# hello\nx = 1");
-      assertEquals(program.statements[0].statementType, "passStatement");
+      assertEquals(program.statements[0]?.statementType, "passStatement");
     });
 
     it("tolerates a trailing comment on the same line as a statement", () => {
@@ -58,7 +58,7 @@ describe("parse: Python", () => {
 
     it("parses PASS as a pass statement", () => {
       const program = parseProgram("Python", "pass");
-      assertEquals(program.statements[0].statementType, "passStatement");
+      assertEquals(program.statements[0]?.statementType, "passStatement");
     });
 
     it("throws if a statement is indented with no preceding block opener", () => {
@@ -292,7 +292,7 @@ describe("parse: Python", () => {
       assertEquals(ifStatement.ifStatements.length, 1);
       assertEquals(ifStatement.elseStatements.length, 1);
       assertEquals(
-        ifStatement.elseStatements[0].statementType,
+        ifStatement.elseStatements[0]?.statementType,
         "variableAssignment",
       );
     });
@@ -535,7 +535,7 @@ describe("parse: Python", () => {
         "Python",
         "def f(n):\n    for n in range(3):\n        pass\n    return n",
       );
-      const n = program.subroutines[0].variables.find((v) => v.name === "n");
+      const n = program.subroutines[0]?.variables.find((v) => v.name === "n");
       assertEquals(n?.type, "integer");
       assert(n?.typeIsCertain);
     });
@@ -778,10 +778,10 @@ describe("parse: Python", () => {
       // the synthesized "element = mylist[!indexN]" statement comes first,
       // before the user's own "pass"
       assertEquals(
-        forStatement.statements[0].statementType,
+        forStatement.statements[0]?.statementType,
         "variableAssignment",
       );
-      assertEquals(forStatement.statements[1].statementType, "passStatement");
+      assertEquals(forStatement.statements[1]?.statementType, "passStatement");
     });
 
     it("pins a hint-less loop variable's type from the list's element kind", () => {
@@ -848,10 +848,10 @@ describe("parse: Python", () => {
       const forStatement = program.statements[1] as ForStatement;
       assertEquals(forStatement.statementType, "forStatement");
       assertEquals(
-        forStatement.statements[0].statementType,
+        forStatement.statements[0]?.statementType,
         "variableAssignment",
       );
-      assertEquals(forStatement.statements[1].statementType, "passStatement");
+      assertEquals(forStatement.statements[1]?.statementType, "passStatement");
     });
 
     it("pins a hint-less loop variable's type to 'string'", () => {
@@ -902,7 +902,7 @@ describe("parse: Python", () => {
       const program = parseProgram("Python", "while True:\n    break");
       const whileStatement = program.statements[0] as WhileStatement;
       assertEquals(
-        whileStatement.statements[0].statementType,
+        whileStatement.statements[0]?.statementType,
         "breakStatement",
       );
     });
@@ -911,7 +911,7 @@ describe("parse: Python", () => {
       const program = parseProgram("Python", "while True:\n    continue");
       const whileStatement = program.statements[0] as WhileStatement;
       assertEquals(
-        whileStatement.statements[0].statementType,
+        whileStatement.statements[0]?.statementType,
         "continueStatement",
       );
     });
@@ -944,7 +944,10 @@ describe("parse: Python", () => {
       );
       const whileStatement = program.statements[0] as WhileStatement;
       const ifStatement = whileStatement.statements[0] as IfStatement;
-      assertEquals(ifStatement.ifStatements[0].statementType, "breakStatement");
+      assertEquals(
+        ifStatement.ifStatements[0]?.statementType,
+        "breakStatement",
+      );
     });
 
     it("throws if 'break' occurs outside any loop", () => {
@@ -993,9 +996,9 @@ describe("parse: Python", () => {
         "def f():\n    while True:\n        break\nf()",
       );
       const sub = program.subroutines[0];
-      const whileStatement = sub.statements[0] as WhileStatement;
+      const whileStatement = sub?.statements[0] as WhileStatement;
       assertEquals(
-        whileStatement.statements[0].statementType,
+        whileStatement.statements[0]?.statementType,
         "breakStatement",
       );
     });
@@ -1016,9 +1019,9 @@ describe("parse: Python", () => {
         "y = double(2)\ndef double(n: int) -> int:\n    return n * 2",
       );
       const sub = program.subroutines[0];
-      assertEquals(sub.name, "double");
-      assert(sub.variables.some((v) => v.isParameter && v.name === "n"));
-      const returnStatement = sub.statements.find(
+      assertEquals(sub?.name, "double");
+      assert(sub?.variables.some((v) => v.isParameter && v.name === "n"));
+      const returnStatement = sub?.statements.find(
         (s) => s.statementType === "returnStatement",
       ) as ReturnStatement;
       assertExists(returnStatement);
@@ -1030,7 +1033,7 @@ describe("parse: Python", () => {
         "y = double(2)\ndef double(n):\n    return n * 2",
       );
       const sub = program.subroutines[0];
-      assert(sub.typeIsCertain);
+      assert(sub?.typeIsCertain);
     });
 
     it("supports nested function definitions", () => {
@@ -1039,8 +1042,8 @@ describe("parse: Python", () => {
         "outer()\ndef outer():\n    def inner():\n        pass\n    inner()",
       );
       const outer = program.subroutines[0];
-      assertEquals(outer.subroutines.length, 1);
-      assertEquals(outer.subroutines[0].name, "inner");
+      assertEquals(outer?.subroutines.length, 1);
+      assertEquals(outer?.subroutines[0]?.name, "inner");
     });
 
     // regression tests for find.assignmentTarget
@@ -1058,8 +1061,8 @@ describe("parse: Python", () => {
           "m = 0\ndef outer():\n    def inner():\n        m = 99\n        return m\n    return inner()\nx = outer()",
         );
         const outerVariable = program.variables.find((v) => v.name === "m");
-        const inner = program.subroutines[0].subroutines[0];
-        const innerVariable = inner.variables.find((v) => v.name === "m");
+        const inner = program.subroutines[0]?.subroutines[0];
+        const innerVariable = inner?.variables.find((v) => v.name === "m");
         assertExists(outerVariable);
         assertExists(innerVariable);
         // two distinct Variable objects, not the same one shared by alias
@@ -1072,8 +1075,8 @@ describe("parse: Python", () => {
           "i = 0\ndef outer():\n    def inner():\n        for i in range(3):\n            pass\n        return i\n    return inner()\nx = outer()",
         );
         const outerVariable = program.variables.find((v) => v.name === "i");
-        const inner = program.subroutines[0].subroutines[0];
-        const innerVariable = inner.variables.find((v) => v.name === "i");
+        const inner = program.subroutines[0]?.subroutines[0];
+        const innerVariable = inner?.variables.find((v) => v.name === "i");
         assertExists(outerVariable);
         assertExists(innerVariable);
         assertFalse(outerVariable === innerVariable);
@@ -1088,9 +1091,9 @@ describe("parse: Python", () => {
           "Python",
           "A = [1, 2, 3]\ndef outer():\n    def inner():\n        return A[0] + A[1] + A[2]\n    return inner()\nx = outer()",
         );
-        const inner = program.subroutines[0].subroutines[0];
+        const inner = program.subroutines[0]?.subroutines[0];
         assertEquals(
-          inner.variables.find((v) => v.name === "A"),
+          inner?.variables.find((v) => v.name === "A"),
           undefined,
         );
       });
@@ -1102,9 +1105,9 @@ describe("parse: Python", () => {
           "Python",
           "A = [1, 2, 3]\ndef outer():\n    def inner():\n        A[0] = 99\n    inner()\nouter()",
         );
-        const inner = program.subroutines[0].subroutines[0];
+        const inner = program.subroutines[0]?.subroutines[0];
         assertEquals(
-          inner.variables.find((v) => v.name === "A"),
+          inner?.variables.find((v) => v.name === "A"),
           undefined,
         );
       });
@@ -1114,9 +1117,9 @@ describe("parse: Python", () => {
           "Python",
           "m = 0\ndef outer():\n    def inner():\n        global m\n        m = 99\n    inner()\nouter()",
         );
-        const inner = program.subroutines[0].subroutines[0];
+        const inner = program.subroutines[0]?.subroutines[0];
         assertEquals(
-          inner.variables.find((v) => v.name === "m"),
+          inner?.variables.find((v) => v.name === "m"),
           undefined,
         );
         assertEquals(program.variables.find((v) => v.name === "m")?.name, "m");
@@ -1128,12 +1131,12 @@ describe("parse: Python", () => {
           "def outer():\n    x = 1\n    def inner():\n        nonlocal x\n        x = 2\n    inner()\n    return x\ny = outer()",
         );
         const outer = program.subroutines[0];
-        const inner = outer.subroutines[0];
+        const inner = outer?.subroutines[0];
         assertEquals(
-          inner.variables.find((v) => v.name === "x"),
+          inner?.variables.find((v) => v.name === "x"),
           undefined,
         );
-        assertExists(outer.variables.find((v) => v.name === "x"));
+        assertExists(outer?.variables.find((v) => v.name === "x"));
       });
 
       it("a plain top-level (non-nested) subroutine's assignment ALSO creates its own local, matching real Python exactly (not just nested subroutines)", () => {
@@ -1148,7 +1151,7 @@ describe("parse: Python", () => {
           "m = 0\ndef f():\n    m = 99\nf()",
         );
         const sub = program.subroutines[0];
-        const subVariable = sub.variables.find((v) => v.name === "m");
+        const subVariable = sub?.variables.find((v) => v.name === "m");
         const programVariable = program.variables.find((v) => v.name === "m");
         assertExists(subVariable);
         assertExists(programVariable);
@@ -1162,7 +1165,7 @@ describe("parse: Python", () => {
         );
         const sub = program.subroutines[0];
         assertEquals(
-          sub.variables.find((v) => v.name === "m"),
+          sub?.variables.find((v) => v.name === "m"),
           undefined,
         );
         assertEquals(program.variables.filter((v) => v.name === "m").length, 1);
@@ -1263,7 +1266,7 @@ describe("parse: Python", () => {
         "y = f(1)\ndef f(a: int) -> int: # comment\n    return a",
       );
       const sub = program.subroutines[0];
-      assertEquals(sub.name, "f");
+      assertEquals(sub?.name, "f");
     });
 
     it("throws if the subroutine body is not indented", () => {
@@ -1281,7 +1284,7 @@ describe("parse: Python", () => {
       );
       const sub = program.subroutines[0];
       assertEquals(
-        sub.variables.filter((v) => v.isParameter).map((v) => v.name),
+        sub?.variables.filter((v) => v.isParameter).map((v) => v.name),
         ["a", "b"],
       );
     });
@@ -1336,8 +1339,8 @@ describe("parse: Python", () => {
         "def outer():\n    x = 1\n    def inner():\n        nonlocal x\n        x = 2\n    inner()\nouter()",
       );
       const outer = program.subroutines[0];
-      const inner = outer.subroutines[0];
-      assertEquals(inner.nonlocals, ["x"]);
+      const inner = outer?.subroutines[0];
+      assertEquals(inner?.nonlocals, ["x"]);
     });
 
     it("parses multiple comma-separated global names", () => {
@@ -1346,7 +1349,7 @@ describe("parse: Python", () => {
         "x = 1\ny = 2\ndef f():\n    global x, y\n    x = 2\n    y = 3\nf()",
       );
       const sub = program.subroutines[0];
-      assertEquals(sub.globals, ["x", "y"]);
+      assertEquals(sub?.globals, ["x", "y"]);
     });
 
     it("throws on a global statement missing a comma between names", () => {
@@ -1406,7 +1409,7 @@ describe("parse: Python", () => {
         "y = f(True)\ndef f(b):\n    if b:\n        return 1\n    else:\n        return 2",
       );
       const sub = program.subroutines[0];
-      assert(sub.typeIsCertain);
+      assert(sub?.typeIsCertain);
     });
 
     it("infers the result type from a return statement when nothing else has pinned it yet", () => {
@@ -1415,9 +1418,9 @@ describe("parse: Python", () => {
       // own type-inference branch runs on its "return 5"
       const program = parseProgram("Python", "def infer():\n    return 5");
       const sub = program.subroutines[0];
-      const result = sub.variables.find((v) => v.name === "!result");
+      const result = sub?.variables.find((v) => v.name === "!result");
       assertEquals(result?.type, "integer");
-      assert(sub.typeIsCertain);
+      assert(sub?.typeIsCertain);
     });
   });
 
@@ -1867,7 +1870,7 @@ describe("parse: Python", () => {
       ) as VariableAssignment;
       assertExists(assignment);
       assertEquals(assignment.indexes.length, 1);
-      assertEquals(assignment.indexes[0].expressionType, "integer");
+      assertEquals(assignment.indexes[0]?.expressionType, "integer");
     });
 
     it("throws a type error when the character index is a string, not an integer", () => {
@@ -2287,8 +2290,8 @@ describe("parse: Python", () => {
       const call = program.statements[0] as ProcedureCall;
       assertEquals(call.arguments.length, 2);
       const namedArg = call.arguments[1];
-      assertEquals(namedArg.expressionType, "namedArgument");
-      if (namedArg.expressionType === "namedArgument") {
+      assertEquals(namedArg?.expressionType, "namedArgument");
+      if (namedArg?.expressionType === "namedArgument") {
         assertEquals(namedArg.lexeme.content, "end");
       }
     });

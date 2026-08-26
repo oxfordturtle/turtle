@@ -98,7 +98,7 @@ const handleTouchMove = (event: TouchEvent): void => {
   if (!canvas) return;
   event.preventDefault(); // prevent scrolling
   if (event.touches.length > 0) {
-    const touch = event.touches[0];
+    const touch = event.touches[0]!;
     const rect = canvas.getBoundingClientRect();
     updateMouseMove(
       touch.clientX,
@@ -114,7 +114,7 @@ const handleTouchMove = (event: TouchEvent): void => {
 const handleTouchStart = (event: TouchEvent): void => {
   if (!canvas) return;
   if (event.touches.length > 0) {
-    const touch = event.touches[0];
+    const touch = event.touches[0]!;
     const rect = canvas.getBoundingClientRect();
     updateMouseMove(
       touch.clientX,

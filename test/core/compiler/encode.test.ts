@@ -82,9 +82,9 @@ describe("encode", () => {
     // increment line's unconditional jump goes back to the condition
     const conditionLine = pcode[3];
     const incrementLine = pcode[5];
-    assertEquals(conditionLine.at(-1), pcode.length);
-    assertEquals(incrementLine.at(-2), PCode.jump);
-    assertEquals(incrementLine.at(-1), 4);
+    assertEquals(conditionLine?.at(-1), pcode.length);
+    assertEquals(incrementLine?.at(-2), PCode.jump);
+    assertEquals(incrementLine?.at(-1), 4);
   });
 
   it("hoists a function definition behind a jump, and the call's PCode.subr is back-patched to the function's start line", () => {

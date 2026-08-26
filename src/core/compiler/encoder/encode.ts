@@ -64,14 +64,14 @@ const backPatchSubroutineCalls = (
   program: Program,
   pcode: number[][],
 ): void => {
-  for (let i = 0; i < pcode.length; i += 1) {
-    for (let j = 0; j < pcode[i].length; j += 1) {
-      if (pcode[i][j - 1] && pcode[i][j - 1] === PCode.subr) {
+  for (const line of pcode) {
+    for (let j = 0; j < line.length; j += 1) {
+      if (line[j - 1] === PCode.subr) {
         const subroutine = getAllSubroutines(program).find(
-          (x) => x.index === pcode[i][j],
+          (x) => x.index === line[j],
         );
         if (subroutine) {
-          pcode[i][j] = subroutine.startLine;
+          line[j] = subroutine.startLine;
         }
       }
     }
@@ -95,17 +95,20 @@ const addHCLR = (pcode: number[][]): void => {
     let lastJumpIndex: number | null = null;
     let i = 0;
     while (i < line.length) {
-      if (heapStringCodes.indexOf(line[i]) >= 0) {
+      // in range by the loop condition, as is the operand count an
+      // opcode with a variable number of arguments carries after it
+      const code = line[i]!;
+      if (heapStringCodes.indexOf(code) >= 0) {
         heapStringMade = true;
       }
-      if (line[i] === PCode.subr) {
+      if (code === PCode.subr) {
         heapStringNeeded = true;
       }
-      if (line[i] === PCode.jump || line[i] === PCode.ifno) {
+      if (code === PCode.jump || code === PCode.ifno) {
         lastJumpIndex = i;
       }
-      const args = pcodeArgs(line[i]);
-      i += args === -1 ? line[i + 1] + 2 : args + 1;
+      const args = pcodeArgs(code);
+      i += args === -1 ? line[i + 1]! + 2 : args + 1;
     }
     if (heapStringMade && !heapStringNeeded) {
       if (lastJumpIndex !== null) {
@@ -126,11 +129,12 @@ const programUsesListOps = (pcode: number[][]): boolean => {
   for (const line of pcode) {
     let i = 0;
     while (i < line.length) {
-      if (listOpCodes.indexOf(line[i]) >= 0) {
+      const code = line[i]!;
+      if (listOpCodes.indexOf(code) >= 0) {
         return true;
       }
-      const args = pcodeArgs(line[i]);
-      i += args === -1 ? line[i + 1] + 2 : args + 1;
+      const args = pcodeArgs(code);
+      i += args === -1 ? line[i + 1]! + 2 : args + 1;
     }
   }
   return false;

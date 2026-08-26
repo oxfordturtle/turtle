@@ -32,7 +32,7 @@ export default (code: string, language: Language): Token[] => {
       // code.split(/\s/)[0] is "" whenever code[0] is itself unmatched
       // whitespace, so the fallback to code[0] is what guarantees at least one
       // character is consumed and the main loop can't stall
-      token("illegal", code.split(/\s/)[0] || code[0], line, character);
+      token("illegal", code.split(/\s/)[0] || code[0]!, line, character);
     tokens.push(nextToken);
     code = code.slice(nextToken.content.length);
     if (nextToken.type === "newline") {
@@ -80,7 +80,7 @@ const comment = (
     case "BASIC": {
       const startBASIC = code.match(/^REM/);
       return startBASIC
-        ? token("comment", code.split("\n")[0], line, character)
+        ? token("comment", code.split("\n")[0]!, line, character)
         : null;
     }
 
@@ -89,7 +89,7 @@ const comment = (
     case "TypeScript": {
       const startCorTS = code.match(/^\/\//);
       return startCorTS
-        ? token("comment", code.split("\n")[0], line, character)
+        ? token("comment", code.split("\n")[0]!, line, character)
         : null;
     }
 
@@ -107,7 +107,7 @@ const comment = (
       if (start) {
         return token(
           "unterminatedComment",
-          code.split("\n")[0],
+          code.split("\n")[0]!,
           line,
           character,
         );
@@ -118,7 +118,7 @@ const comment = (
     case "Python": {
       const startPython = code.match(/^#/);
       return startPython
-        ? token("comment", code.split("\n")[0], line, character)
+        ? token("comment", code.split("\n")[0]!, line, character)
         : null;
     }
   }
@@ -201,7 +201,7 @@ const string = (
   character: number,
   language: Language,
 ): Token | null => {
-  code = code.split("\n")[0];
+  code = code.split("\n")[0]!;
   switch (language) {
     case "BASIC": // fallthrough
     case "Pascal":

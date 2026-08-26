@@ -56,5 +56,5 @@ export const bodyStatements = (
   program: Program,
 ): Statement[] =>
   language === "C" || language === "Java"
-    ? program.subroutines[0].statements
+    ? program.subroutines[0]?.statements!
     : program.statements;

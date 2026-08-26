@@ -239,7 +239,7 @@ describe("parse: shared parser plumbing (common/ and definitions/)", () => {
         "int arr[2][3];\nvoid main () {\nint y = arr[0][1];\n}",
       );
       const sub = program.subroutines[0];
-      const assignment = sub.statements.find(
+      const assignment = sub?.statements.find(
         (s) =>
           s.statementType === "variableAssignment" && s.variable.name === "y",
       ) as VariableAssignment | undefined;
@@ -385,7 +385,7 @@ describe("parse: shared parser plumbing (common/ and definitions/)", () => {
     it("allows a string literal where a character is expected", () => {
       const program = parseProgram("C", 'void main () {\nchar c = "a";\n}');
       const sub = program.subroutines[0];
-      const assignment = sub.statements.find(
+      const assignment = sub?.statements.find(
         (s) => s.statementType === "variableAssignment",
       ) as VariableAssignment | undefined;
       assertExists(assignment);
@@ -394,7 +394,7 @@ describe("parse: shared parser plumbing (common/ and definitions/)", () => {
     it("allows an integer literal where a character is expected", () => {
       const program = parseProgram("C", "void main () {\nchar c = 97;\n}");
       const sub = program.subroutines[0];
-      const assignment = sub.statements.find(
+      const assignment = sub?.statements.find(
         (s) => s.statementType === "variableAssignment",
       ) as VariableAssignment | undefined;
       assertExists(assignment);
@@ -453,7 +453,7 @@ describe("parse: shared parser plumbing (common/ and definitions/)", () => {
         "void main () {\nchar c1 = 'a';\nchar c2 = 'b';\nstring[10] s;\ns = c1 + c2;\n}",
       );
       const sub = program.subroutines[0];
-      const assignment = sub.statements.find(
+      const assignment = sub?.statements.find(
         (s) =>
           s.statementType === "variableAssignment" && s.variable.name === "s",
       ) as VariableAssignment | undefined;
@@ -471,7 +471,7 @@ describe("parse: shared parser plumbing (common/ and definitions/)", () => {
         "void main () {\nchar c1 = 'a';\nchar c2 = 'b';\nbool b;\nb = c1 == c2;\n}",
       );
       const sub = program.subroutines[0];
-      const assignment = sub.statements.find(
+      const assignment = sub?.statements.find(
         (s) =>
           s.statementType === "variableAssignment" && s.variable.name === "b",
       ) as VariableAssignment | undefined;
@@ -921,7 +921,7 @@ describe("parse: shared parser plumbing (common/ and definitions/)", () => {
       assertEquals(assignment.value.expressionType, "function");
       if (assignment.value.expressionType === "function") {
         assertEquals(assignment.value.arguments.length, 1);
-        assertEquals(assignment.value.arguments[0].expressionType, "variable");
+        assertEquals(assignment.value.arguments[0]?.expressionType, "variable");
       }
     });
   });
@@ -939,7 +939,7 @@ describe("parse: shared parser plumbing (common/ and definitions/)", () => {
       if (call.statementType === "procedureCall") {
         // arguments[0] is the receiver, arguments[1] the appended sublist
         assertEquals(call.arguments.length, 2);
-        assertEquals(call.arguments[1].expressionType, "listLiteral");
+        assertEquals(call.arguments[1]?.expressionType, "listLiteral");
       }
     });
 
@@ -1009,7 +1009,7 @@ describe("parse: shared parser plumbing (common/ and definitions/)", () => {
         (s) => s.statementType === "variableAssignment",
       ) as VariableAssignment[];
       assertEquals(assignments.length, 3);
-      assertEquals(assignments[2].value.expressionType, "variable");
+      assertEquals(assignments[2]?.value.expressionType, "variable");
     });
   });
 

@@ -40,6 +40,7 @@ deno task start    # development server, with file watching
 deno task test     # the fast test suites (~8s)
 deno task build    # bundle the frontend JavaScript and CSS into assets/build/
 deno task fmt      # format everything with Prettier
+deno task lint     # deno's built-in linter
 ```
 
 `deno task build` must have run at least once before the app is served, since

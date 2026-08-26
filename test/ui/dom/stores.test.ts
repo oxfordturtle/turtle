@@ -79,22 +79,22 @@ describe("the machine store drives the transport and the properties", () => {
   it("swaps RUN's icon and enables HALT when a program plays", async () => {
     machine.setStatus("played");
     await settle();
-    assertEquals(buttons()[0].querySelector("i")?.className, "fa fa-pause");
-    assertFalse(buttons()[1].hasAttribute("disabled"));
+    assertEquals(buttons()[0]?.querySelector("i")?.className, "fa fa-pause");
+    assertFalse(buttons()[1]!.hasAttribute("disabled"));
   });
 
   it("offers to resume a paused program, still running", async () => {
     machine.setStatus("paused");
     await settle();
-    assertEquals(buttons()[0].querySelector("i")?.className, "fa fa-play");
-    assertFalse(buttons()[1].hasAttribute("disabled"));
+    assertEquals(buttons()[0]?.querySelector("i")?.className, "fa fa-play");
+    assertFalse(buttons()[1]!.hasAttribute("disabled"));
   });
 
   it("disables HALT again when the program stops", async () => {
     machine.setStatus("halted");
     await settle();
-    assertEquals(buttons()[0].querySelector("i")?.className, "fa fa-play");
-    assert(buttons()[1].hasAttribute("disabled"));
+    assertEquals(buttons()[0]?.querySelector("i")?.className, "fa fa-play");
+    assert(buttons()[1]?.hasAttribute("disabled"));
   });
 
   it("follows the turtle's properties", async () => {

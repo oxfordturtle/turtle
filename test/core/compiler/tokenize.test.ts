@@ -149,26 +149,26 @@ describe("tokenize", () => {
 
     it("prioritizes Pascal ':=' over the ':' delimiter", () => {
       const tokens = withoutSpacing(tokenize("x:=1", "Pascal"));
-      assertEquals(tokens[1].type, "operator");
-      assertEquals(tokens[1].content, ":=");
+      assertEquals(tokens[1]?.type, "operator");
+      assertEquals(tokens[1]?.content, ":=");
     });
 
     it("tokenizes a lone Pascal ':' as a delimiter", () => {
       const tokens = withoutSpacing(tokenize("x:y", "Pascal"));
-      assertEquals(tokens[1].type, "delimiter");
-      assertEquals(tokens[1].content, ":");
+      assertEquals(tokens[1]?.type, "delimiter");
+      assertEquals(tokens[1]?.content, ":");
     });
 
     it("prioritizes the Python '->' delimiter over the '-' operator", () => {
       const tokens = withoutSpacing(tokenize("x->y", "Python"));
-      assertEquals(tokens[1].type, "delimiter");
-      assertEquals(tokens[1].content, "->");
+      assertEquals(tokens[1]?.type, "delimiter");
+      assertEquals(tokens[1]?.content, "->");
     });
 
     it("tokenizes a lone Python '-' as an operator", () => {
       const tokens = withoutSpacing(tokenize("x-y", "Python"));
-      assertEquals(tokens[1].type, "operator");
-      assertEquals(tokens[1].content, "-");
+      assertEquals(tokens[1]?.type, "operator");
+      assertEquals(tokens[1]?.content, "-");
     });
 
     it("tokenizes BASIC keyword operators", () => {
@@ -301,22 +301,22 @@ describe("tokenize", () => {
     for (const language of ["BASIC", "Pascal"] as const) {
       it(`tokenizes a good ${language} binary literal`, () => {
         const tokens = tokenize("%101", language);
-        assertEquals(tokens[0].type, "binary");
-        assertEquals(tokens[0].content, "%101");
+        assertEquals(tokens[0]?.type, "binary");
+        assertEquals(tokens[0]?.content, "%101");
       });
 
       it(`tokenizes a bad ${language} binary literal`, () => {
         const tokens = tokenize("0b101", language);
-        assertEquals(tokens[0].type, "badBinary");
-        assertEquals(tokens[0].content, "0b101");
+        assertEquals(tokens[0]?.type, "badBinary");
+        assertEquals(tokens[0]?.content, "0b101");
       });
     }
 
     for (const language of ["C", "Java", "Python", "TypeScript"] as const) {
       it(`tokenizes a good ${language} binary literal`, () => {
         const tokens = tokenize("0b101", language);
-        assertEquals(tokens[0].type, "binary");
-        assertEquals(tokens[0].content, "0b101");
+        assertEquals(tokens[0]?.type, "binary");
+        assertEquals(tokens[0]?.content, "0b101");
       });
     }
   });
@@ -324,26 +324,26 @@ describe("tokenize", () => {
   describe("octal numbers", () => {
     it("does not treat a BASIC '&' number as octal (BASIC has no octal notation)", () => {
       const tokens = tokenize("&17", "BASIC");
-      assertEquals(tokens[0].type, "hexadecimal");
+      assertEquals(tokens[0]?.type, "hexadecimal");
     });
 
     it("tokenizes a good Pascal octal literal", () => {
       const tokens = tokenize("&17", "Pascal");
-      assertEquals(tokens[0].type, "octal");
-      assertEquals(tokens[0].content, "&17");
+      assertEquals(tokens[0]?.type, "octal");
+      assertEquals(tokens[0]?.content, "&17");
     });
 
     it("tokenizes a bad Pascal octal literal", () => {
       const tokens = tokenize("0o17", "Pascal");
-      assertEquals(tokens[0].type, "badOctal");
-      assertEquals(tokens[0].content, "0o17");
+      assertEquals(tokens[0]?.type, "badOctal");
+      assertEquals(tokens[0]?.content, "0o17");
     });
 
     for (const language of ["C", "Java", "Python", "TypeScript"] as const) {
       it(`tokenizes a good ${language} octal literal`, () => {
         const tokens = tokenize("0o17", language);
-        assertEquals(tokens[0].type, "octal");
-        assertEquals(tokens[0].content, "0o17");
+        assertEquals(tokens[0]?.type, "octal");
+        assertEquals(tokens[0]?.content, "0o17");
       });
     }
   });
@@ -351,44 +351,44 @@ describe("tokenize", () => {
   describe("hexadecimal numbers", () => {
     it("tokenizes a bad BASIC hexadecimal literal", () => {
       const tokens = tokenize("$1A", "BASIC");
-      assertEquals(tokens[0].type, "badHexadecimal");
+      assertEquals(tokens[0]?.type, "badHexadecimal");
     });
 
     it("tokenizes a good BASIC hexadecimal literal", () => {
       const tokens = tokenize("#1A", "BASIC");
-      assertEquals(tokens[0].type, "hexadecimal");
+      assertEquals(tokens[0]?.type, "hexadecimal");
     });
 
     it("tokenizes a bad Pascal hexadecimal literal", () => {
       const tokens = tokenize("0x1A", "Pascal");
-      assertEquals(tokens[0].type, "badHexadecimal");
+      assertEquals(tokens[0]?.type, "badHexadecimal");
     });
 
     it("tokenizes a good Pascal hexadecimal literal", () => {
       const tokens = tokenize("$1A", "Pascal");
-      assertEquals(tokens[0].type, "hexadecimal");
+      assertEquals(tokens[0]?.type, "hexadecimal");
     });
 
     for (const language of ["C", "Java", "TypeScript"] as const) {
       it(`tokenizes a bad ${language} hexadecimal literal`, () => {
         const tokens = tokenize("#1A", language);
-        assertEquals(tokens[0].type, "badHexadecimal");
+        assertEquals(tokens[0]?.type, "badHexadecimal");
       });
 
       it(`tokenizes a good ${language} hexadecimal literal`, () => {
         const tokens = tokenize("0x1A", language);
-        assertEquals(tokens[0].type, "hexadecimal");
+        assertEquals(tokens[0]?.type, "hexadecimal");
       });
     }
 
     it("tokenizes a bad Python hexadecimal literal", () => {
       const tokens = tokenize("$1A", "Python");
-      assertEquals(tokens[0].type, "badHexadecimal");
+      assertEquals(tokens[0]?.type, "badHexadecimal");
     });
 
     it("tokenizes a good Python hexadecimal literal", () => {
       const tokens = tokenize("0x1A", "Python");
-      assertEquals(tokens[0].type, "hexadecimal");
+      assertEquals(tokens[0]?.type, "hexadecimal");
     });
   });
 
@@ -396,14 +396,14 @@ describe("tokenize", () => {
     for (const language of LANGUAGES) {
       it(`tokenizes a good decimal literal in ${language}`, () => {
         const tokens = tokenize("42", language);
-        assertEquals(tokens[0].type, "decimal");
-        assertEquals(tokens[0].content, "42");
+        assertEquals(tokens[0]?.type, "decimal");
+        assertEquals(tokens[0]?.content, "42");
       });
 
       it(`tokenizes a real number literal as 'real' in ${language}`, () => {
         const tokens = tokenize("3.14", language);
-        assertEquals(tokens[0].type, "real");
-        assertEquals(tokens[0].content, "3.14");
+        assertEquals(tokens[0]?.type, "real");
+        assertEquals(tokens[0]?.content, "3.14");
       });
     }
   });
@@ -411,47 +411,47 @@ describe("tokenize", () => {
   describe("keywords", () => {
     it("tokenizes a BASIC keyword", () => {
       const tokens = tokenize("IF", "BASIC");
-      assertEquals(tokens[0].type, "keyword");
+      assertEquals(tokens[0]?.type, "keyword");
     });
 
     for (const language of ["C", "Java", "Python", "TypeScript"] as const) {
       it(`tokenizes a ${language} keyword`, () => {
         const tokens = tokenize("if", language);
-        assertEquals(tokens[0].type, "keyword");
+        assertEquals(tokens[0]?.type, "keyword");
       });
     }
 
     it("tokenizes a Pascal keyword case-insensitively", () => {
       const lower = tokenize("if", "Pascal");
       const upper = tokenize("IF", "Pascal");
-      assertEquals(lower[0].type, "keyword");
-      assertEquals(upper[0].type, "keyword");
+      assertEquals(lower[0]?.type, "keyword");
+      assertEquals(upper[0]?.type, "keyword");
     });
   });
 
   describe("types", () => {
     it("tokenizes a C type", () => {
-      assertEquals(tokenize("int", "C")[0].type, "type");
+      assertEquals(tokenize("int", "C")[0]?.type, "type");
     });
 
     it("tokenizes a Java type", () => {
-      assertEquals(tokenize("int", "Java")[0].type, "type");
+      assertEquals(tokenize("int", "Java")[0]?.type, "type");
     });
 
     it("tokenizes a Pascal type", () => {
-      assertEquals(tokenize("integer", "Pascal")[0].type, "type");
+      assertEquals(tokenize("integer", "Pascal")[0]?.type, "type");
     });
 
     it("tokenizes a TypeScript type", () => {
-      assertEquals(tokenize("number", "TypeScript")[0].type, "type");
+      assertEquals(tokenize("number", "TypeScript")[0]?.type, "type");
     });
 
     it("does not tokenize 'int' as a type in BASIC (no type keywords)", () => {
-      assertEquals(tokenize("int", "BASIC")[0].type, "identifier");
+      assertEquals(tokenize("int", "BASIC")[0]?.type, "identifier");
     });
 
     it("does not tokenize 'int' as a type in Python (no type keywords; it's a command there)", () => {
-      assertEquals(tokenize("int", "Python")[0].type, "command");
+      assertEquals(tokenize("int", "Python")[0]?.type, "command");
     });
   });
 
@@ -465,24 +465,24 @@ describe("tokenize", () => {
     ] as const) {
       it(`tokenizes a recognised ${language} input code`, () => {
         const tokens = tokenize("\\key", language);
-        assertEquals(tokens[0].type, "inputCode");
-        assertEquals(tokens[0].content, "\\key");
+        assertEquals(tokens[0]?.type, "inputCode");
+        assertEquals(tokens[0]?.content, "\\key");
       });
 
       it(`tokenizes an unrecognised ${language} input code`, () => {
         const tokens = tokenize("\\zzz", language);
-        assertEquals(tokens[0].type, "badInputCode");
+        assertEquals(tokens[0]?.type, "badInputCode");
       });
     }
 
     it("tokenizes a recognised Pascal input code case-insensitively", () => {
       const tokens = tokenize("\\KEY", "Pascal");
-      assertEquals(tokens[0].type, "inputCode");
+      assertEquals(tokens[0]?.type, "inputCode");
     });
 
     it("tokenizes an unrecognised Pascal input code", () => {
       const tokens = tokenize("\\zzz", "Pascal");
-      assertEquals(tokens[0].type, "badInputCode");
+      assertEquals(tokens[0]?.type, "badInputCode");
     });
   });
 
@@ -496,32 +496,32 @@ describe("tokenize", () => {
     ] as const) {
       it(`tokenizes a recognised ${language} query code`, () => {
         const tokens = tokenize("?key", language);
-        assertEquals(tokens[0].type, "queryCode");
-        assertEquals(tokens[0].content, "?key");
+        assertEquals(tokens[0]?.type, "queryCode");
+        assertEquals(tokens[0]?.content, "?key");
       });
 
       it(`tokenizes an unrecognised ${language} query code`, () => {
         const tokens = tokenize("?zzz", language);
-        assertEquals(tokens[0].type, "badQueryCode");
+        assertEquals(tokens[0]?.type, "badQueryCode");
       });
     }
 
     it("tokenizes a recognised Pascal query code case-insensitively", () => {
       const tokens = tokenize("?KEY", "Pascal");
-      assertEquals(tokens[0].type, "queryCode");
+      assertEquals(tokens[0]?.type, "queryCode");
     });
 
     it("tokenizes an unrecognised Pascal query code", () => {
       const tokens = tokenize("?zzz", "Pascal");
-      assertEquals(tokens[0].type, "badQueryCode");
+      assertEquals(tokens[0]?.type, "badQueryCode");
     });
   });
 
   describe("turtle properties", () => {
     it("tokenizes a BASIC turtle property (with its % suffix)", () => {
       const tokens = tokenize("turtx%", "BASIC");
-      assertEquals(tokens[0].type, "turtle");
-      assertEquals(tokens[0].content, "turtx%");
+      assertEquals(tokens[0]?.type, "turtle");
+      assertEquals(tokens[0]?.content, "turtx%");
     });
 
     for (const language of [
@@ -533,14 +533,14 @@ describe("tokenize", () => {
     ] as const) {
       it(`tokenizes a ${language} turtle property`, () => {
         const tokens = tokenize("turtx", language);
-        assertEquals(tokens[0].type, "turtle");
+        assertEquals(tokens[0]?.type, "turtle");
       });
     }
   });
 
   describe("identifiers", () => {
     it("tokenizes a BASIC colour name (upper case)", () => {
-      assertEquals(tokenize("GREEN", "BASIC")[0].type, "colour");
+      assertEquals(tokenize("GREEN", "BASIC")[0]?.type, "colour");
     });
 
     for (const language of [
@@ -551,12 +551,12 @@ describe("tokenize", () => {
       "TypeScript",
     ] as const) {
       it(`tokenizes a ${language} colour name`, () => {
-        assertEquals(tokenize("green", language)[0].type, "colour");
+        assertEquals(tokenize("green", language)[0]?.type, "colour");
       });
     }
 
     it("tokenizes a BASIC command name (upper case)", () => {
-      assertEquals(tokenize("FORWARD", "BASIC")[0].type, "command");
+      assertEquals(tokenize("FORWARD", "BASIC")[0]?.type, "command");
     });
 
     for (const language of [
@@ -567,34 +567,34 @@ describe("tokenize", () => {
       "TypeScript",
     ] as const) {
       it(`tokenizes a ${language} command name`, () => {
-        assertEquals(tokenize("forward", language)[0].type, "command");
+        assertEquals(tokenize("forward", language)[0]?.type, "command");
       });
     }
 
     for (const language of LANGUAGES) {
       it(`tokenizes a plain identifier in ${language}`, () => {
-        assertEquals(tokenize("myVariable", language)[0].type, "identifier");
+        assertEquals(tokenize("myVariable", language)[0]?.type, "identifier");
       });
     }
 
     it("treats Python's 'range' as a command", () => {
-      assertEquals(tokenize("range", "Python")[0].type, "command");
+      assertEquals(tokenize("range", "Python")[0]?.type, "command");
     });
 
     it("does not treat 'range' as a command in other languages", () => {
-      assertEquals(tokenize("range", "C")[0].type, "identifier");
+      assertEquals(tokenize("range", "C")[0]?.type, "identifier");
     });
 
     it("tokenizes a BASIC string-suffixed identifier", () => {
       const tokens = tokenize("name$", "BASIC");
-      assertEquals(tokens[0].type, "identifier");
-      assertEquals(tokens[0].content, "name$");
+      assertEquals(tokens[0]?.type, "identifier");
+      assertEquals(tokens[0]?.content, "name$");
     });
 
     it("tokenizes a BASIC integer-suffixed identifier", () => {
       const tokens = tokenize("count%", "BASIC");
-      assertEquals(tokens[0].type, "identifier");
-      assertEquals(tokens[0].content, "count%");
+      assertEquals(tokens[0]?.type, "identifier");
+      assertEquals(tokens[0]?.content, "count%");
     });
   });
 
@@ -602,8 +602,8 @@ describe("tokenize", () => {
     for (const language of LANGUAGES) {
       it(`tokenizes an illegal character in ${language}`, () => {
         const tokens = tokenize("@", language);
-        assertEquals(tokens[0].type, "illegal");
-        assertEquals(tokens[0].content, "@");
+        assertEquals(tokens[0]?.type, "illegal");
+        assertEquals(tokens[0]?.content, "@");
       });
     }
   });

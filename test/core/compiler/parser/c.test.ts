@@ -32,7 +32,7 @@ describe("parse: C", () => {
       const program = parseProgram("C", "void main () {\n}");
       assertEquals(program.language, "C");
       assertEquals(program.subroutines.length, 1);
-      assertEquals(program.subroutines[0].name, "main");
+      assertEquals(program.subroutines[0]?.name, "main");
     });
 
     it("throws on a non-const keyword at top level", () => {
@@ -82,8 +82,8 @@ describe("parse: C", () => {
         "const int size = 5;\nvoid main () {\n}",
       );
       assertEquals(program.constants.length, 1);
-      assertEquals(program.constants[0].name, "size");
-      assertEquals(program.constants[0].value, 5);
+      assertEquals(program.constants[0]?.name, "size");
+      assertEquals(program.constants[0]?.value, 5);
     });
 
     it("throws when a constant is redeclared in the current scope", () => {
@@ -141,16 +141,16 @@ describe("parse: C", () => {
     it("parses a const definition inside a subroutine body", () => {
       const program = parseProgram("C", "void main () {\nconst int x = 5;\n}");
       const sub = program.subroutines[0];
-      assertEquals(sub.constants.length, 1);
-      assertEquals(sub.constants[0].value, 5);
-      assertEquals(sub.statements[0].statementType, "passStatement");
+      assertEquals(sub?.constants.length, 1);
+      assertEquals(sub?.constants[0]?.value, 5);
+      assertEquals(sub?.statements[0]?.statementType, "passStatement");
     });
 
     it("parses a top-level variable declaration with no assignment", () => {
       const program = parseProgram("C", "int x;\nvoid main () {\n}");
       const variable = program.variables.find((v) => v.name === "x");
       assertExists(variable);
-      assertEquals(program.statements[0].statementType, "passStatement");
+      assertEquals(program.statements[0]?.statementType, "passStatement");
     });
 
     it("parses a top-level variable declaration with an assignment", () => {
@@ -195,10 +195,10 @@ describe("parse: C", () => {
       const program = parseProgram("C", "void main () {\nint* p;\n}");
       const statements = bodyStatements("C", program);
       const sub = program.subroutines[0];
-      const variable = sub.variables.find((v) => v.name === "p");
+      const variable = sub?.variables.find((v) => v.name === "p");
       assertExists(variable);
       assert(variable.isPointer);
-      assertEquals(statements[0].statementType, "passStatement");
+      assertEquals(statements[0]?.statementType, "passStatement");
     });
 
     it("parses an array variable declaration", () => {
@@ -466,7 +466,7 @@ describe("parse: C", () => {
         "int x = 0;\nvoid main () {\ndo {\nx = x + 1;\n} while (x < 3);\n}",
       );
       const sub = program.subroutines[0];
-      const repeatStatement = sub.statements.find(
+      const repeatStatement = sub?.statements.find(
         (s) => s.statementType === "repeatStatement",
       ) as RepeatStatement | undefined;
       assertExists(repeatStatement);
@@ -922,7 +922,7 @@ describe("parse: C", () => {
         statements: { statementType: string }[];
       };
       assertEquals(
-        whileStatement.statements[0].statementType,
+        whileStatement.statements[0]?.statementType,
         "breakStatement",
       );
     });
@@ -934,7 +934,7 @@ describe("parse: C", () => {
       );
       const forStatement = bodyStatements("C", program)[0] as ForStatement;
       assertEquals(
-        forStatement.statements[0].statementType,
+        forStatement.statements[0]?.statementType,
         "continueStatement",
       );
     });
@@ -949,7 +949,7 @@ describe("parse: C", () => {
         program,
       )[0] as RepeatStatement;
       assertEquals(
-        repeatStatement.statements[0].statementType,
+        repeatStatement.statements[0]?.statementType,
         "breakStatement",
       );
     });
@@ -1018,7 +1018,7 @@ describe("parse: C", () => {
       const program = parseProgram("C", "void main () {\n// hello\n}");
       const statements = bodyStatements("C", program);
       assertEquals(statements.length, 1);
-      assertEquals(statements[0].statementType, "passStatement");
+      assertEquals(statements[0]?.statementType, "passStatement");
     });
   });
 

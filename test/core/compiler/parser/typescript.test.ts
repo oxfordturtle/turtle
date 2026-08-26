@@ -28,7 +28,7 @@ describe("parse: TypeScript", () => {
       const program = parseProgram("TypeScript", "var x: number;\nx = 1;");
       // the "var" statement itself produces a passStatement; the real
       // variableAssignment is the next statement
-      assertEquals(program.statements[0].statementType, "passStatement");
+      assertEquals(program.statements[0]?.statementType, "passStatement");
       const assignment = program.statements[1] as VariableAssignment;
       assertEquals(assignment.statementType, "variableAssignment");
       assertEquals(assignment.variable.name, "x");
@@ -45,7 +45,7 @@ describe("parse: TypeScript", () => {
       // single-statement form works too, confirmed directly
       const program = parseProgram("TypeScript", "var x: number = 5;");
       assertEquals(program.statements.length, 1);
-      assertEquals(program.statements[0].statementType, "variableAssignment");
+      assertEquals(program.statements[0]?.statementType, "variableAssignment");
     });
 
     it("declares an array variable with a dimension", () => {
@@ -363,7 +363,7 @@ describe("parse: TypeScript", () => {
         "TypeScript",
         "function f(): number { return 1; }\nf();",
       );
-      assertEquals(program.statements[0].statementType, "passStatement");
+      assertEquals(program.statements[0]?.statementType, "passStatement");
     });
 
     it("parses nested function definitions", () => {
@@ -371,9 +371,9 @@ describe("parse: TypeScript", () => {
         "TypeScript",
         "function f(): number {\nfunction g(): number { return 1; }\nreturn g();\n}",
       );
-      const f = program.subroutines[0];
+      const f = program.subroutines[0]!;
       assertEquals(f.subroutines.length, 1);
-      assertEquals(f.subroutines[0].name, "g");
+      assertEquals(f.subroutines[0]?.name, "g");
     });
 
     it("allows calling a function as a bare statement", () => {
@@ -831,7 +831,7 @@ describe("parse: TypeScript", () => {
         statements: { statementType: string }[];
       };
       assertEquals(
-        whileStatement.statements[0].statementType,
+        whileStatement.statements[0]?.statementType,
         "breakStatement",
       );
     });
@@ -845,7 +845,7 @@ describe("parse: TypeScript", () => {
         statements: { statementType: string }[];
       };
       assertEquals(
-        forStatement.statements[0].statementType,
+        forStatement.statements[0]?.statementType,
         "continueStatement",
       );
     });
@@ -854,7 +854,7 @@ describe("parse: TypeScript", () => {
       const program = parseProgram("TypeScript", "do { break; } while (true);");
       const repeatStatement = program.statements[0] as RepeatStatement;
       assertEquals(
-        repeatStatement.statements[0].statementType,
+        repeatStatement.statements[0]?.statementType,
         "breakStatement",
       );
     });

@@ -179,7 +179,7 @@ describe("a menu command", () => {
 describe("the examples submenu's own group", () => {
   it("opens a group, and collapses it when the same link is clicked again", async () => {
     await click(toggle("examples-menu"));
-    const group = groupLinks()[0];
+    const group = groupLinks()[0]!;
     await click(group);
     assertEquals(q("examples-menu").group, group.getAttribute("data-group"));
     assertEquals(openGroups(), 1);
@@ -191,11 +191,11 @@ describe("the examples submenu's own group", () => {
 
   it("shows one group at a time", async () => {
     await click(toggle("examples-menu"));
-    await click(groupLinks()[0]);
-    await click(groupLinks()[1]);
+    await click(groupLinks()[0]!);
+    await click(groupLinks()[1]!);
     assertEquals(
       q("examples-menu").group,
-      groupLinks()[1].getAttribute("data-group"),
+      groupLinks()[1]?.getAttribute("data-group"),
     );
     assertEquals(openGroups(), 1);
   });
@@ -205,7 +205,7 @@ describe("the examples submenu's own group", () => {
   // it — its own toggle link — which is the same thing on screen.
   it("starts from the list of groups when the submenu is opened again", async () => {
     await click(toggle("examples-menu"));
-    await click(groupLinks()[0]);
+    await click(groupLinks()[0]!);
     await click(toggle("file-menu"));
     assertFalse(q("examples-menu").hasAttribute("open"));
 

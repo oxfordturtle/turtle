@@ -51,7 +51,7 @@ const augmentedElementAssignment = (
   const exp = makeVariableValue(stmt.lexeme, stmt.variable);
   exp.indexes.push(...stmt.indexes);
   const pcode = expression(exp, program, options);
-  pcode[pcode.length - 1].pop(); // drop the trailing LPTR: the address is wanted first
+  pcode[pcode.length - 1]!.pop(); // drop the trailing LPTR: the address is wanted first
   merge(pcode, [[PCode.dupl, PCode.lptr]]); // address, current value
   merge(pcode, expression(stmt.value, program, options)); // address, current value, y
   merge(pcode, [[PCode[operator]]]); // address, new value
@@ -135,7 +135,7 @@ const globalVariableAssignment = (
     const exp = makeVariableValue(stmt.lexeme, stmt.variable);
     exp.indexes.push(...stmt.indexes);
     const element = expression(exp, program, options);
-    const lastLine = element[element.length - 1];
+    const lastLine = element[element.length - 1]!; // expression() never returns no lines
     if (isArray(stmt.variable) && stmt.variable.type === "string") {
       lastLine.push(PCode.cstr);
     } else {
@@ -163,7 +163,7 @@ const pointerVariableAssignment = (
 ): number[][] => {
   const variableValue = makeVariableValue(stmt.lexeme, stmt.variable);
   const pcode = expression(variableValue, program, options);
-  pcode[pcode.length - 1].pop(); // pop off PCode.peek
+  pcode[pcode.length - 1]!.pop(); // pop off PCode.peek
 
   merge(pcode, expression(stmt.value, program, options));
 
@@ -214,7 +214,7 @@ const localVariableAssignment = (
     const exp = makeVariableValue(stmt.lexeme, stmt.variable);
     exp.indexes.push(...stmt.indexes);
     const element = expression(exp, program, options);
-    const lastLine = element[element.length - 1];
+    const lastLine = element[element.length - 1]!; // expression() never returns no lines
     if (isArray(stmt.variable) && stmt.variable.type === "string") {
       lastLine.push(PCode.cstr);
     } else {
