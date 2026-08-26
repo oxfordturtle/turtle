@@ -2,13 +2,10 @@ import type { KeywordLexeme } from "../../../lexer/lexeme.ts";
 import type { Constant } from "../constant.ts";
 import type { Expression } from "../expression.ts";
 import type { Variable } from "../variable.ts";
-import makeStatement, {
-  type Statement,
-  type StatementCommon,
-} from "../statement.ts";
+import type { Statement } from "../statement.ts";
 
-export interface RepeatStatement extends StatementCommon {
-  readonly statementType: "repeatStatement";
+export interface RepeatStatement {
+  readonly kind: "repeatStatement";
   readonly lexeme: KeywordLexeme;
   readonly condition: Expression;
   readonly statements: Statement[];
@@ -20,8 +17,7 @@ const makeRepeatStatement = (
   lexeme: KeywordLexeme,
   condition: Expression,
 ): RepeatStatement => ({
-  ...makeStatement(),
-  statementType: "repeatStatement",
+  kind: "repeatStatement",
   lexeme,
   condition,
   statements: [],

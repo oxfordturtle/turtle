@@ -24,7 +24,7 @@ export const constant = (
   if (match) {
     return match;
   }
-  if (routine.__ === "Subroutine") {
+  if (routine.kind === "Subroutine") {
     return constant(routine.parent, name);
   }
 };
@@ -55,7 +55,7 @@ export const variable = (
   const searchName = routine.language === "Pascal" ? name.toLowerCase() : name;
 
   const turtleVariables =
-    routine.__ === "Program"
+    routine.kind === "Program"
       ? getTurtleVariables(routine)
       : getTurtleVariables(getProgram(routine));
   const turtleVariable = turtleVariables.find((x) => x.name === searchName);
@@ -63,7 +63,7 @@ export const variable = (
     return turtleVariable;
   }
 
-  if (routine.language === "Python" && routine.__ === "Subroutine") {
+  if (routine.language === "Python" && routine.kind === "Subroutine") {
     const isGlobal = routine.globals.indexOf(name) > -1;
     if (isGlobal) {
       return variable(getProgram(routine), name, origin);
@@ -71,7 +71,7 @@ export const variable = (
   }
 
   let match = routine.variables.find((x) => x.name === name);
-  if (match === undefined && routine.__ === "Subroutine") {
+  if (match === undefined && routine.kind === "Subroutine") {
     match = variable(routine.parent, name, origin);
   }
   if (match) {
@@ -107,7 +107,7 @@ export const assignmentTarget = (
   // deno-coverage-ignore-stop
 
   const turtleVariables =
-    routine.__ === "Program"
+    routine.kind === "Program"
       ? getTurtleVariables(routine)
       : getTurtleVariables(getProgram(routine));
   const turtleVariable = turtleVariables.find((x) => x.name === searchName);
@@ -115,7 +115,7 @@ export const assignmentTarget = (
     return turtleVariable;
   }
 
-  if (routine.language === "Python" && routine.__ === "Subroutine") {
+  if (routine.language === "Python" && routine.kind === "Subroutine") {
     if (routine.globals.indexOf(name) > -1) {
       return variable(getProgram(routine), name);
     }
@@ -133,7 +133,7 @@ export const isDuplicate = (routine: Routine, name: string): boolean => {
   // no check against `routine.globals`, unlike `nonlocals` below:
   // python/subroutine.ts's hoisting pass has already created the Program-level
   // variable, so the `variables` check below catches it first
-  if (routine.language === "Python" && routine.__ === "Subroutine") {
+  if (routine.language === "Python" && routine.kind === "Subroutine") {
     if (routine.nonlocals.some((x) => x === searchName)) return true;
   }
   if (routine.variables.some((x) => x.name === searchName)) return true;
@@ -150,7 +150,7 @@ export const subroutine = (
   if (match) {
     return match;
   }
-  if (routine.__ === "Subroutine") {
+  if (routine.kind === "Subroutine") {
     // only needed for Pascal, where a recursive self-reference occurs before
     // the subroutine has been added to its parent
     if (routine.name === searchName) {

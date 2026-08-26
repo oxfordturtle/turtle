@@ -154,7 +154,7 @@ const parseFactor = (lexemes: Lexemes, routine: Routine): Expression => {
           }
           lexemes.next();
           exp = parseFactor(lexemes, routine);
-          if (exp.expressionType !== "variable") {
+          if (exp.kind !== "variable") {
             throw new CompilerError(
               'Address operator "&" must be followed by a variable.',
               lexeme,

@@ -79,7 +79,7 @@ const conditionExpression = (
   const code = conditionProgram[language](condition);
   const program = parse(lexify(tokenize(code, language), language), language);
   const ifStatement = bodyStatements(language, program).find(
-    (s) => s.statementType === "ifStatement",
+    (s) => s.kind === "ifStatement",
   ) as IfStatement;
   return ifStatement.condition;
 };
@@ -87,7 +87,7 @@ const conditionExpression = (
 /** The operator at the root of a parsed condition (null if it isn't compound). */
 const rootOperator = (language: Language, condition: string): string | null => {
   const exp = conditionExpression(language, condition);
-  return exp.expressionType === "compound" ? exp.operator : null;
+  return exp.kind === "compound" ? exp.operator : null;
 };
 
 /**

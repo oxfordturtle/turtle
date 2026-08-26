@@ -32,11 +32,11 @@ const parseArguments = (
   commandCall: ProcedureCall | FunctionCall,
 ): void => {
   const allParameters =
-    commandCall.command.__ === "Command"
+    commandCall.command.kind === "Command"
       ? commandCall.command.parameters
       : getParameters(commandCall.command);
   const isMethod =
-    commandCall.command.__ === "Command" &&
+    commandCall.command.kind === "Command" &&
     commandCall.command.names[routine.language]?.startsWith(".");
   const parameters = isMethod ? allParameters.slice(1) : allParameters;
 
@@ -103,12 +103,12 @@ const parseArgumentList = (
   commandCall: ProcedureCall | FunctionCall,
 ): void => {
   const commandName =
-    commandCall.command.__ === "Command"
+    commandCall.command.kind === "Command"
       ? commandCall.command.names[routine.language]
       : commandCall.command.name;
 
   const parameters =
-    commandCall.command.__ === "Command"
+    commandCall.command.kind === "Command"
       ? commandCall.command.parameters
       : getParameters(commandCall.command);
 
@@ -260,7 +260,7 @@ export const typeCheckArgument = (
   parameter: Parameter | Variable,
   receiver?: Expression,
 ): Expression => {
-  if (command.__ === "Command") {
+  if (command.kind === "Command") {
     switch (command.names[language]?.toLowerCase()) {
       case "address":
         // a variable passed by reference to the address function may be any type
@@ -272,10 +272,7 @@ export const typeCheckArgument = (
       case "strlen":
         // the length command accepts a string, an array or a Python list; every
         // per-language spelling of it is listed, Python's being "len"
-        if (
-          argument.expressionType === "variable" &&
-          isArray(argument.variable)
-        ) {
+        if (argument.kind === "variable" && isArray(argument.variable)) {
           return argument;
         }
         if (isListExpression(argument)) {
@@ -301,7 +298,7 @@ export const typeCheckArgument = (
         // so it needs its own checks rather than typeCheck's Type ladder. A
         // user subroutine's "List[T]" parameter is a Variable, which typeCheck
         // already handles.
-        if (parameter.__ === "Parameter" && parameter.isList) {
+        if (parameter.kind === "Parameter" && parameter.isList) {
           if (!isListExpression(argument)) {
             throw new CompilerError(
               "Type error: a list was expected.",
@@ -325,15 +322,14 @@ export const typeCheckArgument = (
           return argument;
         }
         if (
-          parameter.__ === "Parameter" &&
+          parameter.kind === "Parameter" &&
           parameter.matchesListElement &&
           receiver
         ) {
           // an unindexed list-of-lists reference: the element being appended
           // or removed is a whole sublist, not a scalar
           const receiverVariable =
-            receiver.expressionType === "variable" &&
-            receiver.indexes.length === 0
+            receiver.kind === "variable" && receiver.indexes.length === 0
               ? receiver.variable
               : undefined;
 

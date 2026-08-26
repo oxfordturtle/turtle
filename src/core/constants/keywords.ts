@@ -1,12 +1,12 @@
 export interface Keyword {
-  readonly __: "Keyword";
+  readonly kind: "Keyword";
   readonly category: number;
   readonly level: number;
   readonly name: string;
 }
 
 const keyword = (category: number, level: number, name: string): Keyword => ({
-  __: "Keyword",
+  kind: "Keyword",
   category,
   level,
   name,

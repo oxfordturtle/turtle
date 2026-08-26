@@ -24,20 +24,20 @@ const typeCheck = (
   // typeIsCertain, unresolved until something later determines it.
   if (
     typeof expected !== "string" &&
-    expected.__ === "Variable" &&
+    expected.kind === "Variable" &&
     !expected.typeIsCertain
   ) {
     if (foundIsList) {
       expected.isList = true;
       // isListOfLists/innerListElementKind must propagate too, or the sublists
       // are mistaken for plain integers
-      if (found.expressionType === "listLiteral" && found.isListOfLists) {
+      if (found.kind === "listLiteral" && found.isListOfLists) {
         expected.isListOfLists = true;
         expected.listElementKind = "integer";
         expected.innerListElementKind = found.innerListElementKind;
         expected.typeIsCertain = found.innerListElementKind !== undefined;
       } else if (
-        found.expressionType === "variable" &&
+        found.kind === "variable" &&
         found.variable.isListOfLists &&
         found.indexes.length === 0
       ) {
@@ -74,7 +74,7 @@ const typeCheck = (
   // are lists of the same element kind, or it's an error
   const expectedIsList =
     typeof expected !== "string" &&
-    expected.__ === "Variable" &&
+    expected.kind === "Variable" &&
     expected.isList;
   if (foundIsList || expectedIsList) {
     if (foundIsList && expectedIsList) {
@@ -102,7 +102,7 @@ const typeCheck = (
 
   // no equivalent branch for a "function" found type: parseFunctionCall has
   // already flipped the called subroutine's typeIsCertain to true
-  if (found.expressionType === "variable" && !found.variable.typeIsCertain) {
+  if (found.kind === "variable" && !found.variable.typeIsCertain) {
     found.variable.type = expectedType;
     found.variable.typeIsCertain = true;
     return found;

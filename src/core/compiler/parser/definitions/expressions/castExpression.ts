@@ -1,13 +1,9 @@
 import type { Lexeme } from "../../../lexer/lexeme.ts";
 import type { Type } from "../../../lexer/types.ts";
-import {
-  type Expression,
-  type ExpressionCommon,
-  makeExpression,
-} from "../expression.ts";
+import type { Expression } from "../expression.ts";
 
-export interface CastExpression extends ExpressionCommon {
-  readonly expressionType: "cast";
+export interface CastExpression {
+  readonly kind: "cast";
   readonly lexeme: Lexeme;
   readonly type: Type;
   readonly expression: Expression;
@@ -18,8 +14,7 @@ const makeCastExpression = (
   type: Type,
   expression: Expression,
 ): CastExpression => ({
-  ...makeExpression(),
-  expressionType: "cast",
+  kind: "cast",
   lexeme,
   type,
   expression,

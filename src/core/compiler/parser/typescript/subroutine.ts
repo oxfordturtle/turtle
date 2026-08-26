@@ -19,7 +19,7 @@ export default function subroutine(
   const name = identifier(lexemes, parent, true);
 
   const subroutine = makeSubroutine(lexeme, parent, name);
-  const program = parent.__ === "Program" ? parent : getProgram(parent);
+  const program = parent.kind === "Program" ? parent : getProgram(parent);
   subroutine.index = getAllSubroutines(program).length + 1;
 
   subroutine.variables.push(...parameters(lexemes, subroutine));

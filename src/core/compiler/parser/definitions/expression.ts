@@ -28,17 +28,9 @@ export type Expression =
   | CastExpression
   | ListLiteral;
 
-export interface ExpressionCommon {
-  readonly __: "expression";
-}
-
-export const makeExpression = (): ExpressionCommon => ({
-  __: "expression",
-});
-
 export const getType = (expression: Expression): Type => {
   const languagesWithCharacterType = ["C", "Java", "Pascal"];
-  switch (expression.expressionType) {
+  switch (expression.kind) {
     case "constant":
       if (languagesWithCharacterType.includes(expression.constant.language)) {
         return expression.constant.type === "string" &&
@@ -94,10 +86,10 @@ export const getType = (expression: Expression): Type => {
 
 /** True even when the element kind isn't yet known. For a list of lists, "wins[i]" is still a list; only "wins[i][j]" is a scalar. */
 export const isListExpression = (expression: Expression): boolean => {
-  if (expression.expressionType === "listLiteral") {
+  if (expression.kind === "listLiteral") {
     return true;
   }
-  if (expression.expressionType === "variable") {
+  if (expression.kind === "variable") {
     if (!expression.variable.isList) {
       return false;
     }
@@ -118,7 +110,7 @@ export const isListExpression = (expression: Expression): boolean => {
 export const getListElementKind = (
   expression: Expression,
 ): "integer" | "string" | undefined => {
-  switch (expression.expressionType) {
+  switch (expression.kind) {
     case "listLiteral":
       return expression.listElementKind;
     case "variable": {

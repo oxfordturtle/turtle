@@ -22,7 +22,7 @@ const expression = (
   options: Options,
   reference = false,
 ): number[][] => {
-  switch (exp.expressionType) {
+  switch (exp.kind) {
     case "integer":
       return [literalIntegerValue(exp, program, options)];
     case "string":

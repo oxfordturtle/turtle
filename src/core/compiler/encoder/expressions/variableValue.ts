@@ -143,7 +143,7 @@ export default (
   else if (exp.variable.turtle) {
     pcode.push([PCode.ldvg, turtleAddress(program) + exp.variable.turtle]);
   } // global variable
-  else if (exp.variable.routine.__ === "Program") {
+  else if (exp.variable.routine.kind === "Program") {
     pcode.push([PCode.ldvg, variableAddress(exp.variable)]);
   } // local reference variable (except arrays and strings)
   else if (

@@ -38,7 +38,9 @@ const isUsed = (
   expression: Expression,
 ) => {
   const name =
-    expression.__ === "Command" ? expression.names[language] : expression.name;
+    expression.kind === "Command"
+      ? expression.names[language]
+      : expression.name;
 
   if (!name) {
     return false;

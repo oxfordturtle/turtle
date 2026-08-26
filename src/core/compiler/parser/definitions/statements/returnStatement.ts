@@ -1,10 +1,9 @@
 import type { KeywordLexeme, OperatorLexeme } from "../../../lexer/lexeme.ts";
 import type { Expression } from "../expression.ts";
 import type { Subroutine } from "../routines/subroutine.ts";
-import makeStatement, { type StatementCommon } from "../statement.ts";
 
-export interface ReturnStatement extends StatementCommon {
-  readonly statementType: "returnStatement";
+export interface ReturnStatement {
+  readonly kind: "returnStatement";
   readonly lexeme: KeywordLexeme | OperatorLexeme;
   readonly routine: Subroutine;
   readonly value: Expression;
@@ -15,8 +14,7 @@ const makeReturnStatement = (
   routine: Subroutine,
   value: Expression,
 ): ReturnStatement => ({
-  ...makeStatement(),
-  statementType: "returnStatement",
+  kind: "returnStatement",
   lexeme,
   routine,
   value,

@@ -79,7 +79,7 @@ export default (
 
   const left = exp.left ? expression(exp.left, program, options) : null;
 
-  if (left && exp.right.expressionType === "integer" && exp.right.value === 1) {
+  if (left && exp.right.kind === "integer" && exp.right.value === 1) {
     if (exp.operator === "plus") {
       merge(left, [[PCode.incr]]);
       return left;

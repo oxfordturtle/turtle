@@ -32,7 +32,7 @@ const parseSimpleStatement = (
   }
 
   // otherwise create the variable as a global
-  const program = routine.__ === "Program" ? routine : getProgram(routine);
+  const program = routine.kind === "Program" ? routine : getProgram(routine);
   const baz = variable(lexemes, program);
   program.variables.push(baz);
   return parseVariableAssignment(lexeme, lexemes, routine, baz);

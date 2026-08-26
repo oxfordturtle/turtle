@@ -25,13 +25,13 @@ const parseFunctionCall = (
   routine: Routine,
   command: Command | Subroutine,
 ): FunctionCall => {
-  if (command.__ === "Subroutine" && !command.typeIsCertain) {
+  if (command.kind === "Subroutine" && !command.typeIsCertain) {
     command.typeIsCertain = true;
     command.variables.unshift(makeVariable("!result", command));
   }
 
   const commandType =
-    command.__ === "Command" ? command.type : getSubroutineType(command);
+    command.kind === "Command" ? command.type : getSubroutineType(command);
   if (commandType === "procedure") {
     throw new CompilerError(
       "{lex} is a procedure, not a function.",
@@ -43,7 +43,7 @@ const parseFunctionCall = (
   parseArguments(lexeme, lexemes, routine, functionCall);
 
   if (
-    functionCall.command.__ === "Subroutine" &&
+    functionCall.command.kind === "Subroutine" &&
     functionCall.command !== routine
   ) {
     if (

@@ -6,7 +6,6 @@ import type { Language } from "./languages.ts";
 export type Expression = Command | Keyword | Subroutine;
 
 export interface Category<Exp extends Expression> {
-  readonly __: "Category";
   readonly index: number;
   readonly title: string;
   readonly expressions: ReadonlyArray<Exp>;
@@ -17,7 +16,6 @@ export const category = <Exp extends Expression>(
   title: string,
   expressions: ReadonlyArray<Exp>,
 ): Category<Exp> => ({
-  __: "Category",
   index,
   title,
   expressions,

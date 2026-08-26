@@ -1,5 +1,4 @@
 export interface Token {
-  readonly __: "Token";
   readonly type: TokenType;
   readonly content: string;
   readonly line: number;
@@ -42,7 +41,6 @@ export const token = (
   line: number,
   character: number,
 ): Token => ({
-  __: "Token",
   type,
   content,
   line,

@@ -17,7 +17,7 @@ export default (
   lexemes: Lexemes,
   routine: Routine,
 ): ReturnStatement => {
-  if (routine.__ === "Program") {
+  if (routine.kind === "Program") {
     throw new CompilerError("Programs cannot return a value.", lexemes.get());
   }
 

@@ -35,7 +35,7 @@ export const encodeLp = (
  * those as well grows the permanent heap until it is exhausted.
  */
 export const isScalarStringVariableRead = (exp: Expression): boolean =>
-  exp.expressionType === "variable" &&
+  exp.kind === "variable" &&
   exp.variable.type === "string" &&
   !exp.variable.isList &&
   exp.indexes.length === 0 &&
@@ -157,7 +157,7 @@ export const listProcedureCallCode = (
   // variable first and build the receiver with makeVariableValue(); a literal
   // or call-result receiver ("[1,2,3].append(4)") is rejected by the parser
   // long before the encoder runs
-  if (receiver.expressionType !== "variable") {
+  if (receiver.kind !== "variable") {
     return null;
   }
   // deno-coverage-ignore-stop
@@ -265,8 +265,7 @@ export const listFunctionCallCode = (
   // deno-coverage-ignore-start -- the ternary's undefined arm and the null
   // return are unreachable, for the same reason as listProcedureCallCode's
   // receiver guard above: every parsed dot-call receiver is a VariableValue
-  const variable =
-    receiver.expressionType === "variable" ? receiver.variable : undefined;
+  const variable = receiver.kind === "variable" ? receiver.variable : undefined;
   if (!variable) {
     return null;
   }

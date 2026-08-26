@@ -311,7 +311,7 @@ export default (
     // type is pinned.
     const listExpression = parseExpression(lexemes, routine);
     const isPlainVariableRef =
-      listExpression.expressionType === "variable" &&
+      listExpression.kind === "variable" &&
       listExpression.indexes.length === 0 &&
       listExpression.slice === null;
     const isStringVariable =

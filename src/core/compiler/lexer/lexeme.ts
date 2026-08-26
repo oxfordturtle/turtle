@@ -20,7 +20,6 @@ export type Lexeme =
   | IdentifierLexeme;
 
 interface LexemeCommon {
-  readonly __: "Lexeme";
   readonly line: number;
   readonly character: number;
   readonly content: string;
@@ -31,7 +30,6 @@ const lexeme = (
   character: number,
   content: string,
 ): LexemeCommon => ({
-  __: "Lexeme",
   line,
   character,
   content,

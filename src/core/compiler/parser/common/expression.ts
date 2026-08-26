@@ -78,9 +78,9 @@ const makeMembershipExpression = (
     // opaque pointers, so "x in wins" would scan heap addresses. Rejected
     // rather than silently answering nonsense; "x in wins[i]" still works.
     const rightIsListOfLists =
-      right.expressionType === "listLiteral"
+      right.kind === "listLiteral"
         ? right.isListOfLists
-        : right.expressionType === "variable" &&
+        : right.kind === "variable" &&
           right.variable.isListOfLists &&
           right.indexes.length === 0;
     if (rightIsListOfLists) {

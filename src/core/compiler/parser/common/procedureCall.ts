@@ -27,7 +27,7 @@ const parseProcedureCall = (
     routine.language === "Java"
   ) {
     const commandType =
-      command.__ === "Command" ? command.type : getSubroutineType(command);
+      command.kind === "Command" ? command.type : getSubroutineType(command);
     if (commandType === "function") {
       throw new CompilerError("{lex} is a function, not a procedure.", lexeme);
     }
@@ -36,7 +36,7 @@ const parseProcedureCall = (
   const procedureCall = makeProcedureCall(lexeme, command);
   parseArguments(lexeme, lexemes, routine, procedureCall);
   if (
-    procedureCall.command.__ === "Subroutine" &&
+    procedureCall.command.kind === "Subroutine" &&
     procedureCall.command !== routine
   ) {
     if (

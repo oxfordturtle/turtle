@@ -33,14 +33,14 @@ describe("parse: shared statement-kind behavior", () => {
         const program = parseProgram(language, code);
         const statements = bodyStatements(language, program);
         const assignment = statements.find(
-          (s) => s.statementType === "variableAssignment",
+          (s) => s.kind === "variableAssignment",
         ) as VariableAssignment | undefined;
         assertExists(assignment);
         assertEquals(
           assignment.variable.name.toLowerCase(),
           language === "BASIC" ? "x%" : "x",
         );
-        assertEquals(assignment.value.expressionType, "integer");
+        assertEquals(assignment.value.kind, "integer");
       });
     }
   });
@@ -73,11 +73,11 @@ describe("parse: shared statement-kind behavior", () => {
         const code = wrapProgram(language, body, varDecl);
         const program = parseProgram(language, code);
         const statements = bodyStatements(language, program);
-        const ifStatement = statements.find(
-          (s) => s.statementType === "ifStatement",
-        ) as IfStatement | undefined;
+        const ifStatement = statements.find((s) => s.kind === "ifStatement") as
+          | IfStatement
+          | undefined;
         assertExists(ifStatement);
-        assertEquals(ifStatement.condition.expressionType, "integer");
+        assertEquals(ifStatement.condition.kind, "integer");
         // every fixture has exactly one statement in each branch
         assertEquals(ifStatement.ifStatements.length, 1);
         assertEquals(ifStatement.elseStatements.length, 1);
@@ -108,7 +108,7 @@ describe("parse: shared statement-kind behavior", () => {
         const program = parseProgram(language, code);
         const statements = bodyStatements(language, program);
         const whileStatement = statements.find(
-          (s) => s.statementType === "whileStatement",
+          (s) => s.kind === "whileStatement",
         );
         assertExists(whileStatement);
         // every fixture has exactly one statement in the loop body
@@ -145,9 +145,7 @@ describe("parse: shared statement-kind behavior", () => {
         const code = wrapProgram(language, body, varDecl);
         const program = parseProgram(language, code);
         const statements = bodyStatements(language, program);
-        const forStatement = statements.find(
-          (s) => s.statementType === "forStatement",
-        );
+        const forStatement = statements.find((s) => s.kind === "forStatement");
         assertExists(forStatement);
       });
     }
@@ -168,13 +166,11 @@ describe("parse: shared statement-kind behavior", () => {
         const code = wrapProgram(language, fixtures[language]);
         const program = parseProgram(language, code);
         const statements = bodyStatements(language, program);
-        const call = statements.find(
-          (s) => s.statementType === "procedureCall",
-        );
+        const call = statements.find((s) => s.kind === "procedureCall");
         assertExists(call);
-        assertEquals(call.statementType, "procedureCall");
+        assertEquals(call.kind, "procedureCall");
         assertEquals(call.arguments.length, 1);
-        assertEquals(call.arguments[0]?.expressionType, "integer");
+        assertEquals(call.arguments[0]?.kind, "integer");
       });
     }
   });

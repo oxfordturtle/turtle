@@ -76,7 +76,7 @@ const parseStatement = (
 
         // LOCAL statement
         case "local":
-          if (routine.__ === "Program") {
+          if (routine.kind === "Program") {
             throw new CompilerError(
               "Main program cannot declare any LOCAL variables.",
               lexemes.get(),
@@ -89,7 +89,7 @@ const parseStatement = (
 
         // PRIVATE statement
         case "private": {
-          if (routine.__ === "Program") {
+          if (routine.kind === "Program") {
             throw new CompilerError(
               "Main program cannot declare any PRIVATE variables.",
               lexemes.get(),
@@ -126,7 +126,7 @@ const parseStatement = (
           break;
 
         case "def":
-          if (routine.__ === "Program") {
+          if (routine.kind === "Program") {
             throw new CompilerError(
               'Subroutines must be defined after program "END".',
               lexeme,

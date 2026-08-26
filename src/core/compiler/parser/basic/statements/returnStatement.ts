@@ -18,7 +18,7 @@ const parseReturnStatement = (
   lexemes: Lexemes,
   routine: Program | Subroutine,
 ): ReturnStatement => {
-  if (routine.__ === "Program") {
+  if (routine.kind === "Program") {
     throw new CompilerError(
       "Statement in the main program cannot begin with {lex}.",
       lexeme,

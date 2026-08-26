@@ -3,15 +3,11 @@ import type {
   OperatorLexeme,
 } from "../../../lexer/lexeme.ts";
 import type { Type } from "../../../lexer/types.ts";
-import {
-  type Expression,
-  type ExpressionCommon,
-  makeExpression,
-} from "../expression.ts";
+import type { Expression } from "../expression.ts";
 import type { Variable } from "../variable.ts";
 
-export interface VariableValue extends ExpressionCommon {
-  readonly expressionType: "variable";
+export interface VariableValue {
+  readonly kind: "variable";
   readonly lexeme: IdentifierLexeme | OperatorLexeme; // can be "+=" or "-=" operators in a variable assignment
   readonly variable: Variable;
   // For string slices. Either bound may be null, meaning omitted rather than
@@ -31,8 +27,7 @@ const makeVariableValue = (
   lexeme: IdentifierLexeme | OperatorLexeme,
   variable: Variable,
 ): VariableValue => ({
-  ...makeExpression(),
-  expressionType: "variable",
+  kind: "variable",
   lexeme,
   variable,
   slice: null,

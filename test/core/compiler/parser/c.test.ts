@@ -143,20 +143,20 @@ describe("parse: C", () => {
       const sub = program.subroutines[0];
       assertEquals(sub?.constants.length, 1);
       assertEquals(sub?.constants[0]?.value, 5);
-      assertEquals(sub?.statements[0]?.statementType, "passStatement");
+      assertEquals(sub?.statements[0]?.kind, "passStatement");
     });
 
     it("parses a top-level variable declaration with no assignment", () => {
       const program = parseProgram("C", "int x;\nvoid main () {\n}");
       const variable = program.variables.find((v) => v.name === "x");
       assertExists(variable);
-      assertEquals(program.statements[0]?.statementType, "passStatement");
+      assertEquals(program.statements[0]?.kind, "passStatement");
     });
 
     it("parses a top-level variable declaration with an assignment", () => {
       const program = parseProgram("C", "int x = 5;\nvoid main () {\n}");
       const assignment = program.statements.find(
-        (s) => s.statementType === "variableAssignment",
+        (s) => s.kind === "variableAssignment",
       ) as VariableAssignment | undefined;
       assertExists(assignment);
       assertEquals(assignment.variable.name, "x");
@@ -198,7 +198,7 @@ describe("parse: C", () => {
       const variable = sub?.variables.find((v) => v.name === "p");
       assertExists(variable);
       assert(variable.isPointer);
-      assertEquals(statements[0]?.statementType, "passStatement");
+      assertEquals(statements[0]?.kind, "passStatement");
     });
 
     it("parses an array variable declaration", () => {
@@ -378,16 +378,16 @@ describe("parse: C", () => {
       assertExists(result);
       assertEquals(result.type, "integer");
       const returnStatement = sub.statements.find(
-        (s) => s.statementType === "returnStatement",
+        (s) => s.kind === "returnStatement",
       ) as ReturnStatement | undefined;
       assertExists(returnStatement);
 
       const mainSub = program.subroutines.find((s) => s.name === "main");
       const assignment = mainSub?.statements.find(
-        (s) => s.statementType === "variableAssignment",
+        (s) => s.kind === "variableAssignment",
       ) as VariableAssignment | undefined;
       assertExists(assignment);
-      assertEquals(assignment.value.expressionType, "function");
+      assertEquals(assignment.value.kind, "function");
     });
 
     it("throws on a return type mismatch", () => {
@@ -427,7 +427,7 @@ describe("parse: C", () => {
       );
       const mainSub = program.subroutines.find((s) => s.name === "main");
       const call = mainSub?.statements.find(
-        (s) => s.statementType === "procedureCall",
+        (s) => s.kind === "procedureCall",
       ) as ProcedureCall | undefined;
       assertExists(call);
     });
@@ -467,7 +467,7 @@ describe("parse: C", () => {
       );
       const sub = program.subroutines[0];
       const repeatStatement = sub?.statements.find(
-        (s) => s.statementType === "repeatStatement",
+        (s) => s.kind === "repeatStatement",
       ) as RepeatStatement | undefined;
       assertExists(repeatStatement);
       assertEquals(repeatStatement.statements.length, 1);
@@ -475,12 +475,12 @@ describe("parse: C", () => {
       // a RepeatStatement's condition means "stop when true", whereas C's
       // "do { } while (...)" means "keep going while true"
       const condition = repeatStatement.condition as Expression;
-      assertEquals(condition.expressionType, "compound");
-      if (condition.expressionType === "compound") {
+      assertEquals(condition.kind, "compound");
+      if (condition.kind === "compound") {
         assertEquals(condition.operator, "not");
         assertEquals(condition.left, null);
-        assertEquals(condition.right.expressionType, "compound");
-        if (condition.right.expressionType === "compound") {
+        assertEquals(condition.right.kind, "compound");
+        if (condition.right.kind === "compound") {
           assertEquals(condition.right.operator, "less");
         }
       }
@@ -559,11 +559,11 @@ describe("parse: C", () => {
       );
       const statements = bodyStatements("C", program);
       const assignment = statements.find(
-        (s) => s.statementType === "variableAssignment",
+        (s) => s.kind === "variableAssignment",
       ) as VariableAssignment | undefined;
       assertExists(assignment);
-      assertEquals(assignment.value.expressionType, "cast");
-      if (assignment.value.expressionType === "cast") {
+      assertEquals(assignment.value.kind, "cast");
+      if (assignment.value.kind === "cast") {
         assertEquals(assignment.value.type, "integer");
       }
     });
@@ -572,11 +572,11 @@ describe("parse: C", () => {
       const program = parseProgram("C", "void main () {\nint x = (int)5;\n}");
       const statements = bodyStatements("C", program);
       const assignment = statements.find(
-        (s) => s.statementType === "variableAssignment",
+        (s) => s.kind === "variableAssignment",
       ) as VariableAssignment | undefined;
       assertExists(assignment);
       // int cast of an already-integer expression is returned unwrapped
-      assertEquals(assignment.value.expressionType, "integer");
+      assertEquals(assignment.value.kind, "integer");
     });
 
     it("throws when casting an expression as void", () => {
@@ -644,11 +644,11 @@ describe("parse: C", () => {
       );
       const statements = bodyStatements("C", program);
       const assignment = statements.find(
-        (s) => s.statementType === "variableAssignment",
+        (s) => s.kind === "variableAssignment",
       ) as VariableAssignment | undefined;
       assertExists(assignment);
-      assertEquals(assignment.value.expressionType, "address");
-      if (assignment.value.expressionType === "address") {
+      assertEquals(assignment.value.kind, "address");
+      if (assignment.value.kind === "address") {
         assertEquals(assignment.value.type, "integer");
       }
     });
@@ -718,9 +718,9 @@ describe("parse: C", () => {
         "void main () {\nif (true) {\nint x = 1;\n}\n}",
       );
       const statements = bodyStatements("C", program);
-      const ifStatement = statements.find(
-        (s) => s.statementType === "ifStatement",
-      ) as IfStatement | undefined;
+      const ifStatement = statements.find((s) => s.kind === "ifStatement") as
+        | IfStatement
+        | undefined;
       assertExists(ifStatement);
       assertEquals(ifStatement.elseStatements.length, 0);
     });
@@ -892,9 +892,9 @@ describe("parse: C", () => {
         "void main () {\nfor (int i = 0; i < 3; i = i + 1) {\nint x = i;\n}\n}",
       );
       const statements = bodyStatements("C", program);
-      const forStatement = statements.find(
-        (s) => s.statementType === "forStatement",
-      ) as ForStatement | undefined;
+      const forStatement = statements.find((s) => s.kind === "forStatement") as
+        | ForStatement
+        | undefined;
       assertExists(forStatement);
       assertEquals(forStatement.initialisation.variable.name, "i");
       assertEquals(
@@ -919,12 +919,9 @@ describe("parse: C", () => {
       );
       const statements = bodyStatements("C", program);
       const whileStatement = statements[0] as unknown as {
-        statements: { statementType: string }[];
+        statements: { kind: string }[];
       };
-      assertEquals(
-        whileStatement.statements[0]?.statementType,
-        "breakStatement",
-      );
+      assertEquals(whileStatement.statements[0]?.kind, "breakStatement");
     });
 
     it("parses 'continue' inside a for loop as a continueStatement", () => {
@@ -933,10 +930,7 @@ describe("parse: C", () => {
         "void main () {\nfor (int i = 0; i < 3; i = i + 1) {\ncontinue;\n}\n}",
       );
       const forStatement = bodyStatements("C", program)[0] as ForStatement;
-      assertEquals(
-        forStatement.statements[0]?.statementType,
-        "continueStatement",
-      );
+      assertEquals(forStatement.statements[0]?.kind, "continueStatement");
     });
 
     it("parses 'break' inside a do-while loop (RepeatStatement)", () => {
@@ -948,10 +942,7 @@ describe("parse: C", () => {
         "C",
         program,
       )[0] as RepeatStatement;
-      assertEquals(
-        repeatStatement.statements[0]?.statementType,
-        "breakStatement",
-      );
+      assertEquals(repeatStatement.statements[0]?.kind, "breakStatement");
     });
 
     it("throws if 'break' occurs outside any loop", () => {
@@ -1018,7 +1009,7 @@ describe("parse: C", () => {
       const program = parseProgram("C", "void main () {\n// hello\n}");
       const statements = bodyStatements("C", program);
       assertEquals(statements.length, 1);
-      assertEquals(statements[0]?.statementType, "passStatement");
+      assertEquals(statements[0]?.kind, "passStatement");
     });
   });
 
@@ -1069,7 +1060,7 @@ describe("parse: C", () => {
       );
       const statements = bodyStatements("C", program);
       const assignment = statements.find(
-        (s) => s.statementType === "variableAssignment",
+        (s) => s.kind === "variableAssignment",
       ) as VariableAssignment | undefined;
       assertExists(assignment);
       assertEquals(assignment.indexes.length, 1);
@@ -1128,9 +1119,9 @@ describe("parse: C", () => {
     it("parses a zero-parameter command call with brackets", () => {
       const program = parseProgram("C", "void main () {\nhome();\n}");
       const statements = bodyStatements("C", program);
-      const call = statements.find(
-        (s) => s.statementType === "procedureCall",
-      ) as ProcedureCall | undefined;
+      const call = statements.find((s) => s.kind === "procedureCall") as
+        | ProcedureCall
+        | undefined;
       assertExists(call);
       assertEquals(call.arguments.length, 0);
     });

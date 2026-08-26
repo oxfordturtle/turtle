@@ -3,7 +3,7 @@ import type { Routine } from "./routine.ts";
 import type { Subroutine } from "./routines/subroutine.ts";
 
 export interface Variable {
-  readonly __: "Variable";
+  readonly kind: "Variable";
   readonly name: string;
   readonly routine: Routine;
   readonly isGlobal: boolean;
@@ -30,10 +30,10 @@ export interface Variable {
 }
 
 const makeVariable = (name: string, routine: Routine): Variable => ({
-  __: "Variable",
+  kind: "Variable",
   name: routine.language === "Pascal" ? name.toLowerCase() : name,
   routine,
-  isGlobal: routine.__ === "Program",
+  isGlobal: routine.kind === "Program",
   isParameter: false,
   isReferenceParameter: false,
   isPointer: false,

@@ -128,7 +128,7 @@ export default (
         case "global":
         case "nonlocal":
           lexemes.next();
-          if (routine.__ === "Program") {
+          if (routine.kind === "Program") {
             throw new CompilerError(
               "{lex} statements can only occur inside a subroutine.",
               lexemes.get(-1),

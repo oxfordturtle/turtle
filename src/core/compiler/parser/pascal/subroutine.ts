@@ -154,7 +154,7 @@ export default function subroutine(
 
 /** calculates the index of a subroutine (before it and its parents have been added to the program) */
 function subroutineIndex(subroutine: Subroutine): number {
-  return subroutine.parent.__ === "Program"
+  return subroutine.parent.kind === "Program"
     ? getAllSubroutines(subroutine.parent).length + 1
     : subroutineIndex(subroutine.parent) +
         getAllSubroutines(subroutine.parent).length +

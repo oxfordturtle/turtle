@@ -22,7 +22,7 @@ export default (
 ): Subroutine => {
   const name = identifier(lexemes, parent, true);
 
-  const program = parent.__ === "Program" ? parent : getProgram(parent);
+  const program = parent.kind === "Program" ? parent : getProgram(parent);
   const subroutine = makeSubroutine(lexeme, parent, name);
   subroutine.index = getAllSubroutines(program).length + 1;
 
@@ -165,7 +165,7 @@ const parameters = (lexemes: Lexemes, routine: Subroutine): Variable[] => {
   const parameters: Variable[] = [];
   while (lexemes.get()?.content !== ")") {
     const parameter = variable(lexemes, routine);
-    if (parameter.__ === "constant") {
+    if (parameter.kind === "constant") {
       throw new CompilerError(
         "Subroutine parameters cannot be constants.",
         lexemes.get(-1),

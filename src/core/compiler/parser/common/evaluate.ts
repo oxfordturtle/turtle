@@ -10,7 +10,7 @@ const evaluate = (
   const True = trueValue[language];
   const False = 0;
 
-  switch (expression.expressionType) {
+  switch (expression.kind) {
     case "address":
     case "variable":
     case "namedArgument":

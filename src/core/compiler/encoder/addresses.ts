@@ -47,7 +47,7 @@ export const variableAddress = (variable: Variable | SubVariable): number => {
       }
       offset += getLength(sibling);
     }
-    return variable.routine.__ === "Program"
+    return variable.routine.kind === "Program"
       ? turtleAddress(variable.routine) +
           getTurtleVariables(variable.routine).length +
           offset +

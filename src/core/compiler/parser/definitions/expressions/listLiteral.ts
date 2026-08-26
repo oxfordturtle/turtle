@@ -1,12 +1,8 @@
 import type { Lexeme } from "../../../lexer/lexeme.ts";
-import {
-  type Expression,
-  type ExpressionCommon,
-  makeExpression,
-} from "../expression.ts";
+import type { Expression } from "../expression.ts";
 
-export interface ListLiteral extends ExpressionCommon {
-  readonly expressionType: "listLiteral";
+export interface ListLiteral {
+  readonly kind: "listLiteral";
   readonly lexeme: Lexeme;
   readonly elements: Expression[];
   // undefined for an empty literal, whose element kind isn't yet known; always
@@ -25,8 +21,7 @@ const makeListLiteral = (
   isListOfLists?: boolean,
   innerListElementKind?: "integer" | "string",
 ): ListLiteral => ({
-  ...makeExpression(),
-  expressionType: "listLiteral",
+  kind: "listLiteral",
   lexeme,
   elements,
   listElementKind,

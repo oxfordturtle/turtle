@@ -8,7 +8,6 @@ import { LANGUAGES } from "./lib/languages.ts";
 // actually match a known colour name) — Token is a plain exported interface,
 // so building one directly here doesn't reach into any internal module.
 const fakeToken = (type: Token["type"], content: string): Token => ({
-  __: "Token",
   type,
   content,
   line: 1,

@@ -45,7 +45,7 @@ const parseForStatement = (
     lexemes,
     routine,
   );
-  if (initialisation.statementType !== "variableAssignment") {
+  if (initialisation.kind !== "variableAssignment") {
     throw new CompilerError(
       '"for" conditions must begin with a variable assignment.',
       lexemes.get(-1),
@@ -97,7 +97,7 @@ const parseForStatement = (
     );
   }
   const change = parseSimpleStatement(firstChangeLexeme, lexemes, routine);
-  if (change.statementType !== "variableAssignment") {
+  if (change.kind !== "variableAssignment") {
     throw new CompilerError(
       '"for (...;" must be followed by a loop variable reassignment.',
       lexemes.get(-1),

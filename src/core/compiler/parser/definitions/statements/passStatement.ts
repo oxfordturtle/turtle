@@ -1,12 +1,9 @@
-import makeStatement, { type StatementCommon } from "../statement.ts";
-
-export interface PassStatement extends StatementCommon {
-  readonly statementType: "passStatement";
+export interface PassStatement {
+  readonly kind: "passStatement";
 }
 
 const makePassStatement = (): PassStatement => ({
-  ...makeStatement(),
-  statementType: "passStatement",
+  kind: "passStatement",
 });
 
 export default makePassStatement;

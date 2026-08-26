@@ -21,19 +21,18 @@ export default (
   // space), then "end" after the last (default a newline)
   if (
     program.language === "Python" &&
-    stmt.command.__ === "Command" &&
+    stmt.command.kind === "Command" &&
     stmt.command.names.Python === "print"
   ) {
     const named = (name: string): NamedArgument | undefined =>
       stmt.arguments.find(
         (argument): argument is NamedArgument =>
-          argument.expressionType === "namedArgument" &&
-          argument.lexeme.content === name,
+          argument.kind === "namedArgument" && argument.lexeme.content === name,
       );
     const separator = named("sep");
     const terminator = named("end");
     const positional = stmt.arguments.filter(
-      (argument) => argument.expressionType !== "namedArgument",
+      (argument) => argument.kind !== "namedArgument",
     );
 
     for (const [index, argument] of positional.entries()) {
@@ -61,7 +60,7 @@ export default (
   }
 
   // Python list method calls (".append" etc.)
-  if (stmt.command.__ === "Command") {
+  if (stmt.command.kind === "Command") {
     const listCode = listProcedureCallCode(
       stmt.command,
       stmt.arguments,
@@ -75,7 +74,7 @@ export default (
   }
 
   const parameters =
-    stmt.command.__ === "Command"
+    stmt.command.kind === "Command"
       ? stmt.command.parameters
       : getParameters(stmt.command);
   for (let index = 0; index < parameters.length; index += 1) {
@@ -86,7 +85,7 @@ export default (
     merge(pcode, expression(arg, program, options, param.isReferenceParameter));
   }
 
-  if (stmt.command.__ === "Subroutine") {
+  if (stmt.command.kind === "Subroutine") {
     // the command index is a placeholder, back-patched by encode.ts
     merge(pcode, [[PCode.subr, stmt.command.index]]);
   } else {

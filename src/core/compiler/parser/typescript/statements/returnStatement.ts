@@ -19,7 +19,7 @@ const parseReturnStatement = (
   lexemes: Lexemes,
   routine: Program | Subroutine,
 ): ReturnStatement => {
-  if (routine.__ === "Program") {
+  if (routine.kind === "Program") {
     throw new CompilerError(
       '"RETURN" statements are only valid within the body of a function.',
       lexemes.get(),

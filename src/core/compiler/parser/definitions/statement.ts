@@ -1,3 +1,6 @@
+// deno-coverage-ignore-file -- type declarations only: erased at compile time, so no
+// test can ever load this module at runtime.
+
 import type { BreakStatement } from "./statements/breakStatement.ts";
 import type { ContinueStatement } from "./statements/continueStatement.ts";
 import type { ForStatement } from "./statements/forStatement.ts";
@@ -20,13 +23,3 @@ export type Statement =
   | PassStatement
   | BreakStatement
   | ContinueStatement;
-
-export interface StatementCommon {
-  readonly __: "Statement";
-}
-
-const makeStatement = (): StatementCommon => ({
-  __: "Statement",
-});
-
-export default makeStatement;

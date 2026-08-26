@@ -14,7 +14,9 @@ const usageExpression = (
   expression: Expression,
 ): UsageExpression => {
   const name =
-    expression.__ === "Command" ? expression.names[language]! : expression.name;
+    expression.kind === "Command"
+      ? expression.names[language]!
+      : expression.name;
 
   const uses =
     language === "Pascal"

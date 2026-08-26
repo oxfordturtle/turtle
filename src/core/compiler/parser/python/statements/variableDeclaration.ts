@@ -26,7 +26,7 @@ export default (
 ): VariableAssignment | PassStatement => {
   const foo = variable(lexemes, routine);
 
-  if (foo.__ === "constant") {
+  if (foo.kind === "constant") {
     if (!lexemes.get()) {
       throw new CompilerError(
         "Constant must be assigned a value.",

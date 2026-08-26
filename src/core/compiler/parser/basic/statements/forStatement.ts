@@ -55,7 +55,7 @@ const parseForStatement = (
   let foo: Variable;
   const existing = find.variable(routine, variableLexeme.content);
   if (!existing) {
-    const program = routine.__ === "Program" ? routine : getProgram(routine);
+    const program = routine.kind === "Program" ? routine : getProgram(routine);
     foo = variable(lexemes, program);
     program.variables.push(foo);
   } else {

@@ -28,9 +28,9 @@ describe("parse: TypeScript", () => {
       const program = parseProgram("TypeScript", "var x: number;\nx = 1;");
       // the "var" statement itself produces a passStatement; the real
       // variableAssignment is the next statement
-      assertEquals(program.statements[0]?.statementType, "passStatement");
+      assertEquals(program.statements[0]?.kind, "passStatement");
       const assignment = program.statements[1] as VariableAssignment;
-      assertEquals(assignment.statementType, "variableAssignment");
+      assertEquals(assignment.kind, "variableAssignment");
       assertEquals(assignment.variable.name, "x");
       assert(
         program.variables.some((v) => v.name === "x" && v.type === "integer"),
@@ -45,7 +45,7 @@ describe("parse: TypeScript", () => {
       // single-statement form works too, confirmed directly
       const program = parseProgram("TypeScript", "var x: number = 5;");
       assertEquals(program.statements.length, 1);
-      assertEquals(program.statements[0]?.statementType, "variableAssignment");
+      assertEquals(program.statements[0]?.kind, "variableAssignment");
     });
 
     it("declares an array variable with a dimension", () => {
@@ -318,7 +318,7 @@ describe("parse: TypeScript", () => {
     // typed expression -- and TypeScript has no character literal syntax
     // and no "character" entry in its type keyword table (tokenize.ts's
     // TypeScript branch only recognises "void|boolean|number|string"), so
-    // no TypeScript expression can ever carry expressionType "character".
+    // no TypeScript expression can ever carry the type "character".
     // Every other expression type that survives the integer typeCheck
     // (integer literals, boolint constants, boolean-as-integer) evaluates
     // to a number. Not force-tested, since it would require fabricating a
@@ -341,7 +341,7 @@ describe("parse: TypeScript", () => {
         sub.variables.some((v) => v.name === "!result" && v.type === "integer"),
       );
       const returnStatement = sub.statements.find(
-        (s) => s.statementType === "returnStatement",
+        (s) => s.kind === "returnStatement",
       ) as ReturnStatement | undefined;
       assertExists(returnStatement);
     });
@@ -363,7 +363,7 @@ describe("parse: TypeScript", () => {
         "TypeScript",
         "function f(): number { return 1; }\nf();",
       );
-      assertEquals(program.statements[0]?.statementType, "passStatement");
+      assertEquals(program.statements[0]?.kind, "passStatement");
     });
 
     it("parses nested function definitions", () => {
@@ -386,7 +386,7 @@ describe("parse: TypeScript", () => {
         "function double(n: number): number { return n * 2; }\ndouble(2);",
       );
       const call = program.statements.find(
-        (s) => s.statementType === "procedureCall",
+        (s) => s.kind === "procedureCall",
       ) as ProcedureCall | undefined;
       assertExists(call);
     });
@@ -506,14 +506,14 @@ describe("parse: TypeScript", () => {
         "var x: number;\nx = 0;\ndo { x = x + 1; } while (x < 3);",
       );
       const repeatStatement = program.statements.find(
-        (s) => s.statementType === "repeatStatement",
+        (s) => s.kind === "repeatStatement",
       ) as RepeatStatement | undefined;
       assertExists(repeatStatement);
       assertEquals(repeatStatement.statements.length, 1);
       // a TypeScript do-while loop repeats *while* its condition is true,
       // but the pcode "repeat" primitive loops *until* its condition is
       // true, so doStatement.ts compiles the condition as "not (x < 3)"
-      assertEquals(repeatStatement.condition.expressionType, "compound");
+      assertEquals(repeatStatement.condition.kind, "compound");
     });
 
     it("throws when the opening bracket is missing", () => {
@@ -569,7 +569,7 @@ describe("parse: TypeScript", () => {
     it("parses an if with no else", () => {
       const program = parseProgram("TypeScript", "if (true) { }");
       const ifStatement = program.statements.find(
-        (s) => s.statementType === "ifStatement",
+        (s) => s.kind === "ifStatement",
       ) as IfStatement | undefined;
       assertExists(ifStatement);
       assertEquals(ifStatement.elseStatements.length, 0);
@@ -828,12 +828,9 @@ describe("parse: TypeScript", () => {
     it("parses 'break' inside a while loop as a breakStatement", () => {
       const program = parseProgram("TypeScript", "while (true) { break; }");
       const whileStatement = program.statements[0] as unknown as {
-        statements: { statementType: string }[];
+        statements: { kind: string }[];
       };
-      assertEquals(
-        whileStatement.statements[0]?.statementType,
-        "breakStatement",
-      );
+      assertEquals(whileStatement.statements[0]?.kind, "breakStatement");
     });
 
     it("parses 'continue' inside a for loop as a continueStatement", () => {
@@ -842,21 +839,15 @@ describe("parse: TypeScript", () => {
         "var i: number;\nfor (i = 0; i < 3; i = i + 1) { continue; }",
       );
       const forStatement = program.statements[1] as unknown as {
-        statements: { statementType: string }[];
+        statements: { kind: string }[];
       };
-      assertEquals(
-        forStatement.statements[0]?.statementType,
-        "continueStatement",
-      );
+      assertEquals(forStatement.statements[0]?.kind, "continueStatement");
     });
 
     it("parses 'break' inside a do-while loop (RepeatStatement)", () => {
       const program = parseProgram("TypeScript", "do { break; } while (true);");
       const repeatStatement = program.statements[0] as RepeatStatement;
-      assertEquals(
-        repeatStatement.statements[0]?.statementType,
-        "breakStatement",
-      );
+      assertEquals(repeatStatement.statements[0]?.kind, "breakStatement");
     });
 
     it("throws if 'break' occurs outside any loop", () => {
@@ -902,7 +893,7 @@ describe("parse: TypeScript", () => {
       );
       const ifStatement = program.statements[0] as IfStatement;
       assertEquals(
-        ifStatement.ifStatements.map((s) => s.statementType),
+        ifStatement.ifStatements.map((s) => s.kind),
         ["passStatement", "passStatement", "procedureCall"],
       );
     });
@@ -1053,9 +1044,8 @@ describe("parse: TypeScript", () => {
         "var x: number;\n\nx = 1;;\n\nx = 2;",
       );
       assertEquals(
-        program.statements.filter(
-          (s) => s.statementType === "variableAssignment",
-        ).length,
+        program.statements.filter((s) => s.kind === "variableAssignment")
+          .length,
         2,
       );
     });
