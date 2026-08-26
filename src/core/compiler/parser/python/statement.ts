@@ -4,6 +4,7 @@ import * as find from "../common/find.ts";
 import parseProcedureCall, {
   parseMethodProcedureCall,
 } from "../common/procedureCall.ts";
+import type { ParserContext } from "../definitions/context.ts";
 import makeVariableValue from "../definitions/expressions/variableValue.ts";
 import type { Lexemes } from "../definitions/lexemes.ts";
 import type { Routine } from "../definitions/routine.ts";
@@ -24,6 +25,7 @@ import parseWhileStatement from "./statements/whileStatement.ts";
 export default (
   lexeme: Lexeme,
   lexemes: Lexemes,
+  context: ParserContext,
   routine: Routine,
 ): Statement => {
   let statement: Statement;
@@ -118,9 +120,8 @@ export default (
             routine,
             lexemes.peek(1)?.content as string,
           ) as Subroutine;
-          // already defined in the first pass; lexemes[sub.end] is the final
-          // DEDENT, so jump past it
-          lexemes.seek(sub.end + 1);
+          // already defined in the first pass, so just jump past its lexemes
+          lexemes.seekPastBody(sub);
           statement = makePassStatement();
           break;
         }
@@ -152,7 +153,7 @@ export default (
 
         case "if":
           lexemes.advance();
-          statement = parseIfStatement(lexeme, lexemes, routine);
+          statement = parseIfStatement(lexeme, lexemes, context, routine);
           break;
 
         case "else":
@@ -163,12 +164,12 @@ export default (
 
         case "for":
           lexemes.advance();
-          statement = parseForStatement(lexeme, lexemes, routine);
+          statement = parseForStatement(lexeme, lexemes, context, routine);
           break;
 
         case "while":
           lexemes.advance();
-          statement = parseWhileStatement(lexeme, lexemes, routine);
+          statement = parseWhileStatement(lexeme, lexemes, context, routine);
           break;
 
         case "pass":
@@ -178,7 +179,7 @@ export default (
           break;
 
         case "break":
-          if (routine.loopDepth === 0) {
+          if (!context.insideLoop(routine)) {
             throw new CompilerError(
               "'break' is only allowed inside a loop.",
               lexeme,
@@ -190,7 +191,7 @@ export default (
           break;
 
         case "continue":
-          if (routine.loopDepth === 0) {
+          if (!context.insideLoop(routine)) {
             throw new CompilerError(
               "'continue' is only allowed inside a loop.",
               lexeme,

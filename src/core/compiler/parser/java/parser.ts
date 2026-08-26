@@ -1,5 +1,6 @@
 import type { Lexeme } from "../../lexer/lexeme.ts";
 import { CompilerError } from "../../tools/error.ts";
+import type { ParserContext } from "../definitions/context.ts";
 import type { Lexemes } from "../definitions/lexemes.ts";
 import { getAllSubroutines } from "../definitions/routine.ts";
 import type { Program } from "../definitions/routines/program.ts";
@@ -12,11 +13,14 @@ import parseSimpleStatement from "./statements/simpleStatement.ts";
 import subroutine from "./subroutine.ts";
 import type from "./type.ts";
 
-export default function java(lexemes: Lexemes): Program {
+export default function java(
+  lexemes: Lexemes,
+  context: ParserContext,
+): Program {
   const prog = program(lexemes);
 
-  lexemes.seek(prog.start);
-  while (lexemes.before(prog.end)) {
+  lexemes.seekBody(prog);
+  while (lexemes.inBody(prog)) {
     const lexeme = lexemes.peek() as Lexeme;
     const declarationStart = lexemes.mark();
 
@@ -64,10 +68,10 @@ export default function java(lexemes: Lexemes): Program {
   }
 
   for (const subroutine of getAllSubroutines(prog)) {
-    lexemes.seek(subroutine.start);
-    while (lexemes.before(subroutine.end)) {
+    lexemes.seekBody(subroutine);
+    while (lexemes.inBody(subroutine)) {
       subroutine.statements.push(
-        parseStatement(lexemes.peek() as Lexeme, lexemes, subroutine),
+        parseStatement(lexemes.peek() as Lexeme, lexemes, context, subroutine),
       );
     }
   }

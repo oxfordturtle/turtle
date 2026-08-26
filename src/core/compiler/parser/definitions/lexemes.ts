@@ -1,5 +1,6 @@
 import type { Lexeme } from "../../lexer/lexeme.ts";
 import { CompilerError } from "../../tools/error.ts";
+import type { Routine } from "./routine.ts";
 
 /**
  * A position in the lexeme stream, as handed out by `mark` and handed back to
@@ -12,11 +13,12 @@ export type Mark = number;
  * The parser's cursor over the lexeme stream.
  *
  * Most of the parser walks forwards, with `peek`, `advance`, `match` and
- * `expect`. But BASIC, Java, Python and TypeScript are two-pass: they scan once
- * to find the subroutine boundaries, recording each routine's `start` and `end`
- * marks, then rewind and parse the bodies. That is why the cursor also offers
- * random access - `mark`, `seek`, `before`, `at` and `indexOf` - rather than
- * only moving forwards.
+ * `expect`. But BASIC, C, Java, Python and TypeScript are two-pass: they scan
+ * once to find the subroutine boundaries, then rewind and parse the bodies.
+ * That is why the cursor also offers random access - `mark`, `seek`, `at` and
+ * `indexOf` - rather than only moving forwards, and why it is what remembers
+ * where each routine's body lies: `setBody`, `seekBody`, `seekPastBody` and
+ * `inBody` are the second pass's whole vocabulary.
  */
 export interface Lexemes {
   /** how many lexemes there are altogether */
@@ -64,20 +66,39 @@ export interface Lexemes {
   /** moves the cursor to a position given by `mark` */
   seek(mark: Mark): void;
 
-  /** whether the cursor is still before `mark` */
-  before(mark: Mark): boolean;
-
   /** the lexeme at an absolute position, wherever the cursor happens to be */
   at(mark: Mark): Lexeme | undefined;
 
   /** the position of the first lexeme with this content, or -1 if there is none */
   indexOf(content: string): Mark;
+
+  /**
+   * Records which lexemes make up a routine's body: `start` is its first, and
+   * `end` the one just past its last - the closing curly bracket in the
+   * C-family languages, the closing DEDENT in Python. Called by the pass that
+   * finds the routine, and read by the one that parses it.
+   */
+  setBody(routine: Routine, start: Mark, end: Mark): void;
+
+  /** moves the cursor to the first lexeme of a routine's body */
+  seekBody(routine: Routine): void;
+
+  /** moves the cursor just past the last lexeme of a routine's body */
+  seekPastBody(routine: Routine): void;
+
+  /** whether the cursor is still short of the end of a routine's body */
+  inBody(routine: Routine): boolean;
 }
 
 const makeLexemes = (lexemes: Lexeme[]): Lexemes => {
   let index = 0;
+  const bodies = new Map<Routine, { start: Mark; end: Mark }>();
 
   const peek = (offset = 0): Lexeme | undefined => lexemes[index + offset];
+
+  // non-null: nothing asks where a routine's body is before the pass that
+  // found the routine has called setBody on it
+  const bodyOf = (routine: Routine) => bodies.get(routine)!;
 
   return {
     length: lexemes.length,
@@ -128,16 +149,28 @@ const makeLexemes = (lexemes: Lexeme[]): Lexemes => {
       index = mark;
     },
 
-    before(mark) {
-      return index < mark;
-    },
-
     at(mark) {
       return lexemes[mark];
     },
 
     indexOf(content) {
       return lexemes.findIndex((x) => x.content === content);
+    },
+
+    setBody(routine, start, end) {
+      bodies.set(routine, { start, end });
+    },
+
+    seekBody(routine) {
+      index = bodyOf(routine).start;
+    },
+
+    seekPastBody(routine) {
+      index = bodyOf(routine).end + 1;
+    },
+
+    inBody(routine) {
+      return index < bodyOf(routine).end;
     },
   };
 };

@@ -80,8 +80,7 @@ export default function program(lexemes: Lexemes): Program {
   }
 
   const prog = makeProgram("Java", identifier.content as string);
-  prog.start = 3;
-  prog.end = lexemes.length - 1;
+  lexemes.setBody(prog, 3, lexemes.length - 1);
 
   return prog;
 }

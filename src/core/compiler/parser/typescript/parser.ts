@@ -1,4 +1,5 @@
 import type { Lexeme } from "../../lexer/lexeme.ts";
+import type { ParserContext } from "../definitions/context.ts";
 import type { Lexemes } from "../definitions/lexemes.ts";
 import makeProgram, { type Program } from "../definitions/routines/program.ts";
 import type { Subroutine } from "../definitions/routines/subroutine.ts";
@@ -8,20 +9,27 @@ import parseStatement from "./statement.ts";
 import subroutine from "./subroutine.ts";
 import variable from "./variable.ts";
 
-export default function typescript(lexemes: Lexemes): Program {
+export default function typescript(
+  lexemes: Lexemes,
+  context: ParserContext,
+): Program {
   const program = makeProgram("TypeScript");
-  program.end = lexemes.length;
+  lexemes.setBody(program, 0, lexemes.length);
 
-  parseBody(lexemes, program);
+  parseBody(lexemes, context, program);
 
   return program;
 }
 
-function parseBody(lexemes: Lexemes, routine: Program | Subroutine): void {
+function parseBody(
+  lexemes: Lexemes,
+  context: ParserContext,
+  routine: Program | Subroutine,
+): void {
   // first pass: hoist all constants, variables, and functions
-  lexemes.seek(routine.start);
+  lexemes.seekBody(routine);
   // TODO: allow block-scoped variables with 'let' and make constants block-scoped as well
-  while (lexemes.before(routine.end)) {
+  while (lexemes.inBody(routine)) {
     const lexeme = lexemes.peek() as Lexeme;
     lexemes.advance();
     switch (lexeme.type) {
@@ -45,13 +53,13 @@ function parseBody(lexemes: Lexemes, routine: Program | Subroutine): void {
     }
   }
 
-  lexemes.seek(routine.start);
-  while (lexemes.before(routine.end)) {
+  lexemes.seekBody(routine);
+  while (lexemes.inBody(routine)) {
     routine.statements.push(
-      parseStatement(lexemes.peek() as Lexeme, lexemes, routine),
+      parseStatement(lexemes.peek() as Lexeme, lexemes, context, routine),
     );
   }
   for (const sub of routine.subroutines) {
-    parseBody(lexemes, sub);
+    parseBody(lexemes, context, sub);
   }
 }

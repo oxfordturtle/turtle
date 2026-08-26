@@ -1,5 +1,6 @@
 import { type Lexeme } from "../../lexer/lexeme.ts";
 import { CompilerError } from "../../tools/error.ts";
+import type { ParserContext } from "../definitions/context.ts";
 import type { Lexemes } from "../definitions/lexemes.ts";
 import { type Subroutine } from "../definitions/routines/subroutine.ts";
 import { type Statement } from "../definitions/statement.ts";
@@ -17,6 +18,7 @@ import parseWhileStatement from "./statements/whileStatement.ts";
 const parseStatement = (
   lexeme: Lexeme,
   lexemes: Lexemes,
+  context: ParserContext,
   routine: Subroutine,
 ): Statement => {
   let statement: Statement;
@@ -48,7 +50,7 @@ const parseStatement = (
 
         case "if":
           lexemes.advance();
-          statement = parseIfStatement(lexeme, lexemes, routine);
+          statement = parseIfStatement(lexeme, lexemes, context, routine);
           break;
 
         case "else":
@@ -59,21 +61,21 @@ const parseStatement = (
 
         case "for":
           lexemes.advance();
-          statement = parseForStatement(lexeme, lexemes, routine);
+          statement = parseForStatement(lexeme, lexemes, context, routine);
           break;
 
         case "do":
           lexemes.advance();
-          statement = parseDoStatement(lexeme, lexemes, routine);
+          statement = parseDoStatement(lexeme, lexemes, context, routine);
           break;
 
         case "while":
           lexemes.advance();
-          statement = parseWhileStatement(lexeme, lexemes, routine);
+          statement = parseWhileStatement(lexeme, lexemes, context, routine);
           break;
 
         case "break":
-          if (routine.loopDepth === 0) {
+          if (!context.insideLoop(routine)) {
             throw new CompilerError(
               "'break' is only allowed inside a loop.",
               lexeme,
@@ -85,7 +87,7 @@ const parseStatement = (
           break;
 
         case "continue":
-          if (routine.loopDepth === 0) {
+          if (!context.insideLoop(routine)) {
             throw new CompilerError(
               "'continue' is only allowed inside a loop.",
               lexeme,

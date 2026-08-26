@@ -2,6 +2,7 @@ import type { Language } from "@/core/constants.ts";
 import type { Lexeme } from "../lexer/lexeme.ts";
 import basicParser from "./basic/parser.ts";
 import cParser from "./c/parser.ts";
+import makeContext from "./definitions/context.ts";
 import makeLexemes from "./definitions/lexemes.ts";
 import type { Program } from "./definitions/routines/program.ts";
 import javaParser from "./java/parser.ts";
@@ -11,20 +12,23 @@ import typeScriptParser from "./typescript/parser.ts";
 
 const parseProgram = (rawLexemes: Lexeme[], language: Language): Program => {
   const lexemes = makeLexemes(rawLexemes);
+  // BASIC and Pascal have no "break"/"continue", so their parsers need no
+  // context; the other four thread one alongside the cursor
+  const context = makeContext();
 
   switch (language) {
     case "BASIC":
       return basicParser(lexemes);
     case "C":
-      return cParser(lexemes);
+      return cParser(lexemes, context);
     case "Java":
-      return javaParser(lexemes);
+      return javaParser(lexemes, context);
     case "Pascal":
       return pascalParser(lexemes);
     case "Python":
-      return pythonParser(lexemes);
+      return pythonParser(lexemes, context);
     case "TypeScript":
-      return typeScriptParser(lexemes);
+      return typeScriptParser(lexemes, context);
   }
 };
 

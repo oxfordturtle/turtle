@@ -40,7 +40,7 @@ export default (
   }
   parseNewLine(lexemes);
 
-  subroutine.start = lexemes.mark();
+  const bodyStart = lexemes.mark();
 
   // move past all inner lexemes
   let finished = false;
@@ -67,22 +67,23 @@ export default (
     }
   }
 
-  subroutine.end =
+  const bodyEnd =
     getSubroutineType(subroutine) === "procedure"
       ? lexemes.mark() - 2
       : lexemes.mark();
+  lexemes.setBody(subroutine, bodyStart, bodyEnd);
 
   // check for subroutine end
   if (!finished) {
     if (getSubroutineType(subroutine) === "procedure") {
       throw new CompilerError(
         `Procedure "${subroutine.name}" does not have an end (expected "ENDPROC").`,
-        lexemes.at(subroutine.start),
+        lexemes.at(bodyStart),
       );
     }
     throw new CompilerError(
       `Function "${subroutine.name}" does not have an end (expected "=<expression>").`,
-      lexemes.at(subroutine.end),
+      lexemes.at(bodyEnd),
     );
   }
 

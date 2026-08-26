@@ -15,6 +15,7 @@ import {
   getListElementKind,
   isListExpression,
 } from "../../definitions/expression.ts";
+import type { ParserContext } from "../../definitions/context.ts";
 import makeCompoundExpression from "../../definitions/expressions/compoundExpression.ts";
 import makeFunctionCall from "../../definitions/expressions/functionCall.ts";
 import makeIntegerValue from "../../definitions/expressions/integerValue.ts";
@@ -38,6 +39,7 @@ let listIterationCounter = 0;
 export default (
   forLexeme: KeywordLexeme,
   lexemes: Lexemes,
+  context: ParserContext,
   routine: Routine,
 ): ForStatement => {
   // whether this turns out to be a "range(...)" loop or a list-iteration
@@ -443,9 +445,9 @@ export default (
       lexemes.peek(-1),
     );
   }
-  routine.loopDepth += 1;
-  forStatement.statements.push(...parseBlock(lexemes, routine));
-  routine.loopDepth -= 1;
+  forStatement.statements.push(
+    ...context.inLoop(routine, () => parseBlock(lexemes, context, routine)),
+  );
 
   return forStatement;
 };

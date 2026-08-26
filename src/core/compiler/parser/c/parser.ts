@@ -1,5 +1,6 @@
 import type { Lexeme } from "../../lexer/lexeme.ts";
 import { CompilerError } from "../../tools/error.ts";
+import type { ParserContext } from "../definitions/context.ts";
 import type { Lexemes } from "../definitions/lexemes.ts";
 import { getAllSubroutines } from "../definitions/routine.ts";
 import makeProgram, { type Program } from "../definitions/routines/program.ts";
@@ -11,7 +12,7 @@ import parseSimpleStatement from "./statements/simpleStatement.ts";
 import subroutine from "./subroutine.ts";
 import type from "./type.ts";
 
-export default function c(lexemes: Lexemes): Program {
+export default function c(lexemes: Lexemes, context: ParserContext): Program {
   const program = makeProgram("C");
 
   while (!lexemes.atEnd()) {
@@ -62,10 +63,10 @@ export default function c(lexemes: Lexemes): Program {
   }
 
   for (const subroutine of getAllSubroutines(program)) {
-    lexemes.seek(subroutine.start);
-    while (lexemes.before(subroutine.end)) {
+    lexemes.seekBody(subroutine);
+    while (lexemes.inBody(subroutine)) {
       subroutine.statements.push(
-        parseStatement(lexemes.peek() as Lexeme, lexemes, subroutine),
+        parseStatement(lexemes.peek() as Lexeme, lexemes, context, subroutine),
       );
     }
   }

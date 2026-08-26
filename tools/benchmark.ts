@@ -32,10 +32,9 @@
  * Repeated measurement rests on one property of the pipeline: every stage can
  * be re-run on the same input and produce the same output. `tokenize` and
  * `lexify` are pure; `parse` builds a fresh cursor over the lexemes it is
- * given; `encode` mutates the program it is handed (`startLine` on each
- * subroutine) but recomputes those deterministically before reading them, so
- * re-encoding is stable. If that ever stops being true, this tool starts
- * measuring something other than what it claims to.
+ * given; `encode` reads the program without writing to it. If that ever stops
+ * being true, this tool starts measuring something other than what it claims
+ * to.
  */
 
 import type { Language } from "@/core/constants.ts";

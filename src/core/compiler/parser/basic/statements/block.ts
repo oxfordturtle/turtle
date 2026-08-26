@@ -23,7 +23,7 @@ const parseBlock = (
     );
   }
 
-  while (!end && lexemes.before(routine.end)) {
+  while (!end && lexemes.inBody(routine)) {
     const lexeme = lexemes.peek() as Lexeme;
     end = blockEndCheck(start, lexeme);
     if (end) {

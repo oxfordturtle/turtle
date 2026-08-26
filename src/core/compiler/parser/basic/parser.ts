@@ -13,7 +13,7 @@ export default function basic(lexemes: Lexemes): Program {
   if (endMark < 0) {
     throw new CompilerError('Program must end with keyword "END".');
   }
-  program.end = endMark;
+  lexemes.setBody(program, 0, endMark);
 
   // first (semi) pass: loop through any lexemes after "END" and hoist subroutine definitions
   lexemes.seek(endMark + 1);

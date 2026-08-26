@@ -2,6 +2,7 @@ import { type KeywordLexeme } from "../../../lexer/lexeme.ts";
 import { CompilerError } from "../../../tools/error.ts";
 import parseExpression from "../../common/expression.ts";
 import typeCheck from "../../common/typeCheck.ts";
+import type { ParserContext } from "../../definitions/context.ts";
 import type { Lexemes } from "../../definitions/lexemes.ts";
 import { type Routine } from "../../definitions/routine.ts";
 import makeIfStatement, {
@@ -12,6 +13,7 @@ import parseBlock from "./block.ts";
 const parseIfStatement = (
   ifLexeme: KeywordLexeme,
   lexemes: Lexemes,
+  context: ParserContext,
   routine: Routine,
 ): IfStatement => {
   if (lexemes.atEnd()) {
@@ -69,7 +71,7 @@ const parseIfStatement = (
       lexemes.peek(-1),
     );
   }
-  thisIfStatement.ifStatements.push(...parseBlock(lexemes, routine));
+  thisIfStatement.ifStatements.push(...parseBlock(lexemes, context, routine));
 
   // pass over any new lines and comments (a comment can appear between the
   // dedent that closes the if-block and a following "elif"/"else")
@@ -85,7 +87,12 @@ const parseIfStatement = (
     if (nextLexeme.content === "elif") {
       lexemes.advance();
       thisIfStatement.elseStatements.push(
-        parseIfStatement(nextLexeme as KeywordLexeme, lexemes, routine),
+        parseIfStatement(
+          nextLexeme as KeywordLexeme,
+          lexemes,
+          context,
+          routine,
+        ),
       );
     } else if (nextLexeme.content === "else") {
       lexemes.advance();
@@ -134,7 +141,9 @@ const parseIfStatement = (
           lexemes.peek(-1),
         );
       }
-      thisIfStatement.elseStatements.push(...parseBlock(lexemes, routine));
+      thisIfStatement.elseStatements.push(
+        ...parseBlock(lexemes, context, routine),
+      );
     }
   }
 

@@ -3,6 +3,7 @@ import { token } from "../../../tokenizer/token.ts";
 import { CompilerError } from "../../../tools/error.ts";
 import parseExpression from "../../common/expression.ts";
 import typeCheck from "../../common/typeCheck.ts";
+import type { ParserContext } from "../../definitions/context.ts";
 import makeCompoundExpression from "../../definitions/expressions/compoundExpression.ts";
 import type { Lexemes } from "../../definitions/lexemes.ts";
 import type { Program } from "../../definitions/routines/program.ts";
@@ -16,13 +17,14 @@ import eosCheck from "./eosCheck.ts";
 const parseDoStatement = (
   doLexeme: KeywordLexeme,
   lexemes: Lexemes,
+  context: ParserContext,
   routine: Program | Subroutine,
 ): RepeatStatement => {
   lexemes.expectAfter("{", '"do" must be followed by an opening bracket "{".');
 
-  routine.loopDepth += 1;
-  const repeatStatements = parseBlock(lexemes, routine);
-  routine.loopDepth -= 1;
+  const repeatStatements = context.inLoop(routine, () =>
+    parseBlock(lexemes, context, routine),
+  );
 
   lexemes.expectAfter("while", '"do { ... }" must be followed by "while".');
 

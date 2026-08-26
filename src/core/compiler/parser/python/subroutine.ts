@@ -107,7 +107,7 @@ export default (
   subroutine.indent = baseIndent + 1;
   lexemes.advance();
 
-  subroutine.start = lexemes.mark();
+  const bodyStart = lexemes.mark();
 
   // move past the subroutine's lexemes, hoisting any undefined globals
   let indents = 0;
@@ -136,7 +136,7 @@ export default (
     lexemes.advance();
   }
 
-  subroutine.end = lexemes.mark() - 1;
+  lexemes.setBody(subroutine, bodyStart, lexemes.mark() - 1);
 
   return subroutine;
 };

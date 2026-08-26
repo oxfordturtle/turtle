@@ -52,7 +52,7 @@ export default function subroutine(
     'Method parameters must be followed by an opening bracket "{".',
   );
 
-  subroutine.start = lexemes.mark();
+  const bodyStart = lexemes.mark();
 
   let brackets = 0;
   while (!lexemes.atEnd() && brackets >= 0) {
@@ -64,7 +64,7 @@ export default function subroutine(
     lexemes.advance();
   }
 
-  subroutine.end = lexemes.mark() - 1;
+  lexemes.setBody(subroutine, bodyStart, lexemes.mark() - 1);
 
   return subroutine;
 }

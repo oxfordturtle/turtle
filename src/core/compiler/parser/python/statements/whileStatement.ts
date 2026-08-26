@@ -2,6 +2,7 @@ import { type KeywordLexeme } from "../../../lexer/lexeme.ts";
 import { CompilerError } from "../../../tools/error.ts";
 import parseExpression from "../../common/expression.ts";
 import typeCheck from "../../common/typeCheck.ts";
+import type { ParserContext } from "../../definitions/context.ts";
 import type { Lexemes } from "../../definitions/lexemes.ts";
 import { type Routine } from "../../definitions/routine.ts";
 import makeWhileStatement, {
@@ -12,6 +13,7 @@ import parseBlock from "./block.ts";
 export default (
   whileLexeme: KeywordLexeme,
   lexemes: Lexemes,
+  context: ParserContext,
   routine: Routine,
 ): WhileStatement => {
   if (lexemes.atEnd()) {
@@ -70,9 +72,9 @@ export default (
       lexemes.peek(-1),
     );
   }
-  routine.loopDepth += 1;
-  whileStatement.statements.push(...parseBlock(lexemes, routine));
-  routine.loopDepth -= 1;
+  whileStatement.statements.push(
+    ...context.inLoop(routine, () => parseBlock(lexemes, context, routine)),
+  );
 
   return whileStatement;
 };

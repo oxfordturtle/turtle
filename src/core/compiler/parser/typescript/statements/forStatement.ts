@@ -2,6 +2,7 @@ import { type KeywordLexeme } from "../../../lexer/lexeme.ts";
 import { CompilerError } from "../../../tools/error.ts";
 import parseExpression from "../../common/expression.ts";
 import typeCheck from "../../common/typeCheck.ts";
+import type { ParserContext } from "../../definitions/context.ts";
 import type { Lexemes } from "../../definitions/lexemes.ts";
 import type { Program } from "../../definitions/routines/program.ts";
 import { type Subroutine } from "../../definitions/routines/subroutine.ts";
@@ -14,6 +15,7 @@ import parseSimpleStatement from "./simpleStatement.ts";
 const parseForStatement = (
   forLexeme: KeywordLexeme,
   lexemes: Lexemes,
+  context: ParserContext,
   routine: Program | Subroutine,
 ): ForStatement => {
   lexemes.expectAfter("(", '"for" must be followed by an opening bracket "(".');
@@ -112,9 +114,9 @@ const parseForStatement = (
     change,
   );
 
-  routine.loopDepth += 1;
-  forStatement.statements.push(...parseBlock(lexemes, routine));
-  routine.loopDepth -= 1;
+  forStatement.statements.push(
+    ...context.inLoop(routine, () => parseBlock(lexemes, context, routine)),
+  );
 
   return forStatement;
 };

@@ -14,7 +14,6 @@ export interface Subroutine extends RoutineCommon {
   globals: string[]; // for Python
   nonlocals: string[]; // for Python
   indent: number; // for Python
-  startLine: number; // first line in PCode (fixed later by the encoder module)
 }
 
 const makeSubroutine = (
@@ -32,7 +31,6 @@ const makeSubroutine = (
   globals: [],
   nonlocals: [],
   indent: 0,
-  startLine: 0,
 });
 
 export default makeSubroutine;
