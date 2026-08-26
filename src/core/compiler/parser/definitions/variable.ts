@@ -74,10 +74,9 @@ export const getLength = (variable: Variable): number => {
   }
 
   if (isArray(variable)) {
-    // an array has at least one element, so it has at least one sub-variable
-    return (
-      getLength(getSubVariables(variable)[0]!) * elementCount(variable) + 2
-    ); // +2 for pointer and length byte
+    // every element has the same length, so measure one rather than building
+    // a SubVariable for all of them
+    return getLength(makeSubVariable(variable, 0)) * elementCount(variable) + 2; // +2 for pointer and length byte
   }
 
   return baseLength(variable);
