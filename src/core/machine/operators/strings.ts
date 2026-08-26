@@ -51,35 +51,43 @@ export { caseOperator as case };
 
 // string operators
 //
-// COPY/DELS/INSS index from 1 and use the deprecated String.substr on purpose:
-// its negative-index behaviour is what the three currently do, and
-// `slice`/`substring` would each clamp differently. See TODO.md §1.4 - fixing
-// that is a deliberate change, not a modernisation.
+// COPY/DELS/INSS index from 1, transcribing Pascal's Copy/Delete/Insert, and
+// clamp an index below 1 up to 1 exactly as Delphi's do - see `startFrom`
+// below (TODO.md §1.4, fixed).
+//
+// They keep the deprecated String.substr, which takes a *length* as the
+// Pascal originals do, where `slice`/`substring` take an end index. The clamp
+// is what makes that safe: substr's first argument counts backwards from the
+// end when negative, which is precisely the bug that was fixed, and an index
+// of 1 or more can no longer reach it.
+
+/** A 1-based Pascal string index as a 0-based JavaScript one, clamped as Delphi clamps it. */
+const startFrom = (index: number): number => Math.max(index, 1) - 1;
 
 export const copy = (): void => {
   const length = memory.popValue();
-  const index = memory.popValue();
+  const start = startFrom(memory.popValue());
   const string = memory.popString();
-  memory.makeHeapString(string.substr(index - 1, length));
+  memory.makeHeapString(string.substr(start, length));
 };
 
 export const dels = (): void => {
   const length = memory.popValue();
-  const index = memory.popValue();
+  const start = startFrom(memory.popValue());
   const string = memory.popString();
   memory.makeHeapString(
-    string.substr(0, index - 1) + string.substr(index - 1 + length),
+    string.substr(0, start) + string.substr(start + length),
   );
 };
 
 export const inss = (): void => {
-  const index = memory.popValue();
+  const start = startFrom(memory.popValue());
   const stringPointer = memory.popValue();
   const substringPointer = memory.popValue();
   const string = memory.getHeapString(stringPointer);
   const substring = memory.getHeapString(substringPointer);
   memory.makeHeapString(
-    string.substr(0, index - 1) + substring + string.substr(index - 1),
+    string.substr(0, start) + substring + string.substr(start),
   );
 };
 
@@ -172,13 +180,15 @@ export const ctst = (): void => {
   // peeks rather than pops: the compiler reuses the tested value
   const string = memory.getHeapString(memory.peekValue());
   if (string.length !== 1) {
-    throw new MachineError("String is not a character."); // TODO: better error message
+    throw new MachineError(
+      `String is not a single character (length ${string.length}).`,
+    );
   }
 };
 
 export const ernf = (): void => {
   // peeks rather than pops: the compiler reuses the tested value
   if (memory.peekValue() < 0) {
-    throw new MachineError("Not found."); // TODO: better error message
+    throw new MachineError("Value not found in the list.");
   }
 };

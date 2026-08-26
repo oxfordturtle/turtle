@@ -1,7 +1,8 @@
 import { describe, it } from "@std/testing/bdd";
 import { assertEquals, assertFalse, assertMatch } from "@std/assert";
 import { isRunning, type MachineOptions } from "@/core/machine.ts";
-import { PCode, runPcode, runToInt } from "./lib/helpers.ts";
+import { type FakeFiles, fakeFiles } from "./lib/fakes.ts";
+import { PCode, runFilePcode, runPcode, runToInt, str } from "./lib/helpers.ts";
 
 /**
  * Coverage for `src/core/machine/runtime.ts`'s runtime error conditions:
@@ -92,6 +93,18 @@ describe("machine/runtime: error handling", () => {
       ["scat", "pops both pointers before resolving either", []],
       ["ctst", "peeks rather than pops", []],
       ["ernf", "peeks rather than pops", []],
+      // The three arms of TODO.md 1.1, fixed: they used to guard their
+      // operands with an `if` and no `else`, so where every other operator
+      // threw, these fell through and carried on. They are enumerated here
+      // even though they are now structurally ordinary pops and peeks,
+      // because a re-introduction of that omission would otherwise be
+      // invisible: V8 emits no branch range for an `if` whose body runs on
+      // every execution of its arm, so no BRDA pair is generated and the
+      // untaken false path is never counted as a miss - the 100% gate simply
+      // cannot see it.
+      ["mixc", "pops four, and used to fall through instead", []],
+      ["test", "peeks two, and used to fall through instead", []],
+      ["cons", "pops two, and used to fall through instead", []],
       [
         "memc",
         "pops the *memory* stack, which reports the same message",
@@ -117,72 +130,32 @@ describe("machine/runtime: error handling", () => {
       });
     }
 
-    // [known bug] TODO.md 1.1: MIXC, TEST and CONS are the only three arms in
-    // the switch that guard their operands with an `if` and no `else`. Every
-    // other operator throws on an empty stack; these three fall through and
-    // carry on as if nothing happened. It reads as an
-    // omission rather than a decision, and it is invisible to the coverage
-    // gate: Deno derives branch coverage from V8's block ranges, and V8 emits
-    // a range only where the inner count *differs* from the enclosing one.
-    // Because the guarded body runs on every execution of either arm today,
-    // no range is emitted, no BRDA pair is generated, and the untaken false
-    // path is never counted as a miss - the 100% gate simply cannot see it.
-    // (The tests below give all three arms a false execution, so from now on
-    // the pairs do exist and both sides are covered.) The assertions are
-    // what the code does, not what it should do: making any one of them throw
-    // - the consistent behaviour - trips these tests rather than passing
-    // silently.
-    //
-    // CONS was missed by Phase 1, which recorded only MIXC and TEST; it was
-    // found in Phase 2 while sweeping the guards, and is pinned here for the
-    // same reason as the other two.
-    describe("[known bug] MIXC, TEST and CONS are silent no-ops instead", () => {
-      it("MIXC on an empty stack does nothing at all and the program runs on", () => {
-        const { output } = runPcode([
-          [PCode.mixc],
-          [PCode.ldin, 7],
-          [PCode.itos],
-          [PCode.writ],
-          [PCode.halt],
-        ]);
-        assertEquals(output.runtimeErrors, []);
-        assertEquals(output.outputText, "7");
+    // The partly-filled half of TODO.md 1.1. MIXC and CONS pop several
+    // operands and TEST peeks two, so a stack holding *some* of what they
+    // want reaches the guard on a later read rather than the first one - the
+    // case the table above cannot express. All three used to carry on
+    // regardless; CONS was missed when the bug was first recorded, and found
+    // in Phase 2 while sweeping the guards.
+    describe("MIXC, TEST and CONS on a partly filled stack", () => {
+      it("MIXC given only two of its four operands throws", () => {
+        expectError(
+          [[PCode.ldin, 1], [PCode.ldin, 2], [PCode.mixc], [PCode.halt]],
+          "Stack operation called on empty stack.",
+        );
       });
 
-      it("MIXC given only two of its four operands is equally silent", () => {
-        const { output } = runPcode([
-          [PCode.ldin, 1],
-          [PCode.ldin, 2],
-          [PCode.mixc],
-          [PCode.halt],
-        ]);
-        assertEquals(output.runtimeErrors, []);
+      it("TEST given only one of its two operands throws", () => {
+        expectError(
+          [[PCode.ldin, 500], [PCode.test], [PCode.halt]],
+          "Stack operation called on empty stack.",
+        );
       });
 
-      it("TEST on an empty stack does nothing at all", () => {
-        const { output } = runPcode([[PCode.test], [PCode.halt]]);
-        assertEquals(output.runtimeErrors, []);
-      });
-
-      it("CONS on an empty stack does nothing at all and the program runs on", () => {
-        const { output } = runPcode([
-          [PCode.cons],
-          [PCode.ldin, 7],
-          [PCode.itos],
-          [PCode.writ],
-          [PCode.halt],
-        ]);
-        assertEquals(output.runtimeErrors, []);
-        assertEquals(output.outputText, "7");
-      });
-
-      it("CONS given only one of its two operands is equally silent", () => {
-        const { output } = runPcode([
-          [PCode.ldin, 1],
-          [PCode.cons],
-          [PCode.halt],
-        ]);
-        assertEquals(output.runtimeErrors, []);
+      it("CONS given only one of its two operands throws", () => {
+        expectError(
+          [[PCode.ldin, 1], [PCode.cons], [PCode.halt]],
+          "Stack operation called on empty stack.",
+        );
       });
     });
   });
@@ -240,20 +213,25 @@ describe("machine/runtime: error handling", () => {
   });
 
   describe("Python string tests", () => {
-    // [known bug] TODO.md 1.3: both messages are placeholders, each carrying
-    // its own `TODO: better error message` in runtime.ts. They are what a
-    // student sees, and neither says what was wrong or where. The exact
-    // strings are asserted so that improving them is a deliberate change that
-    // trips these tests, rather than a silent edit.
-    it("[known bug] CTST throws a placeholder message when the string isn't exactly one character", () => {
+    // Both messages were placeholders ("String is not a character." and "Not
+    // found."), each carrying its own `TODO: better error message` - TODO.md
+    // 1.3, fixed. The replacements follow the house style: a full sentence,
+    // with the offending detail in parentheses where there is one. ERNF has
+    // none to give: it peeks the *index* LIDX pushed, not the value that was
+    // looked for, so it cannot name it. The exact strings are asserted, since
+    // they are what a student reads.
+    it("CTST reports the length when the string isn't exactly one character", () => {
       expectError(
         [[PCode.lstr, 2, 104, 105], [PCode.ctst], [PCode.halt]],
-        "String is not a character.",
+        "String is not a single character (length 2).",
       );
     });
 
-    it("[known bug] ERNF throws a placeholder message when its argument is negative", () => {
-      expectError([[PCode.ldin, -1], [PCode.ernf], [PCode.halt]], "Not found.");
+    it("ERNF reports a value that was looked for and not found", () => {
+      expectError(
+        [[PCode.ldin, -1], [PCode.ernf], [PCode.halt]],
+        "Value not found in the list.",
+      );
     });
   });
 
@@ -300,23 +278,40 @@ describe("machine/runtime: error handling", () => {
       );
     });
 
-    // [known bug] TODO.md 1.2: the arm carries a `TODO: make range check a
-    // runtime option` comment, but `MachineOptions.rangeCheckArrays` already
-    // exists, defaults to true, and is threaded all the way from the Run menu
-    // through `program.ts` into the machine - TEST just never consults it.
-    // Same shape as TODO.md 3.9's seven dead `EncoderOptions`: a control the
-    // student can turn off that changes nothing. Wiring it up trips this test.
-    it("[known bug] range-checks anyway when rangeCheckArrays is turned off", () => {
-      expectError(
+    // TODO.md 1.2, fixed: the arm carried a `TODO: make range check a runtime
+    // option` comment while `MachineOptions.rangeCheckArrays` already existed,
+    // defaulted to true, and was threaded from the Run menu through
+    // `program.ts` into the machine - TEST simply never consulted it. Off now
+    // means no check at all: the index is used as given and whatever happens,
+    // happens, which is the point of offering it (see TODO.md 1.2, and 1.11
+    // for the same decision on the memory stack).
+    it("skips the check when rangeCheckArrays is turned off", () => {
+      // the same out-of-range index as the test above, which throws with the
+      // option left on
+      const { output } = runPcode(
         [
           [PCode.ldin, 5],
           [PCode.stvg, 500],
           [PCode.ldin, 6],
           [PCode.ldin, 500],
           [PCode.test],
+          [PCode.ldin, 7],
+          [PCode.itos],
+          [PCode.writ],
           [PCode.halt],
         ],
-        "Array index out of range (6, 5).",
+        { rangeCheckArrays: false },
+      );
+      assertEquals(output.runtimeErrors, []);
+      assertEquals(output.outputText, "7");
+    });
+
+    it("still reports a short stack when rangeCheckArrays is turned off", () => {
+      // the operand guard is not the range check: TEST reads both values
+      // either way, so a program that never pushed them is still wrong
+      expectError(
+        [[PCode.test], [PCode.halt]],
+        "Stack operation called on empty stack.",
         { rangeCheckArrays: false },
       );
     });
@@ -388,15 +383,14 @@ describe("machine/runtime: error handling", () => {
     );
   });
 
-  // [known bug] TODO.md 1.5: the message reads "invalid input state.code",
-  // which is not a thing a student has. A `code` -> `state.code` rename swept
-  // through this string literal as well as the identifiers; it should read
-  // "invalid input code". The mangled text is asserted exactly, so fixing it
-  // trips this test rather than passing silently.
-  it("[known bug] TDET throws a rename-mangled message when given an out-of-range input code", () => {
+  // The message used to read "invalid input state.code", which is not a thing
+  // a student has: a `code` -> `state.code` rename swept through this string
+  // literal as well as the identifiers (TODO.md 1.5, fixed). Asserted exactly,
+  // since it is what a student reads.
+  it("TDET throws when given an out-of-range input code", () => {
     expectError(
       [[PCode.ldin, 999], [PCode.ldin, 0], [PCode.tdet], [PCode.halt]],
-      "Detect called with invalid input state.code: 999.",
+      "Detect called with invalid input code: 999.",
     );
   });
 
@@ -408,16 +402,35 @@ describe("machine/runtime: error handling", () => {
     );
   });
 
-  // [known bug] TODO.md 1.11: `MachineOptions.preventStackCollision` exists,
-  // defaults to true, and is threaded from the Run menu through `program.ts`
-  // into the machine - and nothing in `src/core/machine/` ever reads it. MEMC
-  // bounds-checks the new frame against `options.stackSize` whatever the flag
-  // says. Exactly 1.2's shape (`TEST` and `rangeCheckArrays`): a control the
-  // student can turn off that changes nothing. Honouring it trips this test.
-  it("[known bug] MEMC checks anyway when preventStackCollision is turned off", () => {
+  // TODO.md 1.11, fixed: MEMC bounds-checked the new frame against
+  // `options.stackSize` whatever `options.preventStackCollision` said - a
+  // control the student could turn off that changed nothing. Off now means the
+  // frame is allocated anyway, and the memory stack grows into the heap:
+  // deliberate rope for an advanced student trying to hack the machine, and
+  // the same decision as 1.2's, whose consequences are worse (every heap
+  // pointer already handed out sits above `heapBase`).
+  it("allocates the frame anyway when preventStackCollision is turned off", () => {
+    const { output } = runPcode(
+      [
+        [PCode.ldin, 100],
+        [PCode.stmt],
+        [PCode.memc, 990, 5],
+        [PCode.ldin, 7],
+        [PCode.itos],
+        [PCode.writ],
+        [PCode.halt],
+      ],
+      { stackSize: 100, preventStackCollision: false },
+    );
+    assertEquals(output.runtimeErrors, []);
+    assertEquals(output.outputText, "7");
+  });
+
+  it("still reports an empty memory stack when preventStackCollision is turned off", () => {
+    // as with TEST above, the operand guard is not the check being turned off
     expectError(
-      [[PCode.ldin, 100], [PCode.stmt], [PCode.memc, 990, 5], [PCode.halt]],
-      "Memory stack has overflowed into memory heap. Probable cause is unterminated recursion.",
+      [[PCode.memc, 990, 5], [PCode.halt]],
+      "Stack operation called on empty stack.",
       { stackSize: 100, preventStackCollision: false },
     );
   });
@@ -507,63 +520,92 @@ describe("machine/runtime: error handling", () => {
     });
   });
 
-  // [known bug] TODO.md 1.6 and 1.7, which meet in one test. `memory.copy`
-  // dispatches to `copyForward`/`copyBackward`, which recurse once per word -
-  // so a large CPTR blows the JavaScript call stack. Its own neighbour
-  // `memory.zero` was made iterative for exactly this reason, and says so in
-  // a comment ("recursion cannot survive" thousands of words); `copy` has the
-  // identical exposure and contradicts it. The threshold is wherever V8's
-  // stack happens to run out - around 12k-20k words on a typical machine, so
-  // the length below is well past it in either direction.
-  //
-  // What the student then sees is the second bug: `execute()`'s catch does
-  // `ports.output.notifyRuntimeError(error as Error)`, blind-casting an
-  // `unknown`. An internal V8 `RangeError` is reported verbatim, exactly as
-  // if it were an error in the student's own program. `MachineError` exists
-  // and would let the two be told apart, but is never used to discriminate
-  // and isn't exported from the barrel.
-  //
-  // Both assertions are what the code does, not what it should do. Making
-  // `copy` iterative trips the first; discriminating on `MachineError` in the
-  // catch trips the second.
-  describe("[known bug] CPTR recurses per word, and the internal error leaks to the student", () => {
+  // TODO.md 1.6, fixed. `memory.copy` dispatches to `copyForward`/
+  // `copyBackward`, which used to recurse once per word: a large CPTR blew the
+  // JavaScript call stack, at wherever V8 ran out - around 12k-20k words on a
+  // typical machine. Both are loops now, like their neighbour `memory.zero`,
+  // whose own comment says recursion "cannot survive" thousands of words. The
+  // 100,000 words below are far past any plausible stack depth in either
+  // direction, so a recursion coming back trips these.
+  describe("CPTR copies a range far larger than any recursion could", () => {
     const hugeCopy = (source: number, target: number): number[][] => [
+      [PCode.ldin, 42],
+      [PCode.stvg, source],
       [PCode.ldin, source],
       [PCode.ldin, target],
-      [PCode.ldin, 100000], // words - far past any plausible stack depth
+      [PCode.ldin, 100000], // words
       [PCode.cptr],
+      [PCode.ldvg, target],
+      [PCode.itos],
+      [PCode.writ],
       [PCode.halt],
     ];
 
-    it("overflows the call stack copying forward (target below source)", () => {
-      const output = expectError(
-        hugeCopy(700000, 600000),
-        "Maximum call stack size exceeded",
-      );
-      // not a MachineError: an internal V8 error, surfaced unchanged
-      assertEquals(output.runtimeErrors[0]?.constructor.name, "RangeError");
-    });
-
-    it("overflows the call stack copying backward (target above source)", () => {
-      const output = expectError(
-        hugeCopy(600000, 700000),
-        "Maximum call stack size exceeded",
-      );
-      assertEquals(output.runtimeErrors[0]?.constructor.name, "RangeError");
-    });
-
-    it("copies without complaint at a length the recursion can survive", () => {
-      // the contrast case: same operation, 1,000 words instead of 100,000
-      const { output } = runPcode([
-        [PCode.ldin, 42],
-        [PCode.stvg, 600000],
-        [PCode.ldin, 600000],
-        [PCode.ldin, 700000],
-        [PCode.ldin, 1000],
-        [PCode.cptr],
-        [PCode.halt],
-      ]);
+    it("copying forward (target below source)", () => {
+      const { output } = runPcode(hugeCopy(700000, 600000));
       assertEquals(output.runtimeErrors, []);
+      assertEquals(output.outputText, "42");
+    });
+
+    it("copying backward (target above source)", () => {
+      const { output } = runPcode(hugeCopy(600000, 700000));
+      assertEquals(output.runtimeErrors, []);
+      assertEquals(output.outputText, "42");
+    });
+  });
+
+  // TODO.md 1.7, fixed. `execute()`'s catch used to hand whatever it caught
+  // straight to `notifyRuntimeError`, blind-casting an `unknown` to `Error`:
+  // an internal fault - a V8 error, or a rejection from one of the port
+  // adapters - reached the student verbatim, exactly as if it were an error in
+  // their own program. Every error the machine itself raises is a
+  // `MachineError`, so that is now the discriminator: a `MachineError` is
+  // reported unchanged, and anything else is wrapped in one that says whose
+  // fault it isn't.
+  //
+  // This used to be pinned through TODO.md 1.6's stack overflow, which was the
+  // live example of an internal error; fixing that removed it, so the tests
+  // below reach the same path through a port adapter instead - the only way in
+  // that remains, now that nothing in the machine throws a non-MachineError.
+  describe("internal errors are told apart from the student's own", () => {
+    const openARejectingFile = (rejectWith: unknown) => {
+      const rejectingFiles: FakeFiles = {
+        ...fakeFiles(),
+        openFile: () => Promise.reject(rejectWith),
+      };
+      return runFilePcode(
+        [str("a.txt"), [PCode.ldin, 3], [PCode.open], [PCode.halt]],
+        {},
+        rejectingFiles,
+      );
+    };
+
+    it("reports an error in the student's own program unchanged", () => {
+      const output = expectError(
+        [[PCode.plus], [PCode.halt]],
+        "Stack operation called on empty stack.",
+      );
+      assertEquals(output.runtimeErrors[0]?.constructor.name, "MachineError");
+    });
+
+    it("wraps an adapter's Error, saying it is not the program's fault", async () => {
+      const { output } = await openARejectingFile(new Error("disk exploded"));
+      assertEquals(output.runtimeErrors.length, 1);
+      assertEquals(
+        output.runtimeErrors[0]?.message,
+        "Something has gone wrong inside the Turtle machine (disk exploded). This is not an error in your program.",
+      );
+      // wrapped in a MachineError, so an adapter can still tell what it has
+      assertEquals(output.runtimeErrors[0]?.constructor.name, "MachineError");
+      assertFalse(isRunning());
+    });
+
+    it("wraps a rejection that isn't an Error at all", async () => {
+      const { output } = await openARejectingFile("just a string");
+      assertEquals(
+        output.runtimeErrors[0]?.message,
+        "Something has gone wrong inside the Turtle machine (just a string). This is not an error in your program.",
+      );
     });
   });
 

@@ -163,37 +163,27 @@ export const rgb = (): void => {
 };
 
 export const mixc = (): void => {
-  // reads the stack without ever throwing on a short one, unlike every other
-  // operator here: that is TODO.md §1.1, pinned by errors.test.ts. Do not
-  // convert these pops to popValue.
-  const secondProportion = memory.stack.pop();
-  const firstProportion = memory.stack.pop();
-  const secondColour = memory.stack.pop();
-  const firstColour = memory.stack.pop();
-  if (
-    firstColour !== undefined &&
-    secondColour !== undefined &&
-    firstProportion !== undefined &&
-    secondProportion !== undefined
-  ) {
-    const total = firstProportion + secondProportion;
-    const r = Math.round(
-      (Math.floor(firstColour / 0x10000) * firstProportion +
-        Math.floor(secondColour / 0x10000) * secondProportion) /
-        total,
-    );
-    const g = Math.round(
-      (Math.floor((firstColour & 0xff00) / 0x100) * firstProportion +
-        Math.floor((secondColour & 0xff00) / 0x100) * secondProportion) /
-        total,
-    );
-    const b = Math.round(
-      ((firstColour & 0xff) * firstProportion +
-        (secondColour & 0xff) * secondProportion) /
-        total,
-    );
-    memory.stack.push(r * 0x10000 + g * 0x100 + b);
-  }
+  const secondProportion = memory.popValue();
+  const firstProportion = memory.popValue();
+  const secondColour = memory.popValue();
+  const firstColour = memory.popValue();
+  const total = firstProportion + secondProportion;
+  const r = Math.round(
+    (Math.floor(firstColour / 0x10000) * firstProportion +
+      Math.floor(secondColour / 0x10000) * secondProportion) /
+      total,
+  );
+  const g = Math.round(
+    (Math.floor((firstColour & 0xff00) / 0x100) * firstProportion +
+      Math.floor((secondColour & 0xff00) / 0x100) * secondProportion) /
+      total,
+  );
+  const b = Math.round(
+    ((firstColour & 0xff) * firstProportion +
+      (secondColour & 0xff) * secondProportion) /
+      total,
+  );
+  memory.stack.push(r * 0x10000 + g * 0x100 + b);
 };
 
 // drawing shapes

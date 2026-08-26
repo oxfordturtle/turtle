@@ -155,6 +155,19 @@ export const advancePastCurrentInstruction = (): void => {
 };
 
 /**
+ * Creates a human readable MachineError.
+ */
+const reportableError = (error: unknown): MachineError => {
+  if (error instanceof MachineError) {
+    return error;
+  }
+  const detail = error instanceof Error ? error.message : String(error);
+  return new MachineError(
+    `Something has gone wrong inside the Turtle machine (${detail}). This is not an error in your program.`,
+  );
+};
+
+/**
  * Jumps to the nearest enclosing TRY block if one is active, else halts and
  * reports. Shared by execute()'s try/catch and suspendFor's rejection path.
  */
@@ -168,7 +181,7 @@ const handleExecutionError = (error: unknown): void => {
     memory.stack.length = stackHeight;
   } else {
     halt();
-    ports.output.notifyRuntimeError(error as Error);
+    ports.output.notifyRuntimeError(reportableError(error));
   }
 };
 
@@ -527,7 +540,7 @@ export const execute = (): void => {
 
         // string/array/list bound test
         case PCode.test:
-          variables.test();
+          variables.test(cycle);
           break;
 
         // exception handling

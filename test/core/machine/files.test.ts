@@ -860,7 +860,10 @@ describe("machine/runtime: file processing (core operators)", () => {
     // the simplest single-suspension op) rather than any one file PCode's own
     // behaviour.
 
-    it("a rejected FileSystem call halts with the rejection's error, same as a synchronous throw", async () => {
+    it("a rejected FileSystem call halts, reporting the rejection as an internal fault", async () => {
+      // an adapter failing is not the student's error, so it is wrapped rather
+      // than shown verbatim - see errors.test.ts ("internal errors are told
+      // apart from the student's own") for the discrimination itself
       const rejectingFiles: FakeFiles = {
         ...fakeFiles(),
         openFile: () => Promise.reject(new Error("disk exploded")),
@@ -871,7 +874,10 @@ describe("machine/runtime: file processing (core operators)", () => {
         rejectingFiles,
       );
       assertEquals(result.output.runtimeErrors.length, 1);
-      assertEquals(result.output.runtimeErrors[0]?.message, "disk exploded");
+      assertEquals(
+        result.output.runtimeErrors[0]?.message,
+        "Something has gone wrong inside the Turtle machine (disk exploded). This is not an error in your program.",
+      );
       assertFalse(isRunning());
     });
 

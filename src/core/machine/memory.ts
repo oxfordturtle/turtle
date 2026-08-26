@@ -114,6 +114,7 @@ export const init = (options: MachineOptions): void => {
   heapTemp = heapBase;
   heapPerm = heapTemp;
   heapMax = heapTemp;
+  heapClearPending = false;
 };
 
 /**
@@ -337,17 +338,20 @@ export const copy = (source: number, target: number, length: number): void => {
   }
 };
 
+// iterative, not recursive, for the reason `zero` above gives: a frame per
+// word cannot survive the tens of thousands a large CPTR asks for (TODO.md
+// §1.6, fixed). The directions differ only in which end they start from,
+// which is what makes `copy` a proper memmove.
+
 const copyForward = (source: number, target: number, length: number): void => {
-  if (length > 0) {
-    main[target] = peek(source);
-    copyForward(source + 1, target + 1, length - 1);
+  for (let i = 0; i < length; i += 1) {
+    main[target + i] = peek(source + i);
   }
 };
 
 const copyBackward = (source: number, target: number, length: number): void => {
-  if (length > 0) {
-    main[target + length - 1] = peek(source + length - 1);
-    copyBackward(source, target, length - 1);
+  for (let i = length - 1; i >= 0; i -= 1) {
+    main[target + i] = peek(source + i);
   }
 };
 

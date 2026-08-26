@@ -23,9 +23,9 @@ import { PCode, runPcode, str } from "./lib/helpers.ts";
  * every ordinary run. (An older version of this comment described that case
  * as a commented-out no-op; it no longer is.) `heapClear()` defers to
  * `heapClearPending` whenever the evaluation stack is non-empty, and
- * `delayedHeapClear()` at the top of `execute()` consumes it. That flag is
- * the one piece of module state `init()` does not reset - see the pinned
- * `[known bug]` at the bottom of this file.
+ * `delayedHeapClear()` at the top of `execute()` consumes it. That flag used
+ * to be the one piece of module state `init()` did not reset - see the test at
+ * the bottom of this file.
  */
 describe("machine/memory: dump()", () => {
   const compileAndRun = (
@@ -177,25 +177,27 @@ describe("machine/memory: heap temp-space reclaim", () => {
 });
 
 /**
- * `memory.init()` resets six of the module's seven private `let`s. The
- * seventh, `heapClearPending`, is not in the list - and the list is
- * hand-maintained against the declarations directly above it, so nothing
- * would catch the omission.
+ * `memory.init()` used to reset six of the module's seven private `let`s: the
+ * seventh, `heapClearPending`, was missing from a list hand-maintained against
+ * the declarations directly above it, so nothing caught the omission (TODO.md
+ * 1.8, fixed - `init()` now resets all seven).
  *
- * That flag is reachable: HCLR with a non-empty evaluation stack sets it (see
+ * The flag is reachable: HCLR with a non-empty evaluation stack sets it (see
  * runtime.test.ts's deferred-clear test), and `options.activateHCLR` defaults
- * to `true`. A program that halts before the next `execute()` therefore ends
- * with the flag still raised, and it survives into the following `run()`.
+ * to `true`. A program that halts before the next `execute()` therefore ended
+ * with the flag still raised, and it survived into the following `run()`.
  *
- * It happens to be harmless today, and that is exactly what is pinned below:
- * `delayedHeapClear()` consumes the stale flag on the new run's very first
- * `execute()`, at which point `init()` has just set `heapTemp === heapPerm`,
- * so the clear it performs is a no-op. The margin is one instruction - any
- * change that allocates on the heap before the first `delayedHeapClear()`,
- * or that defers the flag past it, turns a latent bug into a live one, and
- * trips this test.
+ * It was nevertheless harmless, by exactly one instruction, and that is why
+ * this test looks the same before and after the fix: `delayedHeapClear()`
+ * consumes the flag on the new run's very first `execute()`, at which point
+ * `init()` has just set `heapTemp === heapPerm`, so the clear it performs is a
+ * no-op either way. Nothing observable through the barrel separates the two -
+ * what the test guards is the invariant the fix makes unconditional, so that
+ * any change which allocates on the heap before the first
+ * `delayedHeapClear()`, or defers the flag past it, is caught rather than
+ * turning a latent bug into a live one.
  */
-describe("machine/memory: [known bug] init() does not reset heapClearPending", () => {
+describe("machine/memory: init() clears heapClearPending, so no run inherits it", () => {
   // leaves the flag raised: HCLR runs with 1 still on the stack, so the
   // clear is deferred, and the program halts before any second execute()
   const leaveClearPending = (): void => {
@@ -211,7 +213,7 @@ describe("machine/memory: [known bug] init() does not reset heapClearPending", (
     [PCode.halt],
   ];
 
-  it("the flag survives the run, but the next run is unaffected by it", () => {
+  it("a run that raises the flag leaves the next run unaffected", () => {
     runPcode(allocator());
     const fromClean = dump();
 

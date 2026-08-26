@@ -146,9 +146,12 @@ frees the temporary heap above it (below). An operator holding two pointers must
 pop both and resolve the **shallower one first**; the six string comparisons in
 [operators/comparison.ts](operators/comparison.ts) do exactly that, and say so.
 
-Three arms — `MIXC`, `TEST` and `CONS` — fall through silently on a short stack
-instead of throwing. That is a defect, not a convention: `TODO.md` §1.1, pinned
-by a test.
+Three arms — `MIXC`, `TEST` and `CONS` — used to fall through silently on a
+short stack instead of throwing. That was a defect, not a convention, and is
+fixed: all three read their operands through the helpers above like everything
+else. `TODO.md` §1.1 records it, and `errors.test.ts` names all three by hand in
+its stack-empty table, because the coverage gate cannot see the shape they used
+to have.
 
 ## Memory
 
@@ -311,7 +314,11 @@ PCode 0x…"_ naming the line and code it was found at.
 
 - **`LPOP`** (`0x57`) has no arm.
 - **`TRAC`** and **`MEMW`** pop a value and do nothing with it. Neither does the
-  `traceOnRun` option, which nothing in this directory reads — `TODO.md` §1.12.
+  `traceOnRun` option, which nothing in this directory reads — `TODO.md` §3.8
+  (recorded as §1.12 until it was clear this is a missing feature rather than a
+  defect), where all three are deliberately left undecided: what a trace should
+  contain is an open question, and until it is answered these arms stay as they
+  are.
 - **The twelve "dummy codes"**, `ADDR` through `WRLN` (`0xf0`–`0xfb`), appear
   nowhere but the enum: not emitted by the encoder, not dispatched by the
   machine.

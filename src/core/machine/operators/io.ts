@@ -104,7 +104,7 @@ export const tdet = (cycle: Cycle): void => {
     );
   } else {
     throw new MachineError(
-      `Detect called with invalid input state.code: ${inputcode}.`,
+      `Detect called with invalid input code: ${inputcode}.`,
     );
   }
   cycle.suspend();
@@ -129,14 +129,9 @@ export const outp = (cycle: Cycle): void => {
 };
 
 export const cons = (cycle: Cycle): void => {
-  // a third arm that reads the stack without ever throwing on a short one,
-  // alongside MIXC and TEST - TODO.md §1.1. Do not convert these pops to
-  // popValue.
-  const colour = memory.stack.pop();
-  const visible = memory.stack.pop();
-  if (visible !== undefined && colour !== undefined) {
-    cycle.output.configureConsole(visible !== 0, hex(colour));
-  }
+  const colour = memory.popValue();
+  const visible = memory.popValue();
+  cycle.output.configureConsole(visible !== 0, hex(colour));
 };
 
 export const disp = (cycle: Cycle): void => {

@@ -727,18 +727,18 @@ describe("machine/runtime: execute()", () => {
       );
     });
 
-    // [known bug] TODO.md 1.4: COPY, DELS and INSS are transcribed from
-    // Pascal's 1-based `Copy(s, index, count)` using the deprecated
-    // `String.prototype.substr`, whose first argument counts *backwards from
-    // the end* when negative. So a 0 or negative index - which Delphi clamps
-    // to 1 - silently extracts or splices from the wrong end of the string
-    // instead. The assertions below are what the code does, not what it
-    // should do. They also pin the exact hazard in swapping `substr` for
-    // `slice`/`substring`, which clamp negatives differently again: a
-    // like-for-like replacement would change all three of these answers.
-    describe("[known bug] substr's negative-index behaviour at index <= 0", () => {
-      it("COPY at index 0 takes the last character instead of the first", () => {
-        // substr(-1, 3) on "hello" - Delphi's Copy("hello", 0, 3) is "hel"
+    // TODO.md 1.4, fixed. COPY, DELS and INSS transcribe Pascal's 1-based
+    // `Copy(s, index, count)` using `String.prototype.substr`, whose first
+    // argument counts *backwards from the end* when negative - so an index of
+    // 0 or less used to extract or splice from the wrong end of the string
+    // entirely. Delphi clamps such an index up to 1, and so do these now.
+    //
+    // The clamp is also what keeps `substr` honest: with the index at 1 or
+    // more its negative-start behaviour is unreachable, which is why the three
+    // can keep a length-based method matching the Pascal originals rather than
+    // moving to `slice`/`substring` (which clamp negatives differently again).
+    describe("an index of 0 or less is clamped up to 1, as Delphi does", () => {
+      it("COPY takes from the first character", () => {
         assertEquals(
           runToString(
             str("hello"),
@@ -746,9 +746,9 @@ describe("machine/runtime: execute()", () => {
             [PCode.ldin, 3],
             [PCode.copy],
           ),
-          "o",
+          "hel",
         );
-        // and it keeps counting back as the index goes further negative
+        // and stays there however far negative the index goes
         assertEquals(
           runToString(
             str("hello"),
@@ -756,13 +756,11 @@ describe("machine/runtime: execute()", () => {
             [PCode.ldin, 3],
             [PCode.copy],
           ),
-          "lo",
+          "hel",
         );
       });
 
-      it("DELS at index 0 deletes from the wrong place", () => {
-        // substr(0, -1) is "" and substr(1) is "ello", so the head is lost
-        // and only one character is actually removed
+      it("DELS deletes from the first character", () => {
         assertEquals(
           runToString(
             str("hello"),
@@ -770,15 +768,14 @@ describe("machine/runtime: execute()", () => {
             [PCode.ldin, 2],
             [PCode.dels],
           ),
-          "ello",
+          "llo",
         );
       });
 
-      it("INSS at index 0 discards all but the last character of the target", () => {
-        // substr(0, -1) is "" and substr(-1) is "o", so "hell" vanishes
+      it("INSS inserts at the front, keeping the whole target", () => {
         assertEquals(
           runToString(str("XY"), str("hello"), [PCode.ldin, 0], [PCode.inss]),
-          "XYo",
+          "XYhello",
         );
       });
     });
@@ -1148,18 +1145,20 @@ describe("machine/runtime: execute()", () => {
       );
     });
 
-    // [known bug] TODO.md 1.12: `MachineOptions.traceOnRun` exists, and is
-    // threaded from the Run menu through `program.ts` into the machine - and
-    // nothing in `src/core/machine/` ever reads it, so turning tracing on
-    // changes nothing a student can see. Same shape as TODO.md 1.2 and 1.11:
-    // a control that does nothing.
+    // [known limitation] TODO.md 3.8 (recorded as 1.12 while it was thought
+    // to be a bug): `MachineOptions.traceOnRun` exists, and is threaded from
+    // the Run menu through `program.ts` into the machine - and nothing in
+    // `src/core/machine/` reads it, so turning tracing on changes nothing a
+    // student can see. Unlike 1.2 and 1.11, the two other options that read
+    // like this one, it is not a control that was wired up wrongly: tracing
+    // was never built, and deliberately still isn't.
     //
     // Pinned as an equality between two runs of the same program rather than
     // as an assertion about one of them, because what tracing *should* emit is
     // an open question - a console log per instruction is only the likeliest
     // answer. Whatever it turns out to be, it has to make these two call
     // streams differ, and this test then trips.
-    it("[known bug] traceOnRun changes nothing about a run", () => {
+    it("[known limitation] traceOnRun changes nothing about a run", () => {
       const pcode = [
         [PCode.ldin, 1],
         [PCode.ldin, 42],

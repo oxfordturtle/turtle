@@ -103,19 +103,21 @@ export const hstr = (): void => {
 
 // string/array/list bound test
 
-export const test = (): void => {
-  // reads without popping, and - unlike every other operator here - silently
-  // does nothing on a short stack rather than throwing. That is TODO.md §1.1,
-  // pinned by errors.test.ts; do not "fix" it by reaching for peekValue.
-  const pointer: number | undefined = memory.stack[memory.stack.length - 1];
-  const index: number | undefined = memory.stack[memory.stack.length - 2];
-  if (index !== undefined && pointer !== undefined) {
-    if (index < 0 || index >= memory.peek(pointer)) {
-      // TODO: make range check a runtime option
-      throw new MachineError(
-        `Array index out of range (${index}, ${memory.peek(pointer)}).`,
-      );
-    }
+export const test = (cycle: Cycle): void => {
+  // reads without popping: the compiler goes on to reuse both values
+  const pointer = memory.peekValue();
+  const index = memory.peekValue(1);
+  // `rangeCheckArrays` off means no check at all - the index is used as given,
+  // and whatever happens, happens. That is the point of the option: it lets an
+  // advanced student deliberately try to hack the machine. The operand reads
+  // above are not part of it, so a program that never pushed them is still
+  // wrong either way.
+  if (!cycle.options.rangeCheckArrays) {
+    return;
+  }
+  const length = memory.peek(pointer);
+  if (index < 0 || index >= length) {
+    throw new MachineError(`Array index out of range (${index}, ${length}).`);
   }
 };
 
@@ -140,7 +142,15 @@ export const memc = (cycle: Cycle): void => {
   const address = cycle.operand();
   const size = cycle.operand();
   const base = memory.popMemoryStack();
-  if (base + size > cycle.options.stackSize) {
+  // `preventStackCollision` off means the frame is allocated anyway, and the
+  // memory stack grows into the heap - where `heapBase` is fixed for the run
+  // at `stackSize - 1`, and every heap pointer already handed out sits above
+  // it. Deliberate rope, the same decision as `rangeCheckArrays` above: a
+  // student who turns this off is trying to hack the machine, and gets to.
+  if (
+    cycle.options.preventStackCollision &&
+    base + size > cycle.options.stackSize
+  ) {
     throw new MachineError(
       "Memory stack has overflowed into memory heap. Probable cause is unterminated recursion.",
     );
