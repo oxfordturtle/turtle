@@ -9,13 +9,15 @@ import { type Subroutine } from "../../definitions/routines/subroutine.ts";
 import makeWhileStatement, {
   type WhileStatement,
 } from "../../definitions/statements/whileStatement.ts";
+import type { CFamilyDialect } from "../dialect.ts";
 import parseBlock from "./block.ts";
 
-const parseWhileStatement = (
+const parseWhileStatement = <R extends Program | Subroutine>(
   whileLexeme: KeywordLexeme,
   lexemes: Lexemes,
   context: ParserContext,
-  routine: Program | Subroutine,
+  routine: R,
+  dialect: CFamilyDialect<R>,
 ): WhileStatement => {
   lexemes.expectAfter(
     "(",
@@ -44,7 +46,9 @@ const parseWhileStatement = (
   );
 
   whileStatement.statements.push(
-    ...context.inLoop(routine, () => parseBlock(lexemes, context, routine)),
+    ...context.inLoop(routine, () =>
+      parseBlock(lexemes, context, routine, dialect),
+    ),
   );
 
   return whileStatement;

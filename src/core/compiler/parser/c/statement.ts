@@ -1,5 +1,11 @@
 import { type Lexeme } from "../../lexer/lexeme.ts";
 import { CompilerError } from "../../tools/error.ts";
+import type { CFamilyDialect } from "../cFamily/dialect.ts";
+import parseDoStatement from "../cFamily/statements/doStatement.ts";
+import eosCheck from "../cFamily/statements/eosCheck.ts";
+import parseIfStatement from "../cFamily/statements/ifStatement.ts";
+import parseReturnStatement from "../cFamily/statements/returnStatement.ts";
+import parseWhileStatement from "../cFamily/statements/whileStatement.ts";
 import type { ParserContext } from "../definitions/context.ts";
 import type { Lexemes } from "../definitions/lexemes.ts";
 import { type Subroutine } from "../definitions/routines/subroutine.ts";
@@ -7,13 +13,8 @@ import { type Statement } from "../definitions/statement.ts";
 import makeBreakStatement from "../definitions/statements/breakStatement.ts";
 import makeContinueStatement from "../definitions/statements/continueStatement.ts";
 import makePassStatement from "../definitions/statements/passStatement.ts";
-import parseDoStatement from "./statements/doStatement.ts";
-import eosCheck from "./statements/eosCheck.ts";
 import parseForStatement from "./statements/forStatement.ts";
-import parseIfStatement from "./statements/ifStatement.ts";
-import parseReturnStatement from "./statements/returnStatement.ts";
 import parseSimpleStatement from "./statements/simpleStatement.ts";
-import parseWhileStatement from "./statements/whileStatement.ts";
 
 const parseStatement = (
   lexeme: Lexeme,
@@ -44,12 +45,18 @@ const parseStatement = (
 
         case "return":
           lexemes.advance();
-          statement = parseReturnStatement(lexeme, lexemes, routine);
+          statement = parseReturnStatement(lexeme, lexemes, routine, dialect);
           break;
 
         case "if":
           lexemes.advance();
-          statement = parseIfStatement(lexeme, lexemes, context, routine);
+          statement = parseIfStatement(
+            lexeme,
+            lexemes,
+            context,
+            routine,
+            dialect,
+          );
           break;
 
         case "else":
@@ -60,17 +67,35 @@ const parseStatement = (
 
         case "for":
           lexemes.advance();
-          statement = parseForStatement(lexeme, lexemes, context, routine);
+          statement = parseForStatement(
+            lexeme,
+            lexemes,
+            context,
+            routine,
+            dialect,
+          );
           break;
 
         case "do":
           lexemes.advance();
-          statement = parseDoStatement(lexeme, lexemes, context, routine);
+          statement = parseDoStatement(
+            lexeme,
+            lexemes,
+            context,
+            routine,
+            dialect,
+          );
           break;
 
         case "while":
           lexemes.advance();
-          statement = parseWhileStatement(lexeme, lexemes, context, routine);
+          statement = parseWhileStatement(
+            lexeme,
+            lexemes,
+            context,
+            routine,
+            dialect,
+          );
           break;
 
         case "break":
@@ -113,5 +138,8 @@ const parseStatement = (
 
   return statement;
 };
+
+/** what the shared C-family statement parsers need to know about C */
+const dialect: CFamilyDialect<Subroutine> = { eosCheck, parseStatement };
 
 export default parseStatement;

@@ -1,5 +1,7 @@
 import { type KeywordLexeme } from "../../../lexer/lexeme.ts";
 import { CompilerError } from "../../../tools/error.ts";
+import type { CFamilyDialect } from "../../cFamily/dialect.ts";
+import parseBlock from "../../cFamily/statements/block.ts";
 import parseExpression from "../../common/expression.ts";
 import typeCheck from "../../common/typeCheck.ts";
 import type { ParserContext } from "../../definitions/context.ts";
@@ -9,7 +11,6 @@ import { type Subroutine } from "../../definitions/routines/subroutine.ts";
 import makeForStatement, {
   type ForStatement,
 } from "../../definitions/statements/forStatement.ts";
-import parseBlock from "./block.ts";
 import parseSimpleStatement from "./simpleStatement.ts";
 
 const parseForStatement = (
@@ -17,6 +18,7 @@ const parseForStatement = (
   lexemes: Lexemes,
   context: ParserContext,
   routine: Program | Subroutine,
+  dialect: CFamilyDialect<Program | Subroutine>,
 ): ForStatement => {
   lexemes.expectAfter("(", '"for" must be followed by an opening bracket "(".');
 
@@ -115,7 +117,9 @@ const parseForStatement = (
   );
 
   forStatement.statements.push(
-    ...context.inLoop(routine, () => parseBlock(lexemes, context, routine)),
+    ...context.inLoop(routine, () =>
+      parseBlock(lexemes, context, routine, dialect),
+    ),
   );
 
   return forStatement;

@@ -12,6 +12,7 @@ import makeVariableAssignment, {
 } from "../../definitions/statements/variableAssignment.ts";
 import { isArray, type Variable } from "../../definitions/variable.ts";
 
+/** Shared by C and Java, which assign in exactly the same way. */
 const parseVariableAssignment = (
   variableLexeme: IdentifierLexeme,
   lexemes: Lexemes,

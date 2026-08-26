@@ -9,13 +9,15 @@ import { type Subroutine } from "../../definitions/routines/subroutine.ts";
 import makeIfStatement, {
   type IfStatement,
 } from "../../definitions/statements/ifStatement.ts";
+import type { CFamilyDialect } from "../dialect.ts";
 import parseBlock from "./block.ts";
 
-const parseIfStatement = (
+const parseIfStatement = <R extends Program | Subroutine>(
   ifLexeme: KeywordLexeme,
   lexemes: Lexemes,
   context: ParserContext,
-  routine: Program | Subroutine,
+  routine: R,
+  dialect: CFamilyDialect<R>,
 ): IfStatement => {
   lexemes.expectAfter("(", '"if" must be followed by an opening bracket "(".');
 
@@ -40,7 +42,9 @@ const parseIfStatement = (
     '"if (...)" must be followed by an opening curly bracket "{".',
   );
 
-  ifStatement.ifStatements.push(...parseBlock(lexemes, context, routine));
+  ifStatement.ifStatements.push(
+    ...parseBlock(lexemes, context, routine, dialect),
+  );
 
   if (lexemes.peek()?.content === "else") {
     lexemes.advance();
@@ -50,7 +54,9 @@ const parseIfStatement = (
       '"else" must be followed by an opening bracket "{".',
     );
 
-    ifStatement.elseStatements.push(...parseBlock(lexemes, context, routine));
+    ifStatement.elseStatements.push(
+      ...parseBlock(lexemes, context, routine, dialect),
+    );
   }
 
   return ifStatement;

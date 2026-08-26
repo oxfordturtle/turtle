@@ -1,26 +1,33 @@
 import { type Lexeme } from "../../../lexer/lexeme.ts";
 import type { ParserContext } from "../../definitions/context.ts";
 import type { Lexemes } from "../../definitions/lexemes.ts";
+import type { Program } from "../../definitions/routines/program.ts";
 import { type Subroutine } from "../../definitions/routines/subroutine.ts";
 import { type Statement } from "../../definitions/statement.ts";
-import parseStatement from "../statement.ts";
+import type { CFamilyDialect } from "../dialect.ts";
 
 /**
- * The closing-bracket check is needed even though java/program.ts guarantees
- * the last lexeme is "}": that covers one unclosed block, but two means the
- * inner one consumes the class's own "}" and the outer loop runs out of
- * lexemes.
+ * The closing-bracket check is needed even where the program's last lexeme is
+ * guaranteed to be "}" (as java/program.ts guarantees): that covers one
+ * unclosed block, but two means the inner one consumes the outermost "}" and
+ * the loop below runs out of lexemes.
  */
-const parseBlock = (
+const parseBlock = <R extends Program | Subroutine>(
   lexemes: Lexemes,
   context: ParserContext,
-  routine: Subroutine,
+  routine: R,
+  dialect: CFamilyDialect<R>,
 ): Statement[] => {
   const statements: Statement[] = [];
 
   while (!lexemes.atEnd() && lexemes.peek()?.content !== "}") {
     statements.push(
-      parseStatement(lexemes.peek() as Lexeme, lexemes, context, routine),
+      dialect.parseStatement(
+        lexemes.peek() as Lexeme,
+        lexemes,
+        context,
+        routine,
+      ),
     );
   }
 

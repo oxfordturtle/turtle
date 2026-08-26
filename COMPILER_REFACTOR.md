@@ -10,10 +10,12 @@
 | [5](#phase-5--parse-time-state-off-the-ast)    | Parse-time state off the AST | 4          | Medium    |
 | [6](#phase-6--the-circular-references)         | The circular references      | 5          | Medium    |
 | [7](#phase-7--the-c-family-parser-duplication) | C-family parser duplication  | 4          | **Large** |
+| [8](#phase-8--the-language-capability-table)   | Language capability table    | —          | Medium    |
 
 Phases 1, 2 and 3 are independent of each other and of everything else, and
 each is a self-contained win. **Do those first.** Phases 4–7 are the structural
-work and should go in order.
+work and should go in order. Phase 8 is independent of all of them and can be
+picked up at any time.
 
 ---
 
@@ -771,7 +773,8 @@ gets materially harder to read. I would not pay that for serialisation alone.
 
 ## Phase 7 — The C-family parser duplication
 
-**Size: Large. Depends on: 4.**
+**Size: Large. Depends on: 4. — DONE**; see "As landed" at the end of this
+section.
 
 `parser/c/`, `parser/java/` and `parser/typescript/` are **3,539 lines** between
 them, and large parts are copies. Diffing file by file, ignoring whitespace:
@@ -815,6 +818,327 @@ Pascal, BASIC and Python are genuinely different languages here and should stay
 separate. Python especially — as `src/README.md` notes, most of the compiler's
 real complexity is Python's.
 
+### As landed
+
+`parser/cFamily/` now holds nine files. The parameterisation is a `dialect`
+argument threaded through the shared parsers, declared in `cFamily/dialect.ts`:
+
+```ts
+interface StatementEnd {
+  eosCheck(lexemes: Lexemes): void;
+}
+
+interface CFamilyDialect<R extends Program | Subroutine> extends StatementEnd {
+  parseStatement(lexeme, lexemes, context, routine: R): Statement;
+}
+```
+
+Two things only. `eosCheck` is the semicolon-versus-newline split — C and Java
+share `cFamily/statements/eosCheck.ts`, TypeScript keeps its own. Everything
+else the plan listed as "the handful of things that differ" turned out not to
+need a dialect entry at all:
+
+- **`Program | Subroutine` vs `Subroutine`** became the type parameter `R`
+  rather than a value. Each shared parser is generic in it and infers it from
+  the `routine` it is passed, so C and Java stay strictly typed to `Subroutine`
+  and TypeScript keeps its top-level statements, with no widening and no
+  bivariance escape hatch.
+- **`int` vs `number` and whether `div` is a keyword** never reached these
+  files — they live in `type.ts` and the tokenizer, both untouched.
+
+Each language builds its dialect at the foot of its own `statement.ts`, right
+after the `parseStatement` it names:
+
+```ts
+const dialect: CFamilyDialect<Subroutine> = { eosCheck, parseStatement };
+```
+
+That placement is deliberate: a separate `c/dialect.ts` would have to import
+`c/statement.ts` while `c/statement.ts` imported it back, and the object
+literal would evaluate `parseStatement` in its temporal dead zone. Declaring it
+in the same file removes the cycle rather than tiptoeing around it. `cFamily/`
+imports nothing from `c/`, `java/` or `typescript/` — the dependency runs one
+way only, which is what Phase 6 will want.
+
+#### What moved
+
+| File                            | Now                                            |
+| ------------------------------- | ---------------------------------------------- |
+| `statements/eosCheck.ts`        | `cFamily/` (C, Java); TypeScript keeps its own |
+| `statements/block.ts`           | `cFamily/` (all three)                         |
+| `statements/ifStatement.ts`     | `cFamily/` (all three)                         |
+| `statements/whileStatement.ts`  | `cFamily/` (all three)                         |
+| `statements/doStatement.ts`     | `cFamily/` (all three)                         |
+| `statements/returnStatement.ts` | `cFamily/` (all three)                         |
+| `identifier.ts`                 | `cFamily/` (all three)                         |
+| `statements/simpleStatement.ts` | `cFamily/` (C, Java)                           |
+| `statements/variableAssignment` | `cFamily/` (C, Java)                           |
+
+The last two are the plan's "0 lines of difference between C and Java" rows.
+`variableAssignment.ts` needed no parameterisation whatever — it imports only
+`common/` and `definitions/`. `simpleStatement.ts` did: though textually
+identical, C's and Java's copies reach for their own `constant.ts` and
+`variable.ts`, which are genuinely different (C's array brackets follow the
+variable name, Java's belong to the type). It is therefore the one shared
+parser exported as a factory — `makeParseSimpleStatement({ constant, variable })`
+— so that `c/statements/simpleStatement.ts` and its Java twin are five lines
+each and every call site is unchanged.
+
+Stopped where the plan said to stop: `type.ts` and `forStatement.ts` stay per
+language. `forStatement.ts` now takes the dialect so it can call the shared
+`parseBlock`, but its own body — three clauses in C and Java, different error
+messages and an explicit `expectAfter(";")` in TypeScript — is real divergence.
+TypeScript's `simpleStatement.ts` and `variableAssignment.ts` likewise stay:
+its `const`/`var` hoisting and its extra `":"`/`"["` diagnostics are its own.
+
+#### Three behavioural near-misses, checked
+
+- **C's `if` used `expect`, Java's and TypeScript's `expectAfter`.** C passed
+  `ifLexeme` as `expect`'s third argument to blame the `if` itself. But
+  `parseIfStatement` is only ever called after `lexemes.advance()` past that
+  `if`, so `expectAfter`'s `peek(-1)` **is** `ifLexeme`. Merged to
+  `expectAfter`; the error still points at the `if` (verified: `("if", line 2,
+index 1)` for `void main () {\nif true {\n}\n}`, as before).
+- **`doStatement` synthesised its `!` with `operatorLexeme(notToken, "C")`
+  — in Java too.** The shared version passes `routine.language`, which is
+  finally correct for Java, and is a no-op: the `language` argument only
+  changes the subtype of `=`, `and` and `or`, never `!`, which is `not` in
+  every language.
+- **C's `variableAssignment` blamed `assignmentLexeme` where Java blamed
+  `lexemes.peek(-1)`.** After the `advance()` past `=`, those are the same
+  lexeme. Kept C's spelling, which says so.
+
+#### The coverage directives
+
+Nine `deno-coverage-ignore-start` blocks went, unreplaced. Every one was Java's
+— an `atEnd()` or `!lexeme` guard that Java's `program.ts` makes unreachable by
+guaranteeing the final lexeme is `"}"`, but which C, having no such guarantee,
+reaches and tests. Once the two share a file the branch is simply covered.
+`java/type.ts`, `java/constant.ts`, `java/subroutine.ts`, `java/program.ts` and
+`java/statements/forStatement.ts` keep theirs, being files that did not merge.
+
+The one directive added is `deno-coverage-ignore-file` on `cFamily/dialect.ts`,
+which declares types and nothing else.
+
+#### Verified
+
+- `deno task test` — **100 tests / 3,155 steps**, unchanged from before.
+- `deno task test:examples` — **7 tests / 503 steps**, including the
+  determinism sentinel. No snapshot moved.
+- `deno task coverage:check` — **100% on lines, branches and functions**,
+  enforced, first run.
+- `deno check src/`, `deno task lint`, `deno task fmt` — clean.
+
+| Directory     | before    | after     |
+| ------------- | --------- | --------- |
+| `c/`          | 1,029     | 609       |
+| `java/`       | 1,197     | 743       |
+| `typescript/` | 1,138     | 882       |
+| `cFamily/`    | —         | 569       |
+| **total**     | **3,364** | **2,803** |
+
+561 lines gone, 17%. (The 3,539 in the table above was measured before Phases 4
+and 5 shortened these files.) Corpus parse time is unmoved — 52.7 ms before,
+52.6 ms after — which is the expected answer for one extra property lookup per
+statement.
+
+---
+
+## Phase 8 — The language capability table
+
+**Size: Medium. Depends on: —.**
+
+Six languages, and the differences between them are currently expressed three
+different ways: as data in a `Record<Language, …>` table, as one bare array
+literal, and as ninety-odd inline conditionals. Only the first scales.
+
+| Stage     | Lines      | `language ===` / `Record<Language>` sites |
+| --------- | ---------- | ----------------------------------------- |
+| tokenizer | 687        | 12                                        |
+| lexer     | 655        | 12                                        |
+| parser    | 11,222     | 45                                        |
+| encoder   | 2,471      | 12                                        |
+| analyser  | 137        | 3                                         |
+| formatter | 173        | 8                                         |
+| **total** | **15,345** | **92**                                    |
+
+The tables that already work, and are the model for this phase:
+
+- `tokenizer/tokenize.ts` — `COMMENT_STARTS`, `SYMBOLS`, `DOUBLES_QUOTES`,
+  `LITERALS`, `TURTLES` and `IDENTIFIERS`, all `Record<Language, …>`, with a
+  `byLanguage` helper to build them.
+- `parser/definitions/operators.ts` — its `precedence` table, a
+  `Record<Language, …>` mapping six languages onto three ladders.
+- `constants/languages.ts` — `extension` and `trueValue`.
+- `constants/commands.ts` — 1,642 lines covering all six languages through one
+  `names: Record<Language, string | null>` field.
+
+Everything below is the same kind of fact, written the wrong way.
+
+### The evidence
+
+One capability — **Pascal's case-insensitive identifiers** — is spelled out
+**20 times, in 7 files, across 4 of the 5 stages**:
+
+| File                             | Sites |
+| -------------------------------- | ----- |
+| `parser/common/find.ts`          | 9     |
+| `tokenizer/tokenize.ts`          | 3     |
+| `lexer/lexeme.ts`                | 3     |
+| `analyser/usageExpression.ts`    | 2     |
+| `analyser/usageCategory.ts`      | 1     |
+| `parser/definitions/routine.ts`  | 1     |
+| `parser/definitions/variable.ts` | 1     |
+
+Every one of them is either `language === "Pascal" ? x.toLowerCase() : x` or the
+`"iy"`-versus-`"y"` regex flag. Nothing in the code says they are one fact, so
+a seventh language that folds case means finding all twenty by grep.
+
+The other clusters have the same shape:
+
+| Capability                            | Languages       | Sites                    |
+| ------------------------------------- | --------------- | ------------------------ |
+| Case-insensitive identifiers          | Pascal          | 20                       |
+| Strings indexed from 1, not 0         | Pascal          | 5 (all encoder)          |
+| Has a character type                  | C, Java, Pascal | 4 — and it has a name    |
+| `not` is logical, not bitwise         | C, Python, TS   | 1 (encoder)              |
+| Booleans and integers interconvert    | Python, TS      | 2 (`typeCheck.ts`)       |
+| `main` is the entry point             | C, Java         | 2 (parser + encoder)     |
+| Functions may be called as statements | Python, TS      | 1 (`procedureCall.ts`)   |
+| Reference parameters                  | BASIC, Pascal   | 2 (both `subroutine.ts`) |
+| `=` is comparison, not assignment     | BASIC, Pascal   | 1 (`lexeme.ts`)          |
+| `true` is 1, not −1                   | Python, TS      | already a table          |
+
+The character-type entry is the telling one. It is the only capability here
+that has ever been _named_ — `languagesWithCharacterType = ["C", "Java",
+"Pascal"]` — and it is a bare `const` inside a function's file,
+[parser/definitions/expression.ts:32](src/core/compiler/parser/definitions/expression.ts#L32),
+which two other sites refer to **by comment rather than by import**
+([typescript/type.ts:88](src/core/compiler/parser/typescript/type.ts#L88),
+[definitions/statements/variableAssignment.ts:51](src/core/compiler/parser/definitions/statements/variableAssignment.ts#L51)).
+Someone reached for exactly the right abstraction and had nowhere to put it.
+This phase is giving it somewhere.
+
+### The change
+
+Extend [src/core/constants/languages.ts](src/core/constants/languages.ts) —
+which already holds `extension` and `trueValue`, and is already imported
+everywhere `Language` is — with one capability record:
+
+```ts
+export interface LanguageTraits {
+  readonly caseInsensitive: boolean; // Pascal
+  readonly characterType: boolean; // C, Java, Pascal
+  readonly stringIndexBase: 0 | 1; // Pascal is 1
+  readonly entryPoint: "main" | "top-level";
+  readonly statementCalls: "any" | "procedures-only";
+  readonly referenceParameters: boolean; // BASIC, Pascal
+  readonly booleanIsInteger: boolean; // Python, TypeScript
+  readonly arrays: "fixed" | "dynamic"; // see below
+}
+
+export const traits: Record<Language, LanguageTraits> = { ... };
+```
+
+Then replace the conditionals, one capability at a time. Most become a field
+read at the site. The twenty case-folding sites are worth one helper —
+`foldCase(language, name)`, reading `traits[language].caseInsensitive` — since
+they are all the same expression rather than the same fact used differently.
+
+**Strictly behaviour-preserving**, and cheaply proved: no pcode changes at all,
+so the 503 example snapshots are the whole safety net, and each capability can
+land as its own commit.
+
+### Two axes, not a family tree
+
+The temptation is to declare a family hierarchy — Pascal-like, C-like,
+Python-like — and hang every difference off it. The data says no.
+
+**Syntax** clusters C, Java and TypeScript tightly; that is Phase 7's evidence,
+0–19 lines of difference per file between C and Java. It does _not_ cluster
+Pascal with BASIC. Diffing those two the same way:
+
+| File                            | Pascal ~ BASIC | (C ~ Java, for scale) |
+| ------------------------------- | -------------- | --------------------- |
+| `statements/whileStatement.ts`  | 32 of 58       | 4                     |
+| `statements/ifStatement.ts`     | 72 of 78       | 6                     |
+| `statements/simpleStatement.ts` | 41 of 42       | 0                     |
+| `statements/forStatement.ts`    | 164            | 12                    |
+| `subroutine.ts`                 | 257            | 19                    |
+
+They share a precedence ladder and nothing else structural. There is no
+`parser/pascalFamily/` to be had.
+
+**Semantics** cuts across syntax rather than following it. TypeScript is
+syntactically C-family and semantically heading for Python's model (below).
+Pascal and BASIC pair on reference parameters and on `=`-as-comparison, but not
+on case sensitivity or string indexing. C shares `trueValue` with Pascal and
+`not`-is-logical with Python.
+
+So: two independent tables, not one tree. `operators.ts` is the syntax-axis
+table and is already right. `traits` is the semantics-axis table. A language is
+a row in each, and the two rows need not agree.
+
+If Phase 7 lands first, its `CFamilyDialect` record is a third, narrower
+syntax-axis table. Keep it to syntax — the routine type, the keyword spellings,
+the `parseStatement` hook — and let anything semantic go to `traits` instead.
+
+### The list work is coming
+
+TypeScript's array model today is a fixed-size array with a compile-time
+constant bound — `var x: number[10]`, parsed in
+[typescript/type.ts](src/core/compiler/parser/typescript/type.ts#L70) — which is
+neither TypeScript syntax nor JavaScript semantics. It is a **stop-gap**, put in
+before Python's list machinery existed. The intention is for TypeScript to
+follow Python, so that arrays behave like real JS arrays, and for Java to gain
+lists on the same machinery.
+
+That is later work and out of scope here. It bears on this phase in one way:
+it is precisely the kind of change the table exists for. `isList` currently
+appears 25 times in `parser/python/` and **zero** times in the other five
+language directories, while `parser/definitions/variable.ts` already carries the
+entire vocabulary — `isList`, `listElementKind`, `isListOfLists`,
+`innerListElementKind` — for Python's sake alone. The machine's list operators
+are generic in mechanism and Python-flavoured in only a few behaviours
+(`repr()`-style output, `insert` clamping, negative `n` in `list * n`).
+
+So when TypeScript and Java move, "which languages have dynamic lists?" wants
+one answer in one place, not a fresh scattering of `language === "Python" ||
+language === "TypeScript"`. Include `arrays: "fixed" | "dynamic"` in the record
+now, even though it reads `"fixed"` for five of six languages on the day it
+lands. It is the field that is about to change.
+
+### What not to put in the table
+
+Not every conditional is a capability. `parser/common/arguments.ts`
+special-cases Python's `input` and `print` by name; `factor.ts` carries Python's
+slice syntax at four sites and BASIC's `(`/`)` array brackets at four more;
+`tokenize.ts:172` handles Pascal's block comments. Those are syntax, they belong
+to their language, and a boolean would only obscure them.
+
+The test is whether the fact has a name a teacher would recognise. "Pascal isn't
+case sensitive" does. "Python's `print` takes a `sep` argument" doesn't.
+
+About a third of the 92 sites are real capabilities. Leave the rest alone.
+
+### Order of work
+
+Easiest first, each its own commit, snapshots green at each step:
+
+1. **`characterType`** — move `languagesWithCharacterType` into the table and
+   import it at the four sites. Smallest, and it ends the
+   referenced-by-comment problem.
+2. **`caseInsensitive`** — the 20 sites, via `foldCase`. The largest win and
+   entirely mechanical.
+3. **`stringIndexBase`** — the 5 encoder sites.
+4. **`entryPoint`, `referenceParameters`, `statementCalls`,
+   `booleanIsInteger`** — one to three sites each.
+5. **`arrays`** — declare the field, wire nothing to it.
+
+Stop there. `not`-is-logical sits next to the bitwise-precedence limitation
+pinned in [TODO.md](TODO.md) §1.1, and should be moved only alongside that
+decision rather than in passing.
+
 ---
 
 ## Summary
@@ -829,6 +1153,7 @@ real complexity is Python's.
 | 5 Parse-time state  | Medium | `encode()` stops mutating its input; AST becomes a value                                 |
 | 6 Circular refs     | Medium | JSON — _if_ Phase 6's opening question has an answer                                     |
 | 7 C-family parsers  | Large  | ~1,000 lines of copy-paste                                                               |
+| 8 Capability table  | Medium | 20 copies of one fact become one field; the seam the list work needs                     |
 
 Phases 1 and 2 are eight lines of real change between them, both verified
 against the full suite and the 503-program snapshots, and together they take the

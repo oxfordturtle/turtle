@@ -7,7 +7,7 @@ import makeSubroutine, {
   type Subroutine,
 } from "../definitions/routines/subroutine.ts";
 import makeVariable, { type Variable } from "../definitions/variable.ts";
-import identifier from "./identifier.ts";
+import identifier from "../cFamily/identifier.ts";
 import type from "./type.ts";
 import variable from "./variable.ts";
 

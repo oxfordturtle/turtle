@@ -5,7 +5,7 @@ import type { Routine } from "../definitions/routine.ts";
 import evaluate from "../common/evaluate.ts";
 import parseExpression from "../common/expression.ts";
 import typeCheck from "../common/typeCheck.ts";
-import identifier from "./identifier.ts";
+import identifier from "../cFamily/identifier.ts";
 import type from "./type.ts";
 
 export default (lexemes: Lexemes, routine: Routine): Constant => {

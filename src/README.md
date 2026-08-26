@@ -70,6 +70,13 @@ passing silently. See `TODO.md` §3.2.
   language's syntax needs that no other shares.
 - `parser/common/` — the machinery they share: expressions, factors, arguments,
   type checking, name resolution.
+- `parser/cFamily/` — what C, Java and TypeScript share on top of that: the
+  brace-and-semicolon statement parsers (`block`, `if`, `while`, `do`,
+  `return`), which the three used to hold near-identical copies of. Each
+  language passes a `CFamilyDialect` (see `cFamily/dialect.ts`) saying how it
+  ends a statement and which statement parser a block is a sequence of; the
+  type parameter on the dialect is what distinguishes TypeScript, which allows
+  statements at the top level, from C and Java, which do not.
 - `parser/definitions/` — the AST node types themselves, plus the per-language
   operator precedence ladders.
 

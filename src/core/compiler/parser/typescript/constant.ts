@@ -5,7 +5,7 @@ import typeCheck from "../common/typeCheck.ts";
 import constant, { type Constant } from "../definitions/constant.ts";
 import type { Lexemes } from "../definitions/lexemes.ts";
 import type { Routine } from "../definitions/routine.ts";
-import identifier from "./identifier.ts";
+import identifier from "../cFamily/identifier.ts";
 import type from "./type.ts";
 
 export default (

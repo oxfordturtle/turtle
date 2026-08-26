@@ -3,10 +3,16 @@ import * as find from "../common/find.ts";
 import type { Lexemes } from "../definitions/lexemes.ts";
 import type { Routine } from "../definitions/routine.ts";
 
+/**
+ * `duplicateCheck` is TypeScript's: it hoists its declarations on a first
+ * pass, so the second pass sees each of them again and must not object to the
+ * name it has already recorded. C and Java are single-pass here and leave it
+ * alone.
+ */
 export default function identifier(
   lexemes: Lexemes,
   routine: Routine,
-  duplicateCheck: boolean,
+  duplicateCheck = true,
 ): string {
   const identifier = lexemes.peek();
 
@@ -28,14 +34,11 @@ export default function identifier(
     );
   }
 
-  if (duplicateCheck) {
-    // this should be bypassed for hoisted variables on the second pass
-    if (find.isDuplicate(routine, identifier.value)) {
-      throw new CompilerError(
-        "{lex} is already defined in the current scope.",
-        identifier,
-      );
-    }
+  if (duplicateCheck && find.isDuplicate(routine, identifier.value)) {
+    throw new CompilerError(
+      "{lex} is already defined in the current scope.",
+      identifier,
+    );
   }
 
   lexemes.advance();
