@@ -6,9 +6,7 @@ import {
 
 export function load<P extends Property>(property: P): PropertyValues[P] {
   const fromStorage = sessionStorage.getItem(property);
-  return fromStorage !== null
-    ? JSON.parse(fromStorage)
-    : (defaults[property] as PropertyValues[P]);
+  return fromStorage !== null ? JSON.parse(fromStorage) : defaults[property];
 }
 
 export function save<P extends Property>(
