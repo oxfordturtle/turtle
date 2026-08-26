@@ -21,7 +21,7 @@ console, or anything about how the page loads. `test:ui:browser` needs
 `deno task build` to have run (it serves `assets/build/index.js`, and says so if
 it's missing).
 
-`.github/workflows/ci.yml` runs `fmt:check`, `coverage:check`, `test:examples`
+`.github/workflows/ci.yml` runs `fmt:check`, `lint`, `coverage:check`, `test:examples`
 and, after a `build`, `test:ui:browser` - so CI runs everything, and
 `coverage:check` is what stands in for the plain `test` task there.
 
@@ -257,4 +257,4 @@ in is decided by what it needs, not by what it is about:
   pinned by `test/core/compiler/formatter.test.ts`, but still a stub: nine
   branches return the literal `"TODO"` and `formatProgram` returns
   `"program"`. The pins assert exactly that, marked `[known limitation]`, so
-  implementing it trips them rather than passing silently. See `TODO.md` §2.2.
+  implementing it trips them rather than passing silently. See `TODO.md` §3.2.

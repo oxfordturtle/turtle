@@ -32,9 +32,6 @@ import { afterEach, beforeEach, describe, it } from "@std/testing/bdd";
 // always a call into the file memory, the settings or the machine, and is
 // asserted there rather than on the link that was clicked.
 
-// deno-lint-ignore no-explicit-any
-const system = (): any => q("turtle-system");
-
 const openMenu = (menu: string): Promise<void> => click(q(`${menu} > div > a`));
 
 /** Clicks the command whose label contains `label`, in an open submenu. */
@@ -162,7 +159,7 @@ describe("the Edit menu's commands", () => {
   });
 
   // Undo, Redo, Cut, Copy and Paste have never done anything in the browser -
-  // see src/islands/turtle-system/editing.ts and TODO.md 2.3. The keyboard
+  // see src/islands/turtle-system/editing.ts and TODO.md 3.3. The keyboard
   // shortcuts work on the textarea, so what the menu says is exactly that.
   it("sends the user to the keyboard shortcut for the five editing commands", async () => {
     const captured = captureErrors();
@@ -226,7 +223,7 @@ describe("the Run menu's commands", () => {
 });
 
 describe("the Options menu's commands", () => {
-  // Blocked on an account system that doesn't exist - TODO.md 2.4.
+  // Blocked on an account system that doesn't exist - TODO.md 3.4.
   it("reports that settings cannot be saved yet", async () => {
     const captured = captureErrors();
     await run("options-menu", "Save current settings");

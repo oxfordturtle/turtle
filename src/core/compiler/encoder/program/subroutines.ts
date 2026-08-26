@@ -98,7 +98,7 @@ const subroutineStartCode = (
     if (parameters.length > 0) {
       pcode.push([]);
       for (const parameter of parameters.reverse()) {
-        const lastStartLine = pcode[pcode.length - 1];
+        const lastStartLine = pcode[pcode.length - 1]!; // pushed just above
         if (isArray(parameter) && !parameter.isReferenceParameter) {
           // TODO: copy the array
         } else if (

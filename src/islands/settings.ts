@@ -1,7 +1,11 @@
 /// <reference lib="dom" />
 import { store } from "@merivale/womble";
 import { type Language, languages } from "@/core/constants.ts";
-import { defaults, type Property } from "@/client/constants/properties.ts";
+import {
+  defaults,
+  type Property,
+  type PropertyValues,
+} from "@/client/constants/properties.ts";
 import { load, save } from "@/client/state/storage.ts";
 import { showError, SystemError } from "@/client/tools/error.ts";
 import { requestCloseMenu } from "./turtle-system/commands.ts";
@@ -67,17 +71,7 @@ export const settingNames = [
 
 export type SettingName = (typeof settingNames)[number];
 
-// `defaults` is `as const`, so its literal types describe a *default* rather
-// than a *setting*: `language` would be `"Python"` rather than `string`.
-type Widen<T> = T extends boolean
-  ? boolean
-  : T extends number
-    ? number
-    : T extends string
-      ? string
-      : T;
-
-export type Settings = { [K in SettingName]: Widen<(typeof defaults)[K]> };
+export type Settings = Pick<PropertyValues, SettingName>;
 
 /** The annotation rather than a cast is the point: a name in `settingNames` without a default is a type error here. */
 export const defaultSettings: Settings = defaults;
@@ -120,7 +114,7 @@ export const settingsStore = store("settings", {
       _state,
       { name, value }: { name: SettingName; value: Settings[SettingName] },
     ) => {
-      save(name as Property, value);
+      save(name, value);
       return { [name]: value } as Partial<Settings>;
     },
 
@@ -134,7 +128,7 @@ export const settingsStore = store("settings", {
       for (const name of settingNames) {
         if (name === "savedSettingsHaveBeenLoaded") continue;
         const value = defaultSettings[name];
-        save(name as Property, value);
+        save(name, value);
         write(next, name, value);
       }
       return next;
@@ -164,7 +158,7 @@ export const getSettings = (): Settings =>
 export const initialiseSettings = (): void => {
   // read before `hydrate` writes a `?l=` language over it: the file memory was
   // restored from this value, so a difference is exactly when it must be told
-  const restored = load("language") as string;
+  const restored = load("language");
   settingsStore.dispatch("hydrate");
   const { language } = getSettings();
   if (language !== restored) applyLanguage(language as Language);
@@ -221,7 +215,7 @@ export const loadSavedSettings = (): void => {
  * language-visibility pass both follow.
  */
 export const syncLanguage = (): void => {
-  const language = load("language") as string;
+  const language = load("language");
   if (language === getSettings().language) return;
   settingsStore.dispatch("adopt", language);
 };
@@ -284,7 +278,7 @@ const readSettings = (): Settings => {
   if (typeof document === "undefined") return settings;
   // deno-coverage-ignore-stop
   for (const name of settingNames) {
-    write(settings, name, load(name as Property));
+    write(settings, name, load(name));
   }
   // both are persisted but force-reset on every page load: the "save settings"
   // feature needs a login that doesn't exist yet

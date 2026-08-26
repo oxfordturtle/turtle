@@ -281,7 +281,7 @@ describe("opening a file's content", () => {
     assertEquals(q("language-select select").value, "Pascal");
   });
 
-  // [known limitation] TODO.md 2.6: .tmj (pcode as JSON) and .tmb (pcode as
+  // [known limitation] TODO.md 3.6: .tmj (pcode as JSON) and .tmb (pcode as
   // binary) are both still to do, so they fall through to the same rejection
   // as an unknown extension.
   it("rejects a file type it cannot read, .tmj and .tmb included", () => {
@@ -316,7 +316,7 @@ describe("opening a .tmx/.tgx export", () => {
     assertEquals(program.getFilename(), "saved");
     assertEquals(program.getCode(), "x% = 1");
     assertEquals(program.getPcode(), [[1, 2, 3]]);
-    assertEquals(program.getUsage()[0].category, "Made up");
+    assertEquals(program.getUsage()[0]?.category, "Made up");
     // it counts as compiled, and its lexemes come from its source
     assert(program.getCurrentFile()?.compiled);
     assert(program.getLexemes().length > 0);
@@ -355,7 +355,7 @@ describe("choosing a file from disk", () => {
     assertEquals(program.getFilename(), "");
   });
 
-  // Blocked on an account system that doesn't exist - see TODO.md 2.4.
+  // Blocked on an account system that doesn't exist - see TODO.md 3.4.
   it("reports that a remote file cannot be opened yet", () => {
     const captured = captureErrors();
     program.openRemoteFile("https://example.com/a.tpy");
@@ -369,8 +369,8 @@ describe("saving a file", () => {
     program.renameFile("mine");
     program.saveLocalFile();
     assertEquals(downloads.length, 1);
-    assertEquals(downloads[0].filename, "mine.tpy");
-    assertEquals(await downloads[0].content, "x = 1");
+    assertEquals(downloads[0]?.filename, "mine.tpy");
+    assertEquals(await downloads[0]?.content, "x = 1");
   });
 
   it("reports that saving to an account is not available yet", () => {
@@ -489,11 +489,11 @@ describe("the example loaders", () => {
     await program.outputAllExamples();
     assertEquals(fetched, examples.length);
     assertEquals(downloads.length, 1);
-    assertEquals(downloads[0].filename, "Python_examples.txt");
-    const content = await downloads[0].content;
+    assertEquals(downloads[0]?.filename, "Python_examples.txt");
+    const content = await downloads[0]!.content;
     assertStringIncludes(
       content,
-      `Example ${examples[0].id}:\n----------\nCODE`,
+      `Example ${examples[0]!.id}:\n----------\nCODE`,
     );
   });
 });

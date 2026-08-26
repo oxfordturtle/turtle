@@ -1,63 +1,57 @@
-import { defaultCompilerOptions } from "@/core/compiler.ts";
-import { defaultMachineOptions } from "@/core/machine.ts";
+import {
+  type EncoderOptions,
+  defaultCompilerOptions,
+} from "@/core/compiler.ts";
+import { type MachineOptions, defaultMachineOptions } from "@/core/machine.ts";
 
-export type Property = (typeof properties)[number];
+/** `MachineOptions` is `Readonly<>` at source; the settings store writes to its own copy. */
+type Writable<T> = { -readonly [K in keyof T]: T[K] };
 
-export const properties = [
+/**
+ * The type stored under each property - what `load` returns and `save` takes.
+ *
+ * `files` is `readonly unknown[]`: `unknown` because a value that has been
+ * through a JSON round trip has lost its element type - which is why the file
+ * memory has a `restoreFile` at all - and `readonly` because the default an
+ * unset property falls back to is this module's own array, not a copy.
+ *
+ * `language` and `mode` are `string` for the same reason: what comes back out
+ * of the session (or off a `?l=`) is not something a type can vouch for, so the
+ * modules that need the narrower type validate it - see `setLanguage` in
+ * src/islands/settings.ts.
+ */
+export type PropertyValues = {
   // whether user's saved settings have been loaded in this session
-  "savedSettingsHaveBeenLoaded",
+  savedSettingsHaveBeenLoaded: boolean;
   // system settings
-  "language",
-  "mode",
-  "editorFontFamily",
-  "editorFontSize",
-  "outputFontFamily",
-  "outputFontSize",
-  "includeCommentsInExamples",
-  "loadCorrespondingExample",
-  "assembler",
-  "decimal",
-  "autoCompileOnLoad",
-  "autoRunOnLoad",
-  "autoFormatOnLoad",
-  "alwaysSaveSettings",
+  language: string;
+  mode: string;
+  editorFontFamily: string;
+  editorFontSize: number;
+  outputFontFamily: string;
+  outputFontSize: number;
+  includeCommentsInExamples: boolean;
+  loadCorrespondingExample: boolean;
+  assembler: boolean;
+  decimal: boolean;
+  autoCompileOnLoad: boolean;
+  autoRunOnLoad: boolean;
+  autoFormatOnLoad: boolean;
+  alwaysSaveSettings: boolean;
   // help page properties
-  "commandsCategoryIndex",
-  "showSimpleCommands",
-  "showIntermediateCommands",
-  "showAdvancedCommands",
+  commandsCategoryIndex: number;
+  showSimpleCommands: boolean;
+  showIntermediateCommands: boolean;
+  showAdvancedCommands: boolean;
   // file memory
-  "files",
-  "currentFileIndex",
-  "filename",
-  "lexemes",
-  "usage",
-  "routines",
-  "pcode",
-  // machine runtime options
-  "showCanvasOnRun",
-  "showOutputOnWrite",
-  "showMemoryOnDump",
-  "drawCountMax",
-  "codeCountMax",
-  "smallSize",
-  "stackSize",
-  "traceOnRun",
-  "activateHCLR",
-  "preventStackCollision",
-  "rangeCheckArrays",
-  // compiler options
-  "canvasStartSize",
-  "setupDefaultKeyBuffer",
-  "turtleAttributesAsGlobals",
-  "initialiseLocals",
-  "allowCSTR",
-  "separateReturnStack",
-  "separateMemoryControlStack",
-  "separateSubroutineRegisterStack",
-] as const;
+  files: readonly unknown[];
+  currentFileIndex: number;
+} & Writable<MachineOptions> &
+  EncoderOptions;
 
-export const defaults = {
+export type Property = keyof PropertyValues;
+
+export const defaults: PropertyValues = {
   // whether user's saved settings have been loaded in this session
   savedSettingsHaveBeenLoaded: false,
   // system settings
@@ -83,13 +77,8 @@ export const defaults = {
   // file memory
   files: [],
   currentFileIndex: 0,
-  filename: "",
-  lexemes: [],
-  usage: [],
-  routines: [],
-  pcode: [],
   // machine runtime options
   ...defaultMachineOptions,
   // compiler options
   ...defaultCompilerOptions,
-} as const;
+};

@@ -6,6 +6,7 @@ export {
   updateMouseMove,
   updateMouseUp,
 } from "./machine/input.ts";
+export { MachineError } from "./machine/error.ts";
 export { setPorts } from "./machine/state.ts";
 export { dump } from "./machine/memory.ts";
 export { defaultMachineOptions } from "./machine/options.ts";

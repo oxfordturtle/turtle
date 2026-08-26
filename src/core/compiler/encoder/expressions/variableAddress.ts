@@ -25,18 +25,14 @@ export default (
     const baseVariableExp = makeVariableValue(exp.lexeme, exp.variable); // same variable, no indexes
     pcode.push(...expression(baseVariableExp, program, options));
     for (let i = 0; i < exp.indexes.length; i += 1) {
-      const index = exp.indexes[i];
+      const index = exp.indexes[i]!; // in range by the loop condition
       const indexExp = expression(index, program, options);
       merge(pcode, indexExp);
-      if (
-        exp.variable.arrayDimensions[i] &&
-        exp.variable.arrayDimensions[i][0] !== 0
-      ) {
+      const dimensions = exp.variable.arrayDimensions[i];
+      if (dimensions && dimensions[0] !== 0) {
         // subtract the start index if not indexed from 0
-        merge(pcode, [
-          [PCode.ldin, exp.variable.arrayDimensions[i][0], PCode.subt],
-        ]);
-      } else if (exp.variable.arrayDimensions[i] === undefined) {
+        merge(pcode, [[PCode.ldin, dimensions[0], PCode.subt]]);
+      } else if (dimensions === undefined) {
         // this means the final index expression is to a character within an array of strings
         if (program.language === "Pascal") {
           merge(pcode, [[PCode.decr]]); // Pascal strings are indexed from 1 instead of zero
@@ -46,7 +42,7 @@ export default (
     }
   } // character from string variable as array
   else if (exp.variable.type === "string" && exp.indexes.length > 0) {
-    pcode.push(...expression(exp.indexes[0], program, options));
+    pcode.push(...expression(exp.indexes[0]!, program, options));
     if (program.language === "Pascal") {
       // Pascal string indexes start from 1 instead of 0
       merge(pcode, [[PCode.decr]]);

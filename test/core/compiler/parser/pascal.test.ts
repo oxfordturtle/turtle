@@ -163,7 +163,7 @@ describe("parse: Pascal", () => {
         "program Test;\nbegin\n{ a comment }\nend.",
       );
       assertEquals(program.statements.length, 1);
-      assertEquals(program.statements[0].statementType, "passStatement");
+      assertEquals(program.statements[0]?.statementType, "passStatement");
     });
 
     it("doesn't require a semicolon between a comment and the statement that follows it", () => {
@@ -245,8 +245,8 @@ describe("parse: Pascal", () => {
         "program Test;\nvar x, y: integer;\nbegin\nend.",
       );
       assertEquals(program.variables.length, 2);
-      assertEquals(program.variables[0].type, "integer");
-      assertEquals(program.variables[1].type, "integer");
+      assertEquals(program.variables[0]?.type, "integer");
+      assertEquals(program.variables[1]?.type, "integer");
     });
 
     it("parses several declaration lines stacked under a single VAR keyword", () => {
@@ -315,8 +315,8 @@ describe("parse: Pascal", () => {
         "program Test;\nconst size = 5;\nbegin\nend.",
       );
       assertEquals(program.constants.length, 1);
-      assertEquals(program.constants[0].name, "size");
-      assertEquals(program.constants[0].value, 5);
+      assertEquals(program.constants[0]?.name, "size");
+      assertEquals(program.constants[0]?.value, 5);
     });
 
     it("throws if a constant name is reused", () => {
@@ -428,7 +428,7 @@ describe("parse: Pascal", () => {
         "Pascal",
         "program Test;\nvar s: string;\nbegin\nend.",
       );
-      assertEquals(program.variables[0].stringLength, 64);
+      assertEquals(program.variables[0]?.stringLength, 64);
     });
 
     it("parses an explicit string length", () => {
@@ -436,7 +436,7 @@ describe("parse: Pascal", () => {
         "Pascal",
         "program Test;\nvar s: string[10];\nbegin\nend.",
       );
-      assertEquals(program.variables[0].stringLength, 10);
+      assertEquals(program.variables[0]?.stringLength, 10);
     });
 
     it("throws if the string length specification has no closing bracket (EOF)", () => {
@@ -464,7 +464,7 @@ describe("parse: Pascal", () => {
         "Pascal",
         "program Test;\nvar arr: array[1..3] of integer;\nbegin\nend.",
       );
-      assertEquals(program.variables[0].arrayDimensions, [[1, 3]]);
+      assertEquals(program.variables[0]?.arrayDimensions, [[1, 3]]);
     });
 
     it("parses a multi-dimensional array declaration", () => {
@@ -472,7 +472,7 @@ describe("parse: Pascal", () => {
         "Pascal",
         "program Test;\nvar arr: array[1..3,1..2] of integer;\nbegin\nend.",
       );
-      assertEquals(program.variables[0].arrayDimensions, [
+      assertEquals(program.variables[0]?.arrayDimensions, [
         [1, 3],
         [1, 2],
       ]);
@@ -691,9 +691,9 @@ describe("parse: Pascal", () => {
       );
       assertEquals(program.subroutines.length, 1);
       const sub = program.subroutines[0];
-      assertEquals(sub.name, "go");
-      assert(sub.variables[0].isParameter);
-      assertEquals(sub.variables[0].type, "integer");
+      assertEquals(sub?.name, "go");
+      assert(sub?.variables[0]?.isParameter);
+      assertEquals(sub?.variables[0]?.type, "integer");
     });
 
     it("parses a reference (var) parameter", () => {
@@ -701,7 +701,7 @@ describe("parse: Pascal", () => {
         "Pascal",
         "program Test;\nprocedure go(var n: integer);\nbegin\nend;\nbegin\nend.",
       );
-      assert(program.subroutines[0].variables[0].isReferenceParameter);
+      assert(program.subroutines[0]?.variables[0]?.isReferenceParameter);
     });
 
     it("parses several parameters separated by semicolons", () => {
@@ -710,7 +710,7 @@ describe("parse: Pascal", () => {
         "program Test;\nprocedure go(a: integer; b: string);\nbegin\nend;\nbegin\nend.",
       );
       assertEquals(
-        program.subroutines[0].variables.map((v) => v.type),
+        program.subroutines[0]?.variables.map((v) => v.type),
         ["integer", "string"],
       );
     });
@@ -721,11 +721,11 @@ describe("parse: Pascal", () => {
         "program Test;\nprocedure go(a, b: integer);\nbegin\nend;\nbegin\nend.",
       );
       assertEquals(
-        program.subroutines[0].variables.map((v) => v.name),
+        program.subroutines[0]?.variables.map((v) => v.name),
         ["a", "b"],
       );
       assertEquals(
-        program.subroutines[0].variables.map((v) => v.type),
+        program.subroutines[0]?.variables.map((v) => v.type),
         ["integer", "integer"],
       );
     });
@@ -736,7 +736,7 @@ describe("parse: Pascal", () => {
         "program Test;\nprocedure go;\nvar y: integer;\nbegin\ny := 1;\nend;\nbegin\nend.",
       );
       const sub = program.subroutines[0];
-      const local = sub.variables.find((v) => v.name === "y");
+      const local = sub?.variables.find((v) => v.name === "y");
       assertExists(local);
       assertEquals(local.type, "integer");
     });
@@ -747,7 +747,7 @@ describe("parse: Pascal", () => {
         "program Test;\nfunction double(n: integer): integer;\nbegin\nresult := n * 2;\nend;\nbegin\nend.",
       );
       const sub = program.subroutines[0];
-      const result = sub.variables.find((v) => v.name === "result");
+      const result = sub?.variables.find((v) => v.name === "result");
       assertExists(result);
       assertEquals(result.type, "integer");
     });
@@ -886,7 +886,7 @@ describe("parse: Pascal", () => {
         "program Test;\nprocedure go;\nbegin\ngo;\nend;\nbegin\nend.",
       );
       const sub = program.subroutines[0];
-      const call = sub.statements[0] as ProcedureCall;
+      const call = sub?.statements[0] as ProcedureCall;
       assertEquals(call.statementType, "procedureCall");
       assertEquals(call.command, sub);
     });
@@ -896,8 +896,8 @@ describe("parse: Pascal", () => {
         "Pascal",
         "program Test;\nprocedure outer;\nprocedure inner;\nbegin\nend;\nbegin\nend;\nbegin\nend.",
       );
-      assertEquals(program.subroutines[0].subroutines.length, 1);
-      assertEquals(program.subroutines[0].subroutines[0].name, "inner");
+      assertEquals(program.subroutines[0]?.subroutines.length, 1);
+      assertEquals(program.subroutines[0]?.subroutines[0]?.name, "inner");
     });
 
     it("parses an 'array of' parameter type", () => {
@@ -906,7 +906,7 @@ describe("parse: Pascal", () => {
         "program Test;\nprocedure go(a: array of integer);\nbegin\nend;\nbegin\nend.",
       );
       assertEquals(
-        program.subroutines[0].variables[0].arrayDimensions.length,
+        program.subroutines[0]?.variables[0]?.arrayDimensions.length,
         1,
       );
     });
@@ -917,7 +917,7 @@ describe("parse: Pascal", () => {
         "program Test;\nprocedure go(a: array of array of integer);\nbegin\nend;\nbegin\nend.",
       );
       assertEquals(
-        program.subroutines[0].variables[0].arrayDimensions.length,
+        program.subroutines[0]?.variables[0]?.arrayDimensions.length,
         2,
       );
     });
@@ -953,14 +953,14 @@ describe("parse: Pascal", () => {
         "program Test;\nprocedure outer;\n{ locals }\nvar y: integer;\n{ helper }\nprocedure inner;\nbegin\nend;\n{ body }\nbegin\ny := 1;\nend;\nbegin\nend.",
       );
       const sub = program.subroutines[0];
-      assertEquals(sub.name, "outer");
-      assertExists(sub.variables.find((v) => v.name === "y"));
+      assertEquals(sub?.name, "outer");
+      assertExists(sub?.variables.find((v) => v.name === "y"));
       assertEquals(
-        sub.subroutines.map((s) => s.name),
+        sub?.subroutines.map((s) => s.name),
         ["inner"],
       );
       assertEquals(
-        sub.statements.map((s) => s.statementType),
+        sub?.statements.map((s) => s.statementType),
         ["variableAssignment"],
       );
     });
@@ -1007,7 +1007,7 @@ describe("parse: Pascal", () => {
       assertEquals(ifStatement.statementType, "ifStatement");
       assertEquals(ifStatement.ifStatements.length, 1);
       assertEquals(
-        ifStatement.ifStatements[0].statementType,
+        ifStatement.ifStatements[0]?.statementType,
         "variableAssignment",
       );
     });
@@ -1021,7 +1021,7 @@ describe("parse: Pascal", () => {
       const ifStatement = program.statements[0] as IfStatement;
       assertEquals(ifStatement.elseStatements.length, 1);
       assertEquals(
-        ifStatement.elseStatements[0].statementType,
+        ifStatement.elseStatements[0]?.statementType,
         "variableAssignment",
       );
     });
@@ -1112,7 +1112,7 @@ describe("parse: Pascal", () => {
       assertEquals(whileStatement.statementType, "whileStatement");
       assertEquals(whileStatement.statements.length, 1);
       assertEquals(
-        whileStatement.statements[0].statementType,
+        whileStatement.statements[0]?.statementType,
         "variableAssignment",
       );
     });
@@ -1200,7 +1200,7 @@ describe("parse: Pascal", () => {
       assertEquals(forStatement.statementType, "forStatement");
       assertEquals(forStatement.statements.length, 1);
       assertEquals(
-        forStatement.statements[0].statementType,
+        forStatement.statements[0]?.statementType,
         "variableAssignment",
       );
     });
@@ -1464,7 +1464,7 @@ describe("parse: Pascal", () => {
         "Pascal",
         "program Test;\nvar X: integer;\nbegin\nx := 1;\nend.",
       );
-      assertEquals(program.variables[0].name, "x");
+      assertEquals(program.variables[0]?.name, "x");
       const assignment = program.statements[0] as VariableAssignment;
       assertEquals(assignment.variable.name, "x");
     });
@@ -1549,7 +1549,7 @@ describe("parse: Pascal", () => {
         "program Test;\nvar x: integer;\nbegin\nx := 1 { comment }\nend.",
       );
       assertEquals(program.statements.length, 1);
-      assertEquals(program.statements[0].statementType, "variableAssignment");
+      assertEquals(program.statements[0]?.statementType, "variableAssignment");
     });
 
     it("walks back past a comment an earlier eosCheck already skipped (nested single-statement bodies)", () => {
@@ -1572,7 +1572,7 @@ describe("parse: Pascal", () => {
       const ifStatement = forStatement.statements[0] as IfStatement;
       assertEquals(ifStatement.statementType, "ifStatement");
       assertEquals(ifStatement.ifStatements.length, 1);
-      assertEquals(ifStatement.ifStatements[0].statementType, "procedureCall");
+      assertEquals(ifStatement.ifStatements[0]?.statementType, "procedureCall");
     });
 
     it("throws if a semicolon is missing between two statements", () => {

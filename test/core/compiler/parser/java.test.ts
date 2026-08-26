@@ -123,7 +123,7 @@ describe("parse: Java", () => {
       assertEquals(program.language, "Java");
       assertEquals(program.name, "Test");
       assertEquals(program.subroutines.length, 1);
-      assertEquals(program.subroutines[0].name, "main");
+      assertEquals(program.subroutines[0]?.name, "main");
     });
 
     it("skips comments between the class body's declarations", () => {
@@ -136,7 +136,7 @@ describe("parse: Java", () => {
         "class Test {\n// a comment\nint x = 1;\n// another comment\nvoid main () {}\n// trailing comment\n}",
       );
       assertEquals(program.statements.length, 1);
-      assertEquals(program.statements[0].statementType, "variableAssignment");
+      assertEquals(program.statements[0]?.statementType, "variableAssignment");
       assertEquals(
         program.variables.map((v) => v.name),
         ["x"],
@@ -819,7 +819,7 @@ describe("parse: Java", () => {
         statements: { statementType: string }[];
       };
       assertEquals(
-        whileStatement.statements[0].statementType,
+        whileStatement.statements[0]?.statementType,
         "breakStatement",
       );
     });
@@ -834,7 +834,7 @@ describe("parse: Java", () => {
       );
       const forStatement = bodyStatements("Java", program)[0] as ForStatement;
       assertEquals(
-        forStatement.statements[0].statementType,
+        forStatement.statements[0]?.statementType,
         "continueStatement",
       );
     });
@@ -849,7 +849,7 @@ describe("parse: Java", () => {
         program,
       )[0] as RepeatStatement;
       assertEquals(
-        repeatStatement.statements[0].statementType,
+        repeatStatement.statements[0]?.statementType,
         "breakStatement",
       );
     });
@@ -1112,7 +1112,7 @@ describe("parse: Java", () => {
         wrapProgram("Java", "// hello\nint x = 1;"),
       );
       const statements = bodyStatements("Java", program);
-      assertEquals(statements[0].statementType, "passStatement");
+      assertEquals(statements[0]?.statementType, "passStatement");
     });
 
     it("parses a 'final' constant declared inside a method body", () => {
@@ -1123,8 +1123,8 @@ describe("parse: Java", () => {
         wrapProgram("Java", "final int X = 5;"),
       );
       const sub = program.subroutines[0];
-      assertEquals(sub.constants.length, 1);
-      assertEquals(sub.constants[0].value, 5);
+      assertEquals(sub?.constants.length, 1);
+      assertEquals(sub?.constants[0]?.value, 5);
     });
 
     it("throws on a keyword that's valid in Java but not as the start of a statement", () => {
@@ -1149,7 +1149,7 @@ describe("parse: Java", () => {
         "class Test {\nfinal int SIZE = 5;\nvoid main () {}\n}",
       );
       assertEquals(program.constants.length, 1);
-      assertEquals(program.constants[0].value, 5);
+      assertEquals(program.constants[0]?.value, 5);
     });
 
     it("throws if a declared name is not a valid identifier", () => {

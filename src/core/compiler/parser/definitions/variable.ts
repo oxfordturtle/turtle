@@ -61,8 +61,9 @@ export const baseLength = (variable: Variable): number =>
 // under an array. (The array arm is live and tested; it sits inside this
 // range only because a branch cannot be excluded mid-expression.)
 export const elementCount = (variable: Variable): number =>
+  // isArray() is exactly "arrayDimensions is non-empty", so the subscript holds
   isArray(variable)
-    ? variable.arrayDimensions[0][1] - variable.arrayDimensions[0][0] + 1
+    ? variable.arrayDimensions[0]![1] - variable.arrayDimensions[0]![0] + 1
     : 0;
 // deno-coverage-ignore-stop
 
@@ -73,7 +74,10 @@ export const getLength = (variable: Variable): number => {
   }
 
   if (isArray(variable)) {
-    return getLength(getSubVariables(variable)[0]) * elementCount(variable) + 2; // +2 for pointer and length byte
+    // an array has at least one element, so it has at least one sub-variable
+    return (
+      getLength(getSubVariables(variable)[0]!) * elementCount(variable) + 2
+    ); // +2 for pointer and length byte
   }
 
   return baseLength(variable);

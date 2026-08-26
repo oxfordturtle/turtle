@@ -244,7 +244,7 @@ describe("machine/lists: Python list operators", () => {
       ]);
       assertEquals(output.runtimeErrors.length, 1);
       assertEquals(
-        output.runtimeErrors[0].message,
+        output.runtimeErrors[0]?.message,
         "List has reached its maximum capacity of 2 items.",
       );
       assertEquals(output.stateChanges.at(-1), "halted");
@@ -336,7 +336,7 @@ describe("machine/lists: Python list operators", () => {
       ]);
       assertEquals(output.runtimeErrors.length, 1);
       assertEquals(
-        output.runtimeErrors[0].message,
+        output.runtimeErrors[0]?.message,
         "List has reached its maximum capacity of 3 items.",
       );
     });
@@ -390,7 +390,7 @@ describe("machine/lists: Python list operators", () => {
       const { output } = runPcode(build);
       assertEquals(output.runtimeErrors.length, 1);
       assertEquals(
-        output.runtimeErrors[0].message,
+        output.runtimeErrors[0]?.message,
         'Invalid list index in ".del" method.',
       );
     });
@@ -406,7 +406,7 @@ describe("machine/lists: Python list operators", () => {
       const { output } = runPcode(build);
       assertEquals(output.runtimeErrors.length, 1);
       assertEquals(
-        output.runtimeErrors[0].message,
+        output.runtimeErrors[0]?.message,
         'Invalid list index in ".del" method.',
       );
     });
@@ -570,7 +570,7 @@ describe("machine/lists: Python list operators", () => {
       const { output } = runPcode(build);
       assertEquals(output.runtimeErrors.length, 1);
       assertEquals(
-        output.runtimeErrors[0].message,
+        output.runtimeErrors[0]?.message,
         "List has reached its maximum capacity of 1 items.",
       );
     });

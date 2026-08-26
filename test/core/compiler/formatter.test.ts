@@ -37,7 +37,7 @@ const assignedValues = (language: Language, code: string): Expression[] =>
 /** The last variable-assignment value in a parsed program - the expression under test. */
 const lastAssignedValue = (language: Language, code: string): Expression => {
   const values = assignedValues(language, code);
-  return values[values.length - 1];
+  return values[values.length - 1]!; // every fixture makes at least one assignment
 };
 
 /**
@@ -56,7 +56,7 @@ const formatChecked = (
 
 /** The first body statement of a parsed program. */
 const firstStatement = (language: Language, code: string): Statement =>
-  bodyStatements(language, parseProgram(language, code))[0];
+  bodyStatements(language, parseProgram(language, code))[0]!;
 
 describe("compiler: formatter (unfinished stub, TODO.md §2.2)", () => {
   describe("formatType", () => {
@@ -212,7 +212,7 @@ describe("compiler: formatter (unfinished stub, TODO.md §2.2)", () => {
         const statement = firstStatement("Python", "print(5)");
         assertEquals(statement.statementType, "procedureCall");
         if (statement.statementType !== "procedureCall") return;
-        const exp = statement.arguments[0];
+        const exp = statement.arguments[0]!;
         assertEquals(formatChecked("Python", exp, "cast"), "5");
       });
     });
@@ -343,7 +343,7 @@ describe("compiler: formatter (unfinished stub, TODO.md §2.2)", () => {
         const statement = firstStatement("Python", "print('a', sep='')");
         assertEquals(statement.statementType, "procedureCall");
         if (statement.statementType !== "procedureCall") return;
-        const exp = statement.arguments[1];
+        const exp = statement.arguments[1]!;
         assertEquals(formatChecked("Python", exp, "namedArgument"), "TODO");
         // and the containing call currently renders with the placeholder
         // embedded, rather than as "print('a', sep='')"
@@ -420,7 +420,7 @@ describe("compiler: formatter (unfinished stub, TODO.md §2.2)", () => {
           "Python",
           "def f(x):\n    return x + 1\ny = f(1)",
         );
-        const statement = program.subroutines[0].statements.find(
+        const statement = program.subroutines[0]?.statements.find(
           (s) => s.statementType === "returnStatement",
         );
         assertEquals(statement === undefined, false);
@@ -464,7 +464,7 @@ describe("compiler: formatter (unfinished stub, TODO.md §2.2)", () => {
         const statement = bodyStatements(
           "Python",
           parseProgram("Python", "x = 1\nif x == 1:\n    pass"),
-        )[1];
+        )[1]!;
         assertTodo(statement, "ifStatement");
       });
 
@@ -485,7 +485,7 @@ describe("compiler: formatter (unfinished stub, TODO.md §2.2)", () => {
             "Pascal",
             "program Test;\nvar x: integer;\nbegin\nx := 0;\nrepeat\nx := x + 1\nuntil x = 3\nend.",
           ),
-        )[1];
+        )[1]!;
         assertTodo(statement, "repeatStatement", "Pascal");
       });
 
@@ -494,7 +494,7 @@ describe("compiler: formatter (unfinished stub, TODO.md §2.2)", () => {
         const statement = bodyStatements(
           "Python",
           parseProgram("Python", "x = 0\nwhile x < 3:\n    x = x + 1"),
-        )[1];
+        )[1]!;
         assertTodo(statement, "whileStatement");
       });
 
@@ -503,7 +503,7 @@ describe("compiler: formatter (unfinished stub, TODO.md §2.2)", () => {
         const outer = firstStatement("Python", "if 1 == 1:\n    pass");
         assertEquals(outer.statementType, "ifStatement");
         if (outer.statementType !== "ifStatement") return;
-        assertTodo(outer.ifStatements[0], "passStatement");
+        assertTodo(outer.ifStatements[0]!, "passStatement");
       });
 
       it('[known limitation] renders break and continue as "TODO"', () => {
@@ -515,19 +515,19 @@ describe("compiler: formatter (unfinished stub, TODO.md §2.2)", () => {
             "x = 0\nwhile x < 3:\n    x = x + 1\n    if x == 1:\n        continue\n    if x == 2:\n        break",
           ),
         )[1];
-        assertEquals(loop.statementType, "whileStatement");
-        if (loop.statementType !== "whileStatement") return;
+        assertEquals(loop?.statementType, "whileStatement");
+        if (loop?.statementType !== "whileStatement") return;
         const [ifContinue, ifBreak] = [loop.statements[1], loop.statements[2]];
-        assertEquals(ifContinue.statementType, "ifStatement");
-        assertEquals(ifBreak.statementType, "ifStatement");
+        assertEquals(ifContinue?.statementType, "ifStatement");
+        assertEquals(ifBreak?.statementType, "ifStatement");
         if (
-          ifContinue.statementType !== "ifStatement" ||
-          ifBreak.statementType !== "ifStatement"
+          ifContinue?.statementType !== "ifStatement" ||
+          ifBreak?.statementType !== "ifStatement"
         ) {
           return;
         }
-        assertTodo(ifContinue.ifStatements[0], "continueStatement");
-        assertTodo(ifBreak.ifStatements[0], "breakStatement");
+        assertTodo(ifContinue.ifStatements[0]!, "continueStatement");
+        assertTodo(ifBreak.ifStatements[0]!, "breakStatement");
       });
     });
   });

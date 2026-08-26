@@ -179,10 +179,10 @@ define("command-table", {
     // their reset default.
     restoreFromStorage: ({ element }) => {
       element.restore({
-        category: load("commandsCategoryIndex") as number,
-        simple: load("showSimpleCommands") as boolean,
-        intermediate: load("showIntermediateCommands") as boolean,
-        advanced: load("showAdvancedCommands") as boolean,
+        category: load("commandsCategoryIndex"),
+        simple: load("showSimpleCommands"),
+        intermediate: load("showIntermediateCommands"),
+        advanced: load("showAdvancedCommands"),
       });
     },
   },

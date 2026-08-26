@@ -115,7 +115,7 @@ const parseArgumentList = (
   if (routine.language === "Python" && commandName === "input") {
     // "input" is variadic: a single string argument is allowed, not required
     if (lexemes.get()?.content !== ")") {
-      const parameter = parameters[0];
+      const parameter = parameters[0]!; // "input" declares one
       const argument = parseExpression(lexemes, routine);
       typeCheckArgument(
         routine.language,
@@ -132,7 +132,7 @@ const parseArgumentList = (
   } else if (routine.language === "Python" && commandName === "print") {
     // "print" is variadic: any number of positional arguments, optionally
     // followed by the named "sep" and "end", neither repeatable
-    const parameter = parameters[0];
+    const parameter = parameters[0]!; // "print" declares one
     const namedSoFar = new Set<string>();
     while (lexemes.get()?.content !== ")") {
       const lexeme = lexemes.get()!;
@@ -194,7 +194,7 @@ const parseArgumentList = (
       commandCall.arguments.length < parameters.length &&
       lexemes.get()?.content !== ")"
     ) {
-      const parameter = parameters[commandCall.arguments.length];
+      const parameter = parameters[commandCall.arguments.length]!; // in range by the loop condition
       // for a method call, arguments[0] is already the receiver, so
       // ".append"'s value can be checked against its element kind
       const receiver = commandCall.arguments[0];

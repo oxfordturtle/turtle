@@ -212,7 +212,7 @@ const checkTree = async (tree: Tree, repoRoot: string): Promise<TreeResult> => {
           shortfalls.push({ path, details: describeShortfall(file) });
         }
       } else if (path in FILE_EXCLUSIONS) {
-        excluded.push({ path, reason: FILE_EXCLUSIONS[path] });
+        excluded.push({ path, reason: FILE_EXCLUSIONS[path]! });
       } else if (await isFileLevelIgnored(path)) {
         excluded.push({ path, reason: "deno-coverage-ignore-file directive" });
       } else {

@@ -74,7 +74,12 @@ export const parseMethodFunctionCall = (
   receiver: Expression,
 ): FunctionCall => {
   try {
-    typeCheckArgument(routine.language, method, receiver, method.parameters[0]);
+    typeCheckArgument(
+      routine.language,
+      method,
+      receiver,
+      method.parameters[0]!,
+    ); // a method declares its receiver
   } catch {
     throw new CompilerError(
       `Method "${method.names[routine.language]}" is not defined for type "${getType(

@@ -23,10 +23,15 @@ import {
 export default (tokens: Token[], language: Language): Lexeme[] => {
   const lexemes: Lexeme[] = [];
   const indents = [0];
+  // the innermost indentation level: `indents` is seeded [0] and never popped
+  // past that, so the stack is never empty
+  const currentIndent = (): number => indents[indents.length - 1]!;
   let index = 0;
-  let indent = indents[0];
-  while (index < tokens.length) {
-    switch (tokens[index].type) {
+  let indent = 0;
+  // the loop condition is the bounds check, so `token` needs no other one
+  let token = tokens[index];
+  while (token !== undefined) {
+    switch (token.type) {
       case "spaces":
         break;
 
@@ -37,34 +42,31 @@ export default (tokens: Token[], language: Language): Lexeme[] => {
           language === "Python" ||
           language === "TypeScript"
         ) {
-          if (lexemes[lexemes.length - 1]) {
-            if (
-              lexemes[lexemes.length - 1].type !== "newline" &&
-              lexemes[lexemes.length - 1].type !== "comment"
-            ) {
-              lexemes.push(newlineLexeme(tokens[index]));
+          const previous = lexemes[lexemes.length - 1];
+          if (previous) {
+            if (previous.type !== "newline" && previous.type !== "comment") {
+              lexemes.push(newlineLexeme(token));
             }
           }
-          while (tokens[index + 1] && tokens[index + 1].type === "newline") {
+          while (tokens[index + 1]?.type === "newline") {
             index += 1;
           }
         }
 
         if (language === "Python") {
-          indent =
-            tokens[index + 1] && tokens[index + 1].type === "spaces"
-              ? tokens[index + 1].content.length
-              : 0;
-          if (indent > indents[indents.length - 1]) {
+          // bound after the loop above, which may have advanced `index`
+          const after = tokens[index + 1];
+          indent = after?.type === "spaces" ? after.content.length : 0;
+          if (indent > currentIndent()) {
             indents.push(indent);
-            lexemes.push(indentLexeme(tokens[index + 1]));
+            lexemes.push(indentLexeme(after!));
           } else {
-            while (indent < indents[indents.length - 1]) {
+            while (indent < currentIndent()) {
               indents.pop();
-              lexemes.push(dedentLexeme(tokens[index + 1] || tokens[index]));
+              lexemes.push(dedentLexeme(after || token));
             }
-            if (indent !== indents[indents.length - 1]) {
-              // deno-coverage-ignore-start -- the "|| tokens[index]" fallback
+            if (indent !== currentIndent()) {
+              // deno-coverage-ignore-start -- the "|| token" fallback
               // is unreachable: a mismatch needs indent > 0, which requires a
               // truthy "spaces" token at tokens[index + 1] (with no next token
               // indent is 0, which always sits at the bottom of the indents
@@ -74,9 +76,7 @@ export default (tokens: Token[], language: Language): Lexeme[] => {
               // mid-expression. The identical fallback in the dedent push
               // above *is* reachable and covered.
               throw new CompilerError(
-                `Inconsistent indentation at line ${
-                  (tokens[index + 1] || tokens[index]).line
-                }.`,
+                `Inconsistent indentation at line ${(after || token).line}.`,
               );
               // deno-coverage-ignore-stop
             }
@@ -84,39 +84,40 @@ export default (tokens: Token[], language: Language): Lexeme[] => {
         }
         break;
 
-      case "comment":
-        lexemes.push(commentLexeme(tokens[index], language));
+      case "comment": {
+        lexemes.push(commentLexeme(token, language));
         // a comment is terminated by a line break, which is significant in
         // these languages, so a newline lexeme follows every comment
         if (language === "BASIC" || language === "Python") {
-          lexemes.push(newlineLexeme(tokens[index + 1] || tokens[index]));
+          lexemes.push(newlineLexeme(tokens[index + 1] || token));
         }
         break;
+      }
 
       case "keyword":
-        lexemes.push(keywordLexeme(tokens[index]));
+        lexemes.push(keywordLexeme(token));
         break;
 
       case "type":
-        lexemes.push(typeLexeme(tokens[index]));
+        lexemes.push(typeLexeme(token));
         break;
 
       case "operator":
-        lexemes.push(operatorLexeme(tokens[index], language));
+        lexemes.push(operatorLexeme(token, language));
         break;
 
       case "delimiter":
-        lexemes.push(delimiterLexeme(tokens[index]));
+        lexemes.push(delimiterLexeme(token));
         break;
 
       case "string": {
-        const lexeme = stringLexeme(tokens[index], language);
+        const lexeme = stringLexeme(token, language);
         const isCharacter = lexeme.value.length === 1;
         if (
           isCharacter &&
           (language === "C" || language === "Java" || language === "Pascal")
         ) {
-          lexemes.push(characterLexeme(tokens[index], language));
+          lexemes.push(characterLexeme(token, language));
         } else {
           lexemes.push(lexeme);
         }
@@ -124,71 +125,69 @@ export default (tokens: Token[], language: Language): Lexeme[] => {
       }
 
       case "boolean":
-        lexemes.push(booleanLexeme(tokens[index], language));
+        lexemes.push(booleanLexeme(token, language));
         break;
 
       case "binary":
-        lexemes.push(integerLexeme(tokens[index], 2));
+        lexemes.push(integerLexeme(token, 2));
         break;
 
       case "octal":
-        lexemes.push(integerLexeme(tokens[index], 8));
+        lexemes.push(integerLexeme(token, 8));
         break;
 
       case "hexadecimal":
-        lexemes.push(integerLexeme(tokens[index], 16));
+        lexemes.push(integerLexeme(token, 16));
         break;
 
       case "decimal":
-        lexemes.push(integerLexeme(tokens[index], 10));
+        lexemes.push(integerLexeme(token, 10));
         break;
 
       case "inputCode":
-        lexemes.push(inputCodeLexeme(tokens[index], language));
+        lexemes.push(inputCodeLexeme(token, language));
         break;
 
       case "queryCode":
-        lexemes.push(queryCodeLexeme(tokens[index], language));
+        lexemes.push(queryCodeLexeme(token, language));
         break;
 
       case "command":
       case "turtle":
       case "colour":
       case "identifier":
-        lexemes.push(identifierLexeme(tokens[index], language));
+        lexemes.push(identifierLexeme(token, language));
         break;
 
       case "unterminatedComment":
-        throw new CompilerError("Unterminated comment.", tokens[index]);
+        throw new CompilerError("Unterminated comment.", token);
 
       case "unterminatedString":
-        throw new CompilerError("Unterminated string.", tokens[index]);
+        throw new CompilerError("Unterminated string.", token);
 
       case "badBinary":
       case "badOctal":
       case "badHexadecimal":
-        throw new CompilerError("Ill-formed integer literal.", tokens[index]);
+        throw new CompilerError("Ill-formed integer literal.", token);
 
       case "real":
         throw new CompilerError(
           "The Turtle System does not support real numbers.",
-          tokens[index],
+          token,
         );
 
       case "badInputCode":
-        throw new CompilerError("Unrecognised input code.", tokens[index]);
+        throw new CompilerError("Unrecognised input code.", token);
 
       case "badQueryCode":
-        throw new CompilerError("Unrecognised input query.", tokens[index]);
+        throw new CompilerError("Unrecognised input query.", token);
 
       case "illegal":
-        throw new CompilerError(
-          "Illegal character in this context.",
-          tokens[index],
-        );
+        throw new CompilerError("Illegal character in this context.", token);
     }
 
     index += 1;
+    token = tokens[index];
   }
 
   return lexemes;

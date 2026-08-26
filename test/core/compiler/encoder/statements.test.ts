@@ -385,10 +385,10 @@ describe("encoder: statements/breakStatement.ts & statements/continueStatement.t
     const exitLineNumber = pcode.length; // the halt line, just past the loop
     // the while condition's own ifno and the break's unconditional jump
     // both target the loop's exit
-    assertEquals(condition.slice(-2), [PCode.ifno, exitLineNumber]);
+    assertEquals(condition?.slice(-2), [PCode.ifno, exitLineNumber]);
     assertEquals(breakJump, [PCode.jump, exitLineNumber]);
     // the guarding if skips just the break line itself (to the increment)
-    assertEquals(ifCondition.slice(-2), [PCode.ifno, pcode.length - 2]);
+    assertEquals(ifCondition?.slice(-2), [PCode.ifno, pcode.length - 2]);
     // and the loop's own back-jump targets the condition line
     assertEquals(backJump, [PCode.jump, pcode.length - 5]);
     assertEquals(halt, [PCode.halt]);
@@ -444,7 +444,7 @@ describe("encoder: statements/breakStatement.ts & statements/continueStatement.t
     // ...and continue targets that change line, not the condition line
     assertEquals(continueJump, [PCode.jump, changeLineNumber]);
     // (the condition, for its part, exits the loop to the halt line)
-    assertEquals(condition.slice(-2), [PCode.ifno, pcode.length]);
+    assertEquals(condition?.slice(-2), [PCode.ifno, pcode.length]);
     assertEquals(halt, [PCode.halt]);
   });
 
@@ -459,12 +459,12 @@ describe("encoder: statements/breakStatement.ts & statements/continueStatement.t
     const exitLineNumber = pcode.length; // the halt line
     // the for condition's own ifno and the break's unconditional jump both
     // target the loop's exit
-    assertEquals(condition.slice(-2), [PCode.ifno, exitLineNumber]);
+    assertEquals(condition?.slice(-2), [PCode.ifno, exitLineNumber]);
     assertEquals(breakJump, [PCode.jump, exitLineNumber]);
     // the guarding if skips just the break line itself (to the change line)
-    assertEquals(ifCondition.slice(-2), [PCode.ifno, pcode.length - 1]);
+    assertEquals(ifCondition?.slice(-2), [PCode.ifno, pcode.length - 1]);
     // and the change line jumps back to the condition
-    assertEquals(changeLine.slice(-2), [PCode.jump, pcode.length - 4]);
+    assertEquals(changeLine?.slice(-2), [PCode.jump, pcode.length - 4]);
   });
 
   it("a 'break' in a nested loop only patches the inner loop's exit, not the outer loop's", () => {
@@ -478,11 +478,11 @@ describe("encoder: statements/breakStatement.ts & statements/continueStatement.t
     const [outerCondition, , innerCondition, , breakJump] = pcode.slice(-8);
     // the inner break targets the inner loop's own exit (the outer loop's
     // change line, just before the halt)...
-    assertEquals(innerCondition.slice(-2), [PCode.ifno, pcode.length - 1]);
+    assertEquals(innerCondition?.slice(-2), [PCode.ifno, pcode.length - 1]);
     assertEquals(breakJump, [PCode.jump, pcode.length - 1]);
     // ...which is a different (earlier) line than the outer loop's exit
     // (the halt line)
-    assertEquals(outerCondition.slice(-2), [PCode.ifno, pcode.length]);
+    assertEquals(outerCondition?.slice(-2), [PCode.ifno, pcode.length]);
   });
 });
 
@@ -866,8 +866,9 @@ describe("encoder: statements/variableAssignment.ts", () => {
       PCode.plus,
       PCode.sptr,
     ]);
-    assertFalse(pcode[7].includes(PCode.hstr));
-    assertFalse(pcode[7].includes(PCode.hfix));
+    // `!`, not `?.`: an absent line would make an optional chain pass vacuously
+    assertFalse(pcode[7]!.includes(PCode.hstr));
+    assertFalse(pcode[7]!.includes(PCode.hfix));
     assertEquals(runPcode(pcode).output.outputText, "[9, 2]\n");
   });
 

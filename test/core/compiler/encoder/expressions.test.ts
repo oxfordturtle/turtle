@@ -1,12 +1,7 @@
 import { describe, it } from "@std/testing/bdd";
 import { assert, assertEquals, assertFalse } from "@std/assert";
 import { PCode } from "@/core/constants.ts";
-import {
-  compileAndEncode,
-  countOf,
-  flatten,
-  includesCode,
-} from "./lib/helpers.ts";
+import { compileAndEncode, flatten, includesCode } from "./lib/helpers.ts";
 import { wrapProgram } from "../parser/lib/programs.ts";
 import { runPcode } from "../../machine/lib/helpers.ts";
 

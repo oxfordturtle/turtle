@@ -98,17 +98,24 @@ const rootOperator = (language: Language, condition: string): string | null => {
  * AND/OR/EOR are the documented bitwise-and-boolean operators of BBC BASIC
  * rather than logical connectives of their own.
  */
-const LOGICAL_LANGUAGES: Language[] = ["Python", "C", "Java", "TypeScript"];
+const LOGICAL_LANGUAGES = ["Python", "C", "Java", "TypeScript"] as const;
+
+/**
+ * The four languages with short-circuiting "and"/"or". Naming the union rather
+ * than widening to `Language` is what makes the per-language fixture tables
+ * below total, so a lookup in one needs no undefined check.
+ */
+type LogicalLanguage = (typeof LOGICAL_LANGUAGES)[number];
 
 /** How each of those four spells the condition in the headline case. */
-const AND_OF_COMPARISONS: Record<string, string> = {
+const AND_OF_COMPARISONS: Record<LogicalLanguage, string> = {
   Python: "a == b and c == d",
   C: "a == b && c == d",
   Java: "a == b && c == d",
   TypeScript: "a == b && c == d",
 };
 
-const OR_OF_COMPARISONS: Record<string, string> = {
+const OR_OF_COMPARISONS: Record<LogicalLanguage, string> = {
   Python: "a == b or c == d",
   C: "a == b || c == d",
   Java: "a == b || c == d",
@@ -158,7 +165,7 @@ describe("compiler: logical operator precedence", () => {
   });
 
   describe("and binds tighter than or", () => {
-    const fixtures: Record<string, string> = {
+    const fixtures: Record<LogicalLanguage, string> = {
       Python: "True or False and False",
       C: "true || false && false",
       Java: "true || false && false",
@@ -176,7 +183,7 @@ describe("compiler: logical operator precedence", () => {
   });
 
   describe("arithmetic still binds tighter than both", () => {
-    const fixtures: Record<string, string> = {
+    const fixtures: Record<LogicalLanguage, string> = {
       Python: "1 + 1 == 2 and 2 * 2 == 4",
       C: "1 + 1 == 2 && 2 * 2 == 4",
       Java: "1 + 1 == 2 && 2 * 2 == 4",
@@ -370,19 +377,19 @@ const counted = (
 };
 
 /** How each language spells the two operators, and an "if" around a condition. */
-const OR: Record<string, string> = {
+const OR: Record<LogicalLanguage, string> = {
   Python: "or",
   C: "||",
   Java: "||",
   TypeScript: "||",
 };
-const AND: Record<string, string> = {
+const AND: Record<LogicalLanguage, string> = {
   Python: "and",
   C: "&&",
   Java: "&&",
   TypeScript: "&&",
 };
-const ifTaken: Record<string, (condition: string) => string> = {
+const ifTaken: Record<LogicalLanguage, (condition: string) => string> = {
   Python: (condition) => `if ${condition}:\n    print('taken')`,
   C: (condition) => `if (${condition}) { print('taken'); }`,
   Java: (condition) => `if (${condition}) { print('taken'); }`,
@@ -678,14 +685,17 @@ describe("compiler: logical operator short-circuiting", () => {
 const jumpTargets = (pcode: number[][]): { line: number; target: number }[] => {
   const targets: { line: number; target: number }[] = [];
   for (let line = 0; line < pcode.length; line += 1) {
+    const words = pcode[line]!;
     let i = 0;
-    while (i < pcode[line].length) {
-      const code = pcode[line][i];
+    while (i < words.length) {
+      // in range by the loop condition, as is the operand every opcode
+      // reached here carries after it
+      const code = words[i]!;
       if (code === PCode.jump || code === PCode.ifno) {
-        targets.push({ line, target: pcode[line][i + 1] });
+        targets.push({ line, target: words[i + 1]! });
       }
       const args = pcodeArgs(code);
-      i += args === -1 ? pcode[line][i + 1] + 2 : args + 1;
+      i += args === -1 ? words[i + 1]! + 2 : args + 1;
     }
   }
   return targets;
@@ -719,7 +729,7 @@ const looksLikeUnresolvedJump = (pcode: number[][]): boolean =>
   pcode.some((line) =>
     line.some(
       (code, i) =>
-        (code === PCode.jump || code === PCode.ifno) && line[i + 1] < 0,
+        (code === PCode.jump || code === PCode.ifno) && line[i + 1]! < 0,
     ),
   );
 

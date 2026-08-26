@@ -217,7 +217,7 @@ describe("init opens the file the URL names", () => {
     // the URL shape the server really serves examples under
     assertEquals(requests, ["/examples/Python/Procedures/Triangle1.tpy"]);
     // the real example file's code, in the store, over the empty placeholder
-    const disk = await exampleFromDisk(requests[0]);
+    const disk = await exampleFromDisk(requests[0]!);
     assertEquals(program.getCode(), disk.trim().replace(/\r\n/g, "\n"));
     assertEquals(program.getFiles().length, 1);
     assertEquals(program.getCurrentFile()?.example, "Triangle1");

@@ -152,7 +152,7 @@ describe("machine/runtime: file processing (core operators)", () => {
         [PCode.halt],
       ]);
       assertEquals(result.output.runtimeErrors.length, 1);
-      assertMatch(result.output.runtimeErrors[0].message, /does not exist/);
+      assertMatch(result.output.runtimeErrors[0]?.message!, /does not exist/);
       assertFalse(isRunning());
     });
 
@@ -183,7 +183,7 @@ describe("machine/runtime: file processing (core operators)", () => {
         [PCode.halt],
       ]);
       assertEquals(result.output.runtimeErrors.length, 1);
-      assertMatch(result.output.runtimeErrors[0].message, /cannot contain/i);
+      assertMatch(result.output.runtimeErrors[0]?.message!, /cannot contain/i);
       assertFalse(isRunning());
     });
   });
@@ -218,7 +218,7 @@ describe("machine/runtime: file processing (core operators)", () => {
         [PCode.halt],
       ]);
       assertEquals(result.output.runtimeErrors.length, 1);
-      assertMatch(result.output.runtimeErrors[0].message, /cannot contain/i);
+      assertMatch(result.output.runtimeErrors[0]?.message!, /cannot contain/i);
     });
   });
 
@@ -263,8 +263,8 @@ describe("machine/runtime: file processing (core operators)", () => {
       assertEquals(readMissing, 0);
       assertEquals(appendMissing, 0);
       assertEquals(writeExisting, 0);
-      assert(writeMissing > 0);
-      assert(rewriteExisting > 0);
+      assert(writeMissing! > 0);
+      assert(rewriteExisting! > 0);
     });
 
     it("fails softly (returns 0) for an out-of-range mode code, rather than throwing", async () => {
@@ -307,7 +307,7 @@ describe("machine/runtime: file processing (core operators)", () => {
         [PCode.halt],
       ]);
       assertEquals(result.output.runtimeErrors.length, 1);
-      assertMatch(result.output.runtimeErrors[0].message, /cannot contain/i);
+      assertMatch(result.output.runtimeErrors[0]?.message!, /cannot contain/i);
     });
   });
 
@@ -611,7 +611,7 @@ describe("machine/runtime: file processing (core operators)", () => {
         [PCode.halt],
       ]);
       assertEquals(result.output.runtimeErrors.length, 1);
-      assertMatch(result.output.runtimeErrors[0].message, /cannot contain/i);
+      assertMatch(result.output.runtimeErrors[0]?.message!, /cannot contain/i);
     });
   });
 
@@ -839,7 +839,7 @@ describe("machine/runtime: file processing (core operators)", () => {
         [PCode.halt],
       ]);
       assertEquals(result.output.runtimeErrors.length, 1);
-      assertMatch(result.output.runtimeErrors[0].message, /cannot contain/i);
+      assertMatch(result.output.runtimeErrors[0]?.message!, /cannot contain/i);
     });
 
     it("rejects a '..' segment in the new path", async () => {
@@ -851,7 +851,7 @@ describe("machine/runtime: file processing (core operators)", () => {
         [PCode.halt],
       ]);
       assertEquals(result.output.runtimeErrors.length, 1);
-      assertMatch(result.output.runtimeErrors[0].message, /cannot contain/i);
+      assertMatch(result.output.runtimeErrors[0]?.message!, /cannot contain/i);
     });
   });
 
@@ -860,7 +860,10 @@ describe("machine/runtime: file processing (core operators)", () => {
     // the simplest single-suspension op) rather than any one file PCode's own
     // behaviour.
 
-    it("a rejected FileSystem call halts with the rejection's error, same as a synchronous throw", async () => {
+    it("a rejected FileSystem call halts, reporting the rejection as an internal fault", async () => {
+      // an adapter failing is not the student's error, so it is wrapped rather
+      // than shown verbatim - see errors.test.ts ("internal errors are told
+      // apart from the student's own") for the discrimination itself
       const rejectingFiles: FakeFiles = {
         ...fakeFiles(),
         openFile: () => Promise.reject(new Error("disk exploded")),
@@ -871,7 +874,10 @@ describe("machine/runtime: file processing (core operators)", () => {
         rejectingFiles,
       );
       assertEquals(result.output.runtimeErrors.length, 1);
-      assertEquals(result.output.runtimeErrors[0].message, "disk exploded");
+      assertEquals(
+        result.output.runtimeErrors[0]?.message,
+        "Something has gone wrong inside the Turtle machine (disk exploded). This is not an error in your program.",
+      );
       assertFalse(isRunning());
     });
 

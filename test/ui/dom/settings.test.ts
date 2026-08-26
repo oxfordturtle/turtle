@@ -226,7 +226,7 @@ describe("resetting the settings to their defaults", () => {
   });
 });
 
-// Both blocked on an account system that doesn't exist - see TODO.md 2.4.
+// Both blocked on an account system that doesn't exist - see TODO.md 3.4.
 // `saveSettings` is reached from the Options menu (controls.test.ts);
 // `loadSavedSettings` has no call site yet at all, and is pinned here so that
 // giving it one can't quietly change what it does.

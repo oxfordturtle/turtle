@@ -272,7 +272,7 @@ describe("drawing text", () => {
     assertEquals(finalFont(), `italic bold 10pt ${fonts[0].css}`);
   });
 
-  // [known limitation] TODO.md 2.7: bits 6 and 7 are decoded and then
+  // [known limitation] TODO.md 3.7: bits 6 and 7 are decoded and then
   // ignored, so underlined and strikethrough text draws as plain text. The
   // assertion is what the code does, not what it should do - changing it
   // trips this test rather than passing silently.
@@ -354,7 +354,9 @@ describe("flood filling", () => {
     return [0, 1, 2, 3, 4].map((y) =>
       [0, 1, 2, 3, 4].map((x) => {
         const offset = (y * 5 + x) * 4;
-        return data[offset] * 65536 + data[offset + 1] * 256 + data[offset + 2];
+        return (
+          data[offset]! * 65536 + data[offset + 1]! * 256 + data[offset + 2]!
+        );
       }),
     );
   };

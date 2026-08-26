@@ -53,7 +53,7 @@ export function subroutineName(
     type = "string";
   } else if (test) {
     type = "string";
-    stringLength = parseInt(test[1], 10);
+    stringLength = parseInt(test[1]!, 10); // group 1 of a successful match
   }
 
   return [name, subroutineType, type, stringLength];
@@ -71,7 +71,7 @@ export function variableName(lexemes: Lexemes): [string, Type, number] {
     type = "string";
   } else if (test) {
     type = "string";
-    stringLength = parseInt(test[1], 10);
+    stringLength = parseInt(test[1]!, 10); // group 1 of a successful match
   } else {
     throw new CompilerError(
       '{lex} is not the name of any recognised command or a valid variable name. (Boolean and integer variables end with "%", and string variables end with "$".)',

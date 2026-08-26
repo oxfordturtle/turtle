@@ -79,8 +79,10 @@ export default (
       ? stmt.command.parameters
       : getParameters(stmt.command);
   for (let index = 0; index < parameters.length; index += 1) {
-    const arg = stmt.arguments[index];
-    const param = parameters[index];
+    // the parser has already checked the argument count against the
+    // parameter list, so both subscripts are in range
+    const arg = stmt.arguments[index]!;
+    const param = parameters[index]!;
     merge(pcode, expression(arg, program, options, param.isReferenceParameter));
   }
 

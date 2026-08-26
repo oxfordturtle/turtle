@@ -36,7 +36,7 @@ describe("encoder/program", () => {
         line.includes(PCode.subr),
       );
       assert(subrLineIndex >= 0);
-      const subrLine = pcode[subrLineIndex];
+      const subrLine = pcode[subrLineIndex]!; // found by findIndex, asserted above
       const subrArgIndex = subrLine.indexOf(PCode.subr) + 1;
 
       // if back-patching hadn't run, this would still be the placeholder
@@ -185,9 +185,9 @@ describe("encoder/program", () => {
 
       // turtleAddress(program) is the argument of the very first PCode.ldin
       // in programStart's first pcode line, in all three cases
-      assertEquals(noSubroutines[0][0], PCode.ldin);
-      assertEquals(procedureOnly[0][1], noSubroutines[0][1] + 1); // +1 subroutine pointer
-      assertEquals(withFunction[0][1], procedureOnly[0][1] + 1); // +1 again, for the function's result slot
+      assertEquals(noSubroutines[0]![0], PCode.ldin);
+      assertEquals(procedureOnly[0]![1], noSubroutines[0]![1]! + 1); // +1 subroutine pointer
+      assertEquals(withFunction[0]![1], procedureOnly[0]![1]! + 1); // +1 again, for the function's result slot
     });
   });
 
@@ -225,7 +225,7 @@ describe("encoder/program", () => {
           line[8] === PCode.stvv,
       );
       assertEquals(setupLines.length, 3);
-      assertEquals(setupLines[0][7], 2); // outer array's elementCount (array[1..2,1..2])
+      assertEquals(setupLines[0]![7], 2); // outer array's elementCount (array[1..2,1..2])
     });
 
     it("uses local (subroutine-relative) addressing for a plain local string variable", () => {
@@ -301,7 +301,7 @@ describe("encoder/program", () => {
       assertExists(memcLine);
       const memcIndex = pcode.indexOf(memcLine!);
       // the very next pcode line is straight into storing the parameter, not a zptr zeroing block
-      assert(!pcode[memcIndex + 1].includes(PCode.zptr));
+      assert(!pcode[memcIndex + 1]?.includes(PCode.zptr));
     });
 
     it("zeroes locals when a subroutine has locals beyond its parameters (initialiseLocals: true, the default), but not when the option is false", () => {

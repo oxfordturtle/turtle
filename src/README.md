@@ -62,7 +62,7 @@ barrel, and nine of its branches return the literal string `"TODO"` while
 `formatProgram` returns `"program"`. What it does today — the finished arms and
 the placeholders alike — is pinned in `test/core/compiler/formatter.test.ts`,
 marked `[known limitation]`, so finishing it trips those tests rather than
-passing silently. See `TODO.md` §2.2.
+passing silently. See `TODO.md` §3.2.
 
 ### The parser
 
@@ -107,19 +107,40 @@ relative jumps, append `HCLR` to every line that made a heap string, `HALT`.
 
 ## `core/` — the machine
 
-`machine/runtime.ts` is one large `switch` over the pcode instruction set,
-inside a loop that runs until a draw or instruction budget is spent, then
-reschedules itself through the timers port. Scheduling rather than recursing is
-what lets the canvas actually paint between blocks.
+`machine/runtime.ts` is the machine's lifecycle (`run`/`halt`/`playOrPause`)
+and its instruction loop: a `switch` over the pcode instruction set, running
+until a draw or instruction budget is spent, then rescheduling itself through
+the timers port. Scheduling rather than recursing is what lets the canvas
+actually paint between blocks.
+
+The switch is a dispatch table and nothing more — one line of body per arm,
+calling into `machine/operators/`, where the actual work lives one small module
+per instruction group: `stack.ts`, `arithmetic.ts`, `comparison.ts`,
+`strings.ts`, `lists.ts`, `conversion.ts`, `turtle.ts`, `canvas.ts`,
+`variables.ts`, `flow.ts`, `files.ts`, `io.ts`. The groups are the ones
+`constants/pcodes.ts` declares the opcodes under and `runtime.test.ts` tests
+them under, so all three read side by side. An operator takes a `Cycle` (see
+`machine/types.ts`) for the ports, the run's options, and the few things only
+the loop can do — read an inline operand, record a draw, suspend.
 
 The rest of `machine/` is small: `memory.ts` (main memory, the stacks and the
-heap), `state.ts` (runtime state and the installed ports), `vcanvas.ts`
-(virtual-to-real coordinate mapping), `input.ts` (keyboard and mouse).
+heap, and the typed accessors every operator pops its operands through),
+`state.ts` (runtime state and the installed ports), `vcanvas.ts`
+(virtual-to-real coordinate mapping), `input.ts` (keyboard and mouse),
+`keybuffer.ts` (the keyboard ring buffer's layout, behind names), `error.ts`
+(`MachineError` — a fault in the student's program rather than in the machine),
+`limits.ts`, `colour.ts` and `random.ts`.
+
+The bytecode itself is documented separately, in
+[`core/machine/README.md`](core/machine/README.md): the `number[][]` layout and
+the rule that a jump lands on the start of a line, inline operands, the
+evaluation stack and the other four, the memory map and its heap watermarks,
+and the opcode groups in switch order.
 
 Where the machine's behaviour is a judgement call rather than a derivation, it
 follows the Delphi original, which lives in the sibling `turtle-pascal/`
-repository — `Win_TurtleRun.pas` is the runtime. Comments in `runtime.ts` name
-the Pascal procedure where it matters.
+repository — `Win_TurtleRun.pas` is the runtime. Comments name the Pascal
+procedure where it matters.
 
 ### Ports and adapters
 
@@ -328,7 +349,7 @@ the compiler actually implements.
 - No filesystem adapter, so the file-processing opcodes have nothing real behind
   them in the browser.
 - `core/compiler/formatter/` is a stub — exported and pinned, but unimplemented
-  (see above, and `TODO.md` §2.2).
+  (see above, and `TODO.md` §3.2).
 - Undo, Redo, Cut, Copy and Paste in the Edit menu report "not implemented".
   They need either `document.execCommand`, which is deprecated and unspecified,
   or an undo stack that would have to replace the browser's rather than sit

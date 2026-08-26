@@ -116,10 +116,11 @@ export const programStore = store("program", {
       if (files.length === 0) {
         files.push(new File(language));
         currentFileIndex = 0;
-      } else if (files.length === 1 && files[0].code === "") {
-        files[0].language = language;
+      } else if (files.length === 1 && files[0]!.code === "") {
+        files[0]!.language = language;
       } else {
-        derived = { tokens: tokenize(files[currentFileIndex].code, language) };
+        // currentFileIndex was clamped into the (non-empty) files array above
+        derived = { tokens: tokenize(files[currentFileIndex]!.code, language) };
       }
       // the session doesn't store compilation results, so a file compiled when
       // the page was last unloaded is compiled again here, in the *current*
@@ -230,7 +231,7 @@ export const programStore = store("program", {
       // even when the index doesn't move, everything downstream of it is now a
       // different file
       const index = Math.min(state.currentFileIndex, remaining.length - 1);
-      const file = remaining[index];
+      const file = remaining[index]!; // remaining is non-empty by the check above
       save("files", remaining);
       save("currentFileIndex", index);
       return {
@@ -321,8 +322,8 @@ export const getPcode = (): number[][] => programStore.get("pcode");
 export const initialise = (): void => {
   if (programStore.get("files").length > 0) return;
   programStore.dispatch("restore", {
-    restored: (load("files") as unknown[]).map(restoreFile),
-    storedIndex: load("currentFileIndex") as number,
+    restored: load("files").map(restoreFile),
+    storedIndex: load("currentFileIndex"),
   });
 };
 
@@ -565,7 +566,7 @@ const compile = (
   index: number,
   language: Language,
 ): Partial<Program> => {
-  const file = files[index];
+  const file = files[index]!; // every caller passes an index into `files`
   file.language = language;
   const next: Partial<Program> = {};
   try {

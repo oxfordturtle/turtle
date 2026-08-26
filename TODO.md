@@ -1,16 +1,18 @@
 # TODO
 
-Gaps and deliberate limitations, collected from the markers already in the
-codebase so each can be picked up on its own. There are no known bugs
-outstanding: everything below is either a decision to revisit or work not yet
-done.
+Gaps, known bugs and deliberate limitations, collected from the markers already
+in the codebase so each can be picked up on its own. §1 is the machine's known
+bugs, **all of which are now fixed**, kept as a record; §2 is behaviour that is
+deliberate and should not be "fixed" without a decision; §3 and §4 are work not
+yet done.
 
-The limitations in §1 have a test pinning the current behaviour, following the
-convention in `test/README.md` §5: a `[known limitation]` (or, if a bug is ever
-found and not fixed straight away, a `[known bug]`) test asserts what the code
-actually does, so that changing it trips the test rather than passing silently.
-**Changing one of those therefore means updating its pinned test as part of the
-change.**
+§2 has a test pinning the current behaviour in both directions, following the
+convention in `test/README.md` §5: a `[known limitation]` test asserts what the
+code actually does, so that changing it trips the test rather than passing
+silently. **Changing one of those therefore means updating its pinned test as
+part of the change.** §1's entries had pins of the same kind while they were
+outstanding; each fix replaced its pin with a test asserting the corrected
+behaviour, cited in the entry.
 
 Sources of truth this file was collected from, and which should be updated
 alongside it:
@@ -139,11 +141,29 @@ currently fall through to "Invalid file type."
 ("ignores the underline and strikethrough bits"). The font bits are decoded and
 then ignored; bold and italic immediately above them are handled.
 
-### 2.8 `TRAC` and `MEMW` opcodes just pop the stack
+### 2.8 `TRAC` and `MEMW` opcodes just pop the stack, and `traceOnRun` is dead
 
-[src/core/machine/runtime.ts:1977](src/core/machine/runtime.ts#L1977) and
-[:1981](src/core/machine/runtime.ts#L1981), pinned at
-`test/core/machine/runtime.test.ts:1066`.
+[operators/io.ts:22](src/core/machine/operators/io.ts#L22) and
+[:26](src/core/machine/operators/io.ts#L26), pinned at
+`test/core/machine/runtime.test.ts:1066`. Both are marked "not implemented" at
+the site and listed as such in
+[machine/README.md](src/core/machine/README.md).
+
+`MachineOptions.traceOnRun` is the same gap seen from the Run menu, and was
+recorded separately as §1.12 before it was clear that it is a missing feature
+rather than a defect: grepping every `MachineOptions` field for
+`options.<field>` across `src/core/machine/` finds ten of the eleven live and
+`traceOnRun` alone dead (§§1.2 and 1.11 were the other two dead ones, and are
+fixed), so turning tracing on changes nothing a student can see. Whatever tracing should emit, `TRAC` and `MEMW` are presumably where it
+emits from.
+
+**Deliberately left open, and not to be implemented in passing.** What a trace
+should contain has never been decided — a console log per instruction is only
+the likeliest answer. The pin at
+[runtime.test.ts](test/core/machine/runtime.test.ts) ("traceOnRun changes
+nothing about a run") reflects that: it asserts an equality between two runs of
+one program, with the flag off and on, rather than anything about either, so
+whatever tracing turns out to be, it trips.
 
 ### 2.9 Seven of the eight `EncoderOptions` are dead
 
@@ -175,13 +195,13 @@ go.
 
 ## 3. Smaller TODOs
 
-Individually cheap, listed so they can be swept up opportunistically.
+Individually cheap, listed so they can be swept up opportunistically. Three
+`src/core/machine/` entries that used to live here — the hard-coded range check
+and the two placeholder error messages — moved to §1 once they were pinned;
+they are §1.2 and §1.3.
 
 | Item                                                                 | Where                                                                                                                        |
 | -------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
-| Range checking should be a runtime option, not hard-coded            | [runtime.ts:1354](src/core/machine/runtime.ts#L1354)                                                                         |
-| Placeholder runtime error message: "String is not a character."      | [runtime.ts:1329](src/core/machine/runtime.ts#L1329)                                                                         |
-| Placeholder runtime error message: "Not found."                      | [runtime.ts:1341](src/core/machine/runtime.ts#L1341)                                                                         |
 | No error for binary literals with digits > 1                         | [tokenize.ts:300](src/core/compiler/tokenizer/tokenize.ts#L300)                                                              |
 | No error for octal literals with digits > 7                          | [tokenize.ts:335](src/core/compiler/tokenizer/tokenize.ts#L335)                                                              |
 | Single-quoted strings should perhaps be ruled out in BASIC           | [tokenize.ts:208](src/core/compiler/tokenizer/tokenize.ts#L208)                                                              |

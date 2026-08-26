@@ -22,10 +22,15 @@ const asset = async (requestParams: RequestParams): Promise<Response> => {
     : fileResponse(file, path);
 };
 
-const page = async (requestParams: RequestParams): Promise<Response> =>
-  handler[requestParams.sections[0]]
-    ? await handler[requestParams.sections[0]](requestParams)
+const page = async (requestParams: RequestParams): Promise<Response> => {
+  // called as a member of `handler`, not through a local: see pages.test.ts's
+  // "routes named after Object.prototype members", which pins what a route
+  // named after an inherited member currently does
+  const name = requestParams.sections[0];
+  return handler[name]
+    ? await handler[name](requestParams)
     : error(requestParams, 404);
+};
 
 const handler: Record<
   string,
