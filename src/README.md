@@ -105,6 +105,17 @@ start a new pcode line. This trips up short-circuit `and`/`or`
 `encoder/encode.ts` finishes the job: back-patch subroutine calls, resolve
 relative jumps, append `HCLR` to every line that made a heap string, `HALT`.
 
+### Performance
+
+`deno task bench` compiles the whole `assets/examples/` corpus and reports where
+the time goes: per stage, per keystroke (`tokenize` then `highlight`, which is
+what the editor re-runs on every edit), and — the part worth reading first — a
+**scaling check**, the same work at 1x/2x/4x/8x the input as ms-per-unit. A flat
+column is linear; a rising one is quadratic, and says so long before the
+absolute numbers look alarming. Absolute timings are machine-dependent and are
+not gated; `deno task bench --check` gates the scaling ratio, which is not.
+See `tools/benchmark.ts`.
+
 ## `core/` — the machine
 
 `machine/runtime.ts` is the machine's lifecycle (`run`/`halt`/`playOrPause`)

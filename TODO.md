@@ -202,9 +202,9 @@ they are §1.2 and §1.3.
 
 | Item                                                                 | Where                                                                                                                        |
 | -------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
-| No error for binary literals with digits > 1                         | [tokenize.ts:300](src/core/compiler/tokenizer/tokenize.ts#L300)                                                              |
-| No error for octal literals with digits > 7                          | [tokenize.ts:335](src/core/compiler/tokenizer/tokenize.ts#L335)                                                              |
-| Single-quoted strings should perhaps be ruled out in BASIC           | [tokenize.ts:208](src/core/compiler/tokenizer/tokenize.ts#L208)                                                              |
+| No error for binary literals with digits > 1                         | [tokenize.ts:331](src/core/compiler/tokenizer/tokenize.ts#L331)                                                              |
+| No error for octal literals with digits > 7                          | [tokenize.ts:332](src/core/compiler/tokenizer/tokenize.ts#L332)                                                              |
+| Single-quoted strings should perhaps be ruled out in BASIC           | [tokenize.ts:266](src/core/compiler/tokenizer/tokenize.ts#L266)                                                              |
 | TypeScript: no block-scoped `let`, and constants aren't block-scoped | [typescript/parser.ts:23](src/core/compiler/parser/typescript/parser.ts#L23)                                                 |
 | TypeScript: constants hoisted on the first pass                      | [typescript/parser.ts:32](src/core/compiler/parser/typescript/parser.ts#L32)                                                 |
 | Character/string operator choice made by operand type, not context   | [common/expression.ts:221](src/core/compiler/parser/common/expression.ts#L221)                                               |

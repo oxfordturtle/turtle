@@ -236,13 +236,10 @@ describe("tokenize", () => {
       });
     }
 
-    // N.B. the BASIC/Pascal scanner's mid-loop `code[length] === "\n"` check
-    // is dead code: string() does `code = code.split("\n")[0]` before the
-    // loop runs, so by then `code` cannot contain a newline at all. Both of
-    // the cases that check was meant to catch (the two tests above -- a
-    // string cut off by a real line break, and one cut off by the end of the
-    // file) fall through to the `!end` check after the loop instead, and both
-    // are asserted above. Deliberately not force-tested.
+    // N.B. the two tests above -- a string cut off by a real line break, and
+    // one cut off by the end of the file -- are the same case to the scanner:
+    // it stops at the end of the line either way, and reports what it has as
+    // unterminated.
 
     for (const language of ["C", "Java", "Python", "TypeScript"] as const) {
       it(`tokenizes a single-quoted ${language} string`, () => {
@@ -484,6 +481,18 @@ describe("tokenize", () => {
       const tokens = tokenize("\\zzz", "Pascal");
       assertEquals(tokens[0]?.type, "badInputCode");
     });
+
+    for (const language of LANGUAGES) {
+      it(`tokenizes a lone backslash in ${language} as illegal, not as a bad input code`, () => {
+        // a "\\" with no name after it is neither a recognised input code nor
+        // a badly spelled one - "badInputCode" needs at least one word
+        // character to name. Nothing in the examples does this, so it is
+        // pinned here.
+        const tokens = tokenize("\\", language);
+        assertEquals(tokens[0]?.type, "illegal");
+        assertEquals(tokens[0]?.content, "\\");
+      });
+    }
   });
 
   describe("query codes", () => {
@@ -515,6 +524,15 @@ describe("tokenize", () => {
       const tokens = tokenize("?zzz", "Pascal");
       assertEquals(tokens[0]?.type, "badQueryCode");
     });
+
+    for (const language of LANGUAGES) {
+      it(`tokenizes a lone question mark in ${language} as illegal, not as a bad query code`, () => {
+        // as with the lone backslash above
+        const tokens = tokenize("?", language);
+        assertEquals(tokens[0]?.type, "illegal");
+        assertEquals(tokens[0]?.content, "?");
+      });
+    }
   });
 
   describe("turtle properties", () => {
