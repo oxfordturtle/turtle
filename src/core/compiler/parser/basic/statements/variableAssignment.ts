@@ -19,30 +19,29 @@ const parseVariableAssignment = (
 ): VariableAssignment => {
   // array variables permit element indexes at this point
   const indexes: Expression[] = [];
-  if (lexemes.get()?.content === "(") {
+  if (lexemes.peek()?.content === "(") {
     if (isArray(variable)) {
-      lexemes.next();
-      while (lexemes.get() && lexemes.get()?.content !== ")") {
+      lexemes.advance();
+      while (!lexemes.atEnd() && lexemes.peek()?.content !== ")") {
         let exp = parseExpression(lexemes, routine);
         exp = typeCheck(routine.language, exp, "integer");
         indexes.push(exp);
-        if (lexemes.get()?.content === ",") {
-          lexemes.next();
-          if (lexemes.get()?.content === ")") {
+        if (lexemes.match(",")) {
+          if (lexemes.peek()?.content === ")") {
             throw new CompilerError(
               "Trailing comma at the end of array indexes.",
-              lexemes.get(-1),
+              lexemes.peek(-1),
             );
           }
         }
       }
-      if (!lexemes.get()) {
+      if (lexemes.atEnd()) {
         throw new CompilerError(
           'Closing bracket ")" needed after array indexes.',
-          lexemes.get(-1),
+          lexemes.peek(-1),
         );
       }
-      lexemes.next();
+      lexemes.advance();
     } else {
       throw new CompilerError(
         "{lex} is not an array variable.",
@@ -64,11 +63,11 @@ const parseVariableAssignment = (
     }
   }
 
-  const assignmentLexeme = lexemes.get();
+  const assignmentLexeme = lexemes.peek();
   if (!assignmentLexeme) {
     throw new CompilerError(
       'Variable must be followed by assignment operator "=".',
-      lexemes.get(-1),
+      lexemes.peek(-1),
     );
   }
   if (
@@ -80,12 +79,12 @@ const parseVariableAssignment = (
       assignmentLexeme,
     );
   }
-  lexemes.next();
+  lexemes.advance();
 
-  if (!lexemes.get()) {
+  if (lexemes.atEnd()) {
     throw new CompilerError(
       `Variable "${variable.name}" must be assigned a value.`,
-      lexemes.get(-1),
+      lexemes.peek(-1),
     );
   }
   let value = parseExpression(lexemes, routine);

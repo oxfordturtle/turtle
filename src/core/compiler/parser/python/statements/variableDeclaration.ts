@@ -27,19 +27,13 @@ export default (
   const foo = variable(lexemes, routine);
 
   if (foo.kind === "constant") {
-    if (!lexemes.get()) {
+    if (lexemes.atEnd()) {
       throw new CompilerError(
         "Constant must be assigned a value.",
-        lexemes.get(-1),
+        lexemes.peek(-1),
       );
     }
-    if (lexemes.get()?.content !== "=") {
-      throw new CompilerError(
-        "Constant must be assigned a value.",
-        lexemes.get(),
-      );
-    }
-    lexemes.next();
+    lexemes.expect("=", "Constant must be assigned a value.");
 
     const exp = parseExpression(lexemes, routine);
     const value = evaluate(exp, "Python", "constant");
@@ -52,7 +46,7 @@ export default (
 
   routine.variables.push(foo);
 
-  if (lexemes.get()?.content === "=") {
+  if (lexemes.peek()?.content === "=") {
     return parseVariableAssignment(variableLexeme, lexemes, routine, foo);
   }
 

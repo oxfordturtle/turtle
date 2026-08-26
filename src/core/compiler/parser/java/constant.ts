@@ -13,11 +13,11 @@ export default (lexemes: Lexemes, routine: Routine): Constant => {
   if (constantType === null) {
     throw new CompilerError(
       'Constant type cannot be void (expected "boolean", "char", "int", or "String").',
-      lexemes.get(),
+      lexemes.peek(),
     );
   }
   if (arrayDimensions.length > 0) {
-    throw new CompilerError("Constant cannot be an array.", lexemes.get());
+    throw new CompilerError("Constant cannot be an array.", lexemes.peek());
   }
 
   const name = identifier(lexemes, routine);
@@ -25,20 +25,14 @@ export default (lexemes: Lexemes, routine: Routine): Constant => {
   // deno-coverage-ignore-start -- unreachable: program.ts guarantees the final
   // lexeme is "}", and identifier() has just consumed a real identifier (it
   // rejects "}"), so at least that final "}" is still ahead of us here
-  if (!lexemes.get()) {
+  if (lexemes.atEnd()) {
     throw new CompilerError(
       `Constant ${name} must be assigned a value.`,
-      lexemes.get(-1),
+      lexemes.peek(-1),
     );
   }
   // deno-coverage-ignore-stop
-  if (lexemes.get()?.content !== "=") {
-    throw new CompilerError(
-      `Constant ${name} must be assigned a value.`,
-      lexemes.get(),
-    );
-  }
-  lexemes.next();
+  lexemes.expect("=", `Constant ${name} must be assigned a value.`);
 
   const exp = parseExpression(lexemes, routine);
   typeCheck(routine.language, exp, constantType);

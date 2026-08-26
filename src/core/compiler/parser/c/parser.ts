@@ -14,18 +14,18 @@ import type from "./type.ts";
 export default function c(lexemes: Lexemes): Program {
   const program = makeProgram("C");
 
-  while (lexemes.get()) {
-    const lexeme = lexemes.get() as Lexeme;
-    const lexemeIndex = lexemes.index;
+  while (!lexemes.atEnd()) {
+    const lexeme = lexemes.peek() as Lexeme;
+    const declarationStart = lexemes.mark();
 
     switch (lexeme.type) {
       case "comment":
-        lexemes.next();
+        lexemes.advance();
         break;
 
       case "keyword":
         if (lexeme.subtype === "const") {
-          lexemes.next();
+          lexemes.advance();
           program.constants.push(constant(lexemes, program));
           eosCheck(lexemes);
         } else {
@@ -40,12 +40,12 @@ export default function c(lexemes: Lexemes): Program {
         type(lexemes);
         identifier(lexemes, program);
 
-        if (lexemes.get()?.content === "(") {
-          lexemes.index = lexemeIndex; // go back to the start
+        if (lexemes.peek()?.content === "(") {
+          lexemes.seek(declarationStart); // go back to the start
           program.subroutines.push(subroutine(lexeme, lexemes, program));
         } // otherwise its a variable declaration/assignment
         else {
-          lexemes.index = lexemeIndex; // go back to the start
+          lexemes.seek(declarationStart); // go back to the start
           program.statements.push(
             parseSimpleStatement(lexeme, lexemes, program),
           );
@@ -62,10 +62,10 @@ export default function c(lexemes: Lexemes): Program {
   }
 
   for (const subroutine of getAllSubroutines(program)) {
-    lexemes.index = subroutine.start;
-    while (lexemes.index < subroutine.end) {
+    lexemes.seek(subroutine.start);
+    while (lexemes.before(subroutine.end)) {
       subroutine.statements.push(
-        parseStatement(lexemes.get() as Lexeme, lexemes, subroutine),
+        parseStatement(lexemes.peek() as Lexeme, lexemes, subroutine),
       );
     }
   }

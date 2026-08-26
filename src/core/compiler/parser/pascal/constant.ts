@@ -1,4 +1,3 @@
-import { CompilerError } from "../../tools/error.ts";
 import evaluate from "../common/evaluate.ts";
 import parseExpression from "../common/expression.ts";
 import constant, { type Constant } from "../definitions/constant.ts";
@@ -10,13 +9,7 @@ import parseSemicolon from "./statements/semicolon.ts";
 export default (lexemes: Lexemes, routine: Program): Constant => {
   const name = identifier(lexemes, routine);
 
-  if (!lexemes.get() || lexemes.get()?.content !== "=") {
-    throw new CompilerError(
-      "Constant must be assigned a value.",
-      lexemes.get(-1),
-    );
-  }
-  lexemes.next();
+  lexemes.expectAfter("=", "Constant must be assigned a value.");
 
   const exp = parseExpression(lexemes, routine);
   const value = evaluate(exp, "Pascal", "constant");

@@ -1,5 +1,4 @@
 import { type Lexeme } from "../../../lexer/lexeme.ts";
-import { CompilerError } from "../../../tools/error.ts";
 import type { Lexemes } from "../../definitions/lexemes.ts";
 import type { Program } from "../../definitions/routines/program.ts";
 import { type Subroutine } from "../../definitions/routines/subroutine.ts";
@@ -12,18 +11,14 @@ const parseBlock = (
 ): Statement[] => {
   const statements: Statement[] = [];
 
-  while (lexemes.get() && lexemes.get()?.content !== "}") {
-    statements.push(parseStatement(lexemes.get() as Lexeme, lexemes, routine));
+  while (!lexemes.atEnd() && lexemes.peek()?.content !== "}") {
+    statements.push(parseStatement(lexemes.peek() as Lexeme, lexemes, routine));
   }
 
-  if (lexemes.get()?.content === "}") {
-    lexemes.next();
-  } else {
-    throw new CompilerError(
-      'Closing bracket "}" missing after statement block.',
-      lexemes.get(-1),
-    );
-  }
+  lexemes.expectAfter(
+    "}",
+    'Closing bracket "}" missing after statement block.',
+  );
 
   return statements;
 };

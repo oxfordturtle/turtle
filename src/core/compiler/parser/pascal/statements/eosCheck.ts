@@ -14,17 +14,17 @@ const eosCheck = (lexemes: Lexemes): void => {
   // single-statement body (e.g. an "if" inside a "for") makes eosCheck run
   // several times in a row at the same lexeme position (once per wrapping
   // statement), and an earlier call in that chain may already have skipped
-  // this same trailing comment, leaving it as lexemes.get(-1) for this one.
+  // this same trailing comment, leaving it as lexemes.peek(-1) for this one.
   let precedingOffset = -1;
-  while (lexemes.get(precedingOffset)?.type === "comment") {
+  while (lexemes.peek(precedingOffset)?.type === "comment") {
     precedingOffset -= 1;
   }
-  const precedingLexeme = lexemes.get(precedingOffset);
-  while (lexemes.get()?.type === "comment") {
-    lexemes.next();
+  const precedingLexeme = lexemes.peek(precedingOffset);
+  while (lexemes.peek()?.type === "comment") {
+    lexemes.advance();
   }
-  if (lexemes.get()) {
-    if (lexemes.get()?.content !== ";") {
+  if (lexemes.peek()) {
+    if (lexemes.peek()?.content !== ";") {
       if (
         noSemiAfter.indexOf(
           precedingLexeme?.content?.toLowerCase() as string,
@@ -32,18 +32,18 @@ const eosCheck = (lexemes: Lexemes): void => {
       ) {
         if (
           noSemiBefore.indexOf(
-            lexemes.get()?.content?.toLowerCase() as string,
+            lexemes.peek()?.content?.toLowerCase() as string,
           ) === -1
         ) {
           throw new CompilerError(
             "Semicolon needed after command.",
-            lexemes.get(),
+            lexemes.peek(),
           );
         }
       }
     } else {
-      while (lexemes.get() && lexemes.get()?.content === ";") {
-        lexemes.next();
+      while (lexemes.peek()?.content === ";") {
+        lexemes.advance();
       }
     }
   }

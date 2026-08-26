@@ -1,7 +1,6 @@
 import { type KeywordLexeme } from "../../../lexer/lexeme.ts";
 import { CompilerError } from "../../../tools/error.ts";
 import parseExpression from "../../common/expression.ts";
-import skipComments from "../../common/skipComments.ts";
 import typeCheck from "../../common/typeCheck.ts";
 import type { Lexemes } from "../../definitions/lexemes.ts";
 import { type Routine } from "../../definitions/routine.ts";
@@ -15,7 +14,7 @@ export default (
   lexemes: Lexemes,
   routine: Routine,
 ): WhileStatement => {
-  if (!lexemes.get()) {
+  if (lexemes.atEnd()) {
     throw new CompilerError(
       '"while" must be followed by a Boolean expression.',
       whileLexeme,
@@ -24,57 +23,51 @@ export default (
   let condition = parseExpression(lexemes, routine);
   condition = typeCheck(routine.language, condition, "boolean");
 
-  if (!lexemes.get()) {
+  if (lexemes.atEnd()) {
     throw new CompilerError(
       '"while <expression>" must be followed by a colon.',
-      lexemes.get(-1),
+      lexemes.peek(-1),
     );
   }
-  if (lexemes.get()?.content !== ":") {
-    throw new CompilerError(
-      '"while <expression>" must be followed by a colon.',
-      lexemes.get(),
-    );
-  }
-  lexemes.next();
+  lexemes.expect(":", '"while <expression>" must be followed by a colon.');
 
   // follows a comment lexeme with a synthetic newline lexeme in Python, so
   // a comment right after the colon is just as valid as bare whitespace)
-  skipComments(lexemes);
-  if (!lexemes.get()) {
+  lexemes.skipComments();
+  if (lexemes.atEnd()) {
     throw new CompilerError(
       'No statements found after "while <expression>:".',
-      lexemes.get(-1),
+      lexemes.peek(-1),
     );
   }
-  if (lexemes.get()?.type !== "newline") {
+  if (lexemes.peek()?.type !== "newline") {
     throw new CompilerError(
       'Statements following "while <expression>:" must be on a new line.',
-      lexemes.get(),
+      lexemes.peek(),
     );
   }
-  lexemes.next();
+  lexemes.advance();
 
   const whileStatement = makeWhileStatement(whileLexeme, condition);
 
-  if (!lexemes.get()) {
+  if (lexemes.atEnd()) {
     throw new CompilerError(
       'No statements found after "while <expression>:".',
-      lexemes.get(-1),
+      lexemes.peek(-1),
     );
   }
-  if (lexemes.get()?.type !== "indent") {
+  if (lexemes.peek()?.type !== "indent") {
     throw new CompilerError(
       'Statements following "while <expression>:" must be indented.',
-      lexemes.get(),
+      lexemes.peek(),
     );
   }
-  lexemes.next();
+  lexemes.advance();
 
-  if (!lexemes.get()) {
+  if (lexemes.atEnd()) {
     throw new CompilerError(
       'No statements found after "while <expression>:".',
-      lexemes.get(-1),
+      lexemes.peek(-1),
     );
   }
   routine.loopDepth += 1;

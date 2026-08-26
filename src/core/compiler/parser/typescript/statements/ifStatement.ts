@@ -15,53 +15,38 @@ const parseIfStatement = (
   lexemes: Lexemes,
   routine: Program | Subroutine,
 ): IfStatement => {
-  if (!lexemes.get() || lexemes.get()?.content !== "(") {
-    throw new CompilerError(
-      '"if" must be followed by an opening bracket "(".',
-      lexemes.get(-1),
-    );
-  }
-  lexemes.next();
+  lexemes.expectAfter("(", '"if" must be followed by an opening bracket "(".');
 
-  if (!lexemes.get()) {
+  if (lexemes.atEnd()) {
     throw new CompilerError(
       '"if (" must be followed by a Boolean expression.',
-      lexemes.get(-1),
+      lexemes.peek(-1),
     );
   }
   let condition = parseExpression(lexemes, routine);
   condition = typeCheck(routine.language, condition, "boolean");
 
-  if (!lexemes.get() || lexemes.get()?.content !== ")") {
-    throw new CompilerError(
-      '"if (..." must be followed by a closing bracket ")".',
-      lexemes.get(-1),
-    );
-  }
-  lexemes.next();
+  lexemes.expectAfter(
+    ")",
+    '"if (..." must be followed by a closing bracket ")".',
+  );
 
   const ifStatement = makeIfStatement(ifLexeme, condition);
 
-  if (!lexemes.get() || lexemes.get()?.content !== "{") {
-    throw new CompilerError(
-      '"if (...)" must be followed by an opening curly bracket "{".',
-      lexemes.get(-1),
-    );
-  }
-  lexemes.next();
+  lexemes.expectAfter(
+    "{",
+    '"if (...)" must be followed by an opening curly bracket "{".',
+  );
 
   ifStatement.ifStatements.push(...parseBlock(lexemes, routine));
 
-  if (lexemes.get() && lexemes.get()?.content === "else") {
-    lexemes.next();
+  if (lexemes.peek()?.content === "else") {
+    lexemes.advance();
 
-    if (!lexemes.get() || lexemes.get()?.content !== "{") {
-      throw new CompilerError(
-        '"else" must be followed by an opening bracket "{".',
-        lexemes.get(-1),
-      );
-    }
-    lexemes.next();
+    lexemes.expectAfter(
+      "{",
+      '"else" must be followed by an opening bracket "{".',
+    );
 
     ifStatement.elseStatements.push(...parseBlock(lexemes, routine));
   }

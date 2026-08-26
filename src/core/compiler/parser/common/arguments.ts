@@ -41,34 +41,27 @@ const parseArguments = (
   const parameters = isMethod ? allParameters.slice(1) : allParameters;
 
   if (parameters.length > 0) {
-    if (!lexemes.get() || lexemes.get()?.content !== "(") {
-      throw new CompilerError(
-        "Opening bracket missing after command {lex}.",
-        lexeme,
-      );
-    }
-
-    lexemes.next();
+    lexemes.expect("(", "Opening bracket missing after command {lex}.", lexeme);
 
     parseArgumentList(lexemes, routine, commandCall);
   } // without parameters
   else {
     // command with no parameters in BASIC or Pascal (brackets not allowed)
     if (routine.language === "BASIC" || routine.language === "Pascal") {
-      if (lexemes.get() && lexemes.get()?.content === "(") {
+      if (lexemes.peek()?.content === "(") {
         throw new CompilerError(
           "Command {lex} takes no arguments.",
-          lexemes.get(-1),
+          lexemes.peek(-1),
         );
       }
     } // command with no parameters in other languages (brackets obligatory)
     else {
-      const openBracket = lexemes.get();
-      const closeBracket = lexemes.get(1);
+      const openBracket = lexemes.peek();
+      const closeBracket = lexemes.peek(1);
       if (!openBracket || openBracket.content !== "(") {
         throw new CompilerError(
           "Opening bracket missing after command {lex}.",
-          lexemes.get(-1),
+          lexemes.peek(-1),
         );
       }
 
@@ -79,18 +72,18 @@ const parseArguments = (
       ) {
         throw new CompilerError(
           "Closing bracket missing after command {lex}.",
-          lexemes.get(-1),
+          lexemes.peek(-1),
         );
       }
       if (closeBracket.content !== ")") {
         throw new CompilerError(
           "Command {lex} takes no arguments.",
-          lexemes.get(-1),
+          lexemes.peek(-1),
         );
       }
 
-      lexemes.next();
-      lexemes.next();
+      lexemes.advance();
+      lexemes.advance();
     }
   }
 };
@@ -114,7 +107,7 @@ const parseArgumentList = (
 
   if (routine.language === "Python" && commandName === "input") {
     // "input" is variadic: a single string argument is allowed, not required
-    if (lexemes.get()?.content !== ")") {
+    if (lexemes.peek()?.content !== ")") {
       const parameter = parameters[0]!; // "input" declares one
       const argument = parseExpression(lexemes, routine);
       typeCheckArgument(
@@ -134,9 +127,9 @@ const parseArgumentList = (
     // followed by the named "sep" and "end", neither repeatable
     const parameter = parameters[0]!; // "print" declares one
     const namedSoFar = new Set<string>();
-    while (lexemes.get()?.content !== ")") {
-      const lexeme = lexemes.get()!;
-      if (lexeme.type === "identifier" && lexemes.get(1)?.content === "=") {
+    while (lexemes.peek()?.content !== ")") {
+      const lexeme = lexemes.peek()!;
+      if (lexeme.type === "identifier" && lexemes.peek(1)?.content === "=") {
         if (lexeme.content !== "end" && lexeme.content !== "sep") {
           throw new CompilerError(
             `Unknown named argument ${lexeme.content}.`,
@@ -150,8 +143,8 @@ const parseArgumentList = (
           );
         }
         namedSoFar.add(lexeme.content);
-        lexemes.next();
-        lexemes.next();
+        lexemes.advance();
+        lexemes.advance();
         let argument = parseExpression(lexemes, routine);
         argument = typeCheckArgument(
           routine.language,
@@ -161,9 +154,7 @@ const parseArgumentList = (
         );
         const namedArgument = makeNamedArgument(lexeme, argument);
         commandCall.arguments.push(namedArgument);
-        if (lexemes.get()?.content === ",") {
-          lexemes.next();
-        }
+        lexemes.match(",");
       } else {
         if (namedSoFar.size > 0) {
           throw new CompilerError(
@@ -180,9 +171,7 @@ const parseArgumentList = (
           parameter,
         );
         commandCall.arguments.push(argument);
-        if (lexemes.get()?.content === ",") {
-          lexemes.next();
-        }
+        lexemes.match(",");
       }
     }
     if (commandCall.arguments.length === 0) {
@@ -192,7 +181,7 @@ const parseArgumentList = (
   } else {
     while (
       commandCall.arguments.length < parameters.length &&
-      lexemes.get()?.content !== ")"
+      lexemes.peek()?.content !== ")"
     ) {
       const parameter = parameters[commandCall.arguments.length]!; // in range by the loop condition
       // for a method call, arguments[0] is already the receiver, so
@@ -208,25 +197,19 @@ const parseArgumentList = (
       );
       commandCall.arguments.push(argument);
       if (commandCall.arguments.length < parameters.length) {
-        if (!lexemes.get()) {
+        if (lexemes.atEnd()) {
           throw new CompilerError(
             "Comma needed after parameter.",
             argument.lexeme,
           );
         }
-        if (lexemes.get()?.content === ")") {
+        if (lexemes.peek()?.content === ")") {
           throw new CompilerError(
             `Not enough arguments given for command "${commandName}".`,
             commandCall.lexeme,
           );
         }
-        if (lexemes.get()?.content !== ",") {
-          throw new CompilerError(
-            "Comma needed after parameter.",
-            argument.lexeme,
-          );
-        }
-        lexemes.next();
+        lexemes.expect(",", "Comma needed after parameter.", argument.lexeme);
       }
     }
   }
@@ -237,20 +220,17 @@ const parseArgumentList = (
       commandCall.lexeme,
     );
   }
-  if (lexemes.get()?.content === ",") {
+  if (lexemes.peek()?.content === ",") {
     throw new CompilerError(
       "Too many arguments given for command {lex}.",
       commandCall.lexeme,
     );
   }
-  if (lexemes.get()?.content !== ")") {
-    throw new CompilerError(
-      "Closing bracket missing after command {lex}.",
-      commandCall.lexeme,
-    );
-  }
-
-  lexemes.next();
+  lexemes.expect(
+    ")",
+    "Closing bracket missing after command {lex}.",
+    commandCall.lexeme,
+  );
 };
 
 export const typeCheckArgument = (

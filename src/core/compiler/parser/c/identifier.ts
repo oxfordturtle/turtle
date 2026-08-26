@@ -4,12 +4,12 @@ import type { Routine } from "../definitions/routine.ts";
 import * as find from "../common/find.ts";
 
 export default function identifier(lexemes: Lexemes, routine: Routine): string {
-  const identifier = lexemes.get();
+  const identifier = lexemes.peek();
 
   if (!identifier) {
     throw new CompilerError(
       "{lex} must be followed by an identifier.",
-      lexemes.get(-1),
+      lexemes.peek(-1),
     );
   }
 
@@ -31,7 +31,7 @@ export default function identifier(lexemes: Lexemes, routine: Routine): string {
     );
   }
 
-  lexemes.next();
+  lexemes.advance();
 
   return identifier.value;
 }

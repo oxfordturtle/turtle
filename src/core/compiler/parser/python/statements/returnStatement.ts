@@ -18,7 +18,7 @@ export default (
   routine: Routine,
 ): ReturnStatement => {
   if (routine.kind === "Program") {
-    throw new CompilerError("Programs cannot return a value.", lexemes.get());
+    throw new CompilerError("Programs cannot return a value.", lexemes.peek());
   }
 
   let value = parseExpression(lexemes, routine);

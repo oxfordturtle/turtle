@@ -17,7 +17,7 @@ export default function variable(
   if (variableType === null) {
     throw new CompilerError(
       'Variable cannot be void (expected "boolean", "number", or "string").',
-      lexemes.get(),
+      lexemes.peek(),
     );
   }
 

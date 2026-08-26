@@ -9,15 +9,13 @@ import type from "./type.ts";
 export function variables(lexemes: Lexemes, routine: Routine): Variable[] {
   const vars: Variable[] = [];
 
-  while (lexemes.get() && lexemes.get()?.content !== ":") {
+  while (!lexemes.atEnd() && lexemes.peek()?.content !== ":") {
     const name = identifier(lexemes, routine);
     vars.push(makeVariable(name, routine));
-    if (lexemes.get()?.content === ",") {
-      lexemes.next();
-    } else if (lexemes.get()?.type === "identifier") {
+    if (!lexemes.match(",") && lexemes.peek()?.type === "identifier") {
       throw new CompilerError(
         "Comma missing between variable names.",
-        lexemes.get(),
+        lexemes.peek(),
       );
     }
   }
@@ -37,12 +35,12 @@ export function variables(lexemes: Lexemes, routine: Routine): Variable[] {
 
   // a comment may separate one variable declaration from the next (e.g.
   // documenting what each variable is for, right after its semicolon)
-  while (lexemes.get()?.type === "comment") {
-    lexemes.next();
+  while (lexemes.peek()?.type === "comment") {
+    lexemes.advance();
   }
 
   // an identifier next means more variable declarations
-  if (lexemes.get() && lexemes.get()?.type === "identifier") {
+  if (lexemes.peek()?.type === "identifier") {
     vars.push(...variables(lexemes, routine));
   }
 

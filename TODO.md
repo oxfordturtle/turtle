@@ -212,6 +212,7 @@ they are §1.2 and §1.3.
 | Numeric and unicode string escapes unsupported                       | [lexer/lexeme.ts:254](src/core/compiler/lexer/lexeme.ts#L254)                                                                |
 | Python: can't iterate directly over a list of lists                  | [python/statements/forStatement.ts:337](src/core/compiler/parser/python/statements/forStatement.ts#L337)                     |
 | Slices with a step (`s[a:b:c]`) unsupported                          | [common/factor.ts:46](src/core/compiler/parser/common/factor.ts#L46), [:107](src/core/compiler/parser/common/factor.ts#L107) |
+| Java: the missing-`}` error has no line or character                 | [java/program.ts:78](src/core/compiler/parser/java/program.ts#L78)                                                           |
 | `stvg` placement relative to NEWTURTLE needs checking                | [statements/variableAssignment.ts:69](src/core/compiler/encoder/statements/variableAssignment.ts#L69)                        |
 | Local-variable zeroing may not match Peter's latest compiler         | [program/subroutines.ts:77](src/core/compiler/encoder/program/subroutines.ts#L77)                                            |
 

@@ -23,7 +23,7 @@ const parseStatement = (
 
   switch (lexeme.type) {
     case "comment":
-      lexemes.next();
+      lexemes.advance();
       statement = makePassStatement();
       break;
 
@@ -41,33 +41,33 @@ const parseStatement = (
           break;
 
         case "return":
-          lexemes.next();
+          lexemes.advance();
           statement = parseReturnStatement(lexeme, lexemes, routine);
           break;
 
         case "if":
-          lexemes.next();
+          lexemes.advance();
           statement = parseIfStatement(lexeme, lexemes, routine);
           break;
 
         case "else":
           throw new CompilerError(
             'Statement cannot begin with "else". If you have an "if" above, you may be missing a closing bracket "}".',
-            lexemes.get(),
+            lexemes.peek(),
           );
 
         case "for":
-          lexemes.next();
+          lexemes.advance();
           statement = parseForStatement(lexeme, lexemes, routine);
           break;
 
         case "do":
-          lexemes.next();
+          lexemes.advance();
           statement = parseDoStatement(lexeme, lexemes, routine);
           break;
 
         case "while":
-          lexemes.next();
+          lexemes.advance();
           statement = parseWhileStatement(lexeme, lexemes, routine);
           break;
 
@@ -78,7 +78,7 @@ const parseStatement = (
               lexeme,
             );
           }
-          lexemes.next();
+          lexemes.advance();
           eosCheck(lexemes);
           statement = makeBreakStatement();
           break;
@@ -90,7 +90,7 @@ const parseStatement = (
               lexeme,
             );
           }
-          lexemes.next();
+          lexemes.advance();
           eosCheck(lexemes);
           statement = makeContinueStatement();
           break;

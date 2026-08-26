@@ -25,7 +25,7 @@ const parseStatement = (
 
   switch (lexeme.type) {
     case "comment":
-      lexemes.next();
+      lexemes.advance();
       statement = makePassStatement();
       break;
 
@@ -33,7 +33,7 @@ const parseStatement = (
       // in general this should be impossible (new lines should be eaten up at
       // the end of the previous statement), but it can happen at the start of
       // of the program or the start of a block, if there's a comment on the
-      lexemes.next();
+      lexemes.advance();
       statement = makePassStatement();
       break;
 
@@ -49,12 +49,12 @@ const parseStatement = (
           // the subroutine will have been defined in the first pass
           const sub = find.subroutine(
             routine,
-            lexemes.get(1)?.content as string,
+            lexemes.peek(1)?.content as string,
           ) as Subroutine;
           // so here, just jump past its lexemes
           // N.B. lexemes[sub.end] is the final "}" lexeme; here we want to move
           // past it, hence sub.end + 1
-          lexemes.index = sub.end + 1;
+          lexemes.seek(sub.end + 1);
           statement = makePassStatement();
           break;
         }
@@ -67,12 +67,12 @@ const parseStatement = (
           break;
 
         case "return":
-          lexemes.next();
+          lexemes.advance();
           statement = parseReturnStatement(lexeme, lexemes, routine);
           break;
 
         case "if":
-          lexemes.next();
+          lexemes.advance();
           statement = parseIfStatement(lexeme, lexemes, routine);
           break;
 
@@ -83,17 +83,17 @@ const parseStatement = (
           );
 
         case "for":
-          lexemes.next();
+          lexemes.advance();
           statement = parseForStatement(lexeme, lexemes, routine);
           break;
 
         case "do":
-          lexemes.next();
+          lexemes.advance();
           statement = parseDoStatement(lexeme, lexemes, routine);
           break;
 
         case "while":
-          lexemes.next();
+          lexemes.advance();
           statement = parseWhileStatement(lexeme, lexemes, routine);
           break;
 
@@ -104,7 +104,7 @@ const parseStatement = (
               lexeme,
             );
           }
-          lexemes.next();
+          lexemes.advance();
           eosCheck(lexemes);
           statement = makeBreakStatement();
           break;
@@ -116,7 +116,7 @@ const parseStatement = (
               lexeme,
             );
           }
-          lexemes.next();
+          lexemes.advance();
           eosCheck(lexemes);
           statement = makeContinueStatement();
           break;

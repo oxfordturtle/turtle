@@ -15,13 +15,12 @@ const identifiers = (
   const name = identifier(lexemes, routine, false);
   names.push(name);
 
-  if (lexemes.get()?.content === ",") {
-    lexemes.next();
+  if (lexemes.match(",")) {
     names.push(...identifiers(lexemes, routine, context));
-  } else if (lexemes.get()?.type === "identifier") {
+  } else if (lexemes.peek()?.type === "identifier") {
     throw new CompilerError(
       `Comma missing between ${context} variable declarations.`,
-      lexemes.get(-1),
+      lexemes.peek(-1),
     );
   }
 

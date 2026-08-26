@@ -19,7 +19,10 @@ const parseReturnStatement = (
   routine: Subroutine,
 ): ReturnStatement => {
   if (getSubroutineType(routine) !== "function") {
-    throw new CompilerError("Procedures cannot return a value.", lexemes.get());
+    throw new CompilerError(
+      "Procedures cannot return a value.",
+      lexemes.peek(),
+    );
   }
 
   let value = parseExpression(lexemes, routine);

@@ -16,19 +16,13 @@ const parseForStatement = (
   lexemes: Lexemes,
   routine: Subroutine,
 ): ForStatement => {
-  if (!lexemes.get() || lexemes.get()?.content !== "(") {
-    throw new CompilerError(
-      '"for" must be followed by an opening bracket "(".',
-      lexemes.get(-1),
-    );
-  }
-  lexemes.next();
+  lexemes.expectAfter("(", '"for" must be followed by an opening bracket "(".');
 
-  const firstInitialisationLexeme = lexemes.get();
+  const firstInitialisationLexeme = lexemes.peek();
   if (!firstInitialisationLexeme) {
     throw new CompilerError(
       '"for" conditions must begin with a variable assignment.',
-      lexemes.get(-1),
+      lexemes.peek(-1),
     );
   }
   if (
@@ -37,7 +31,7 @@ const parseForStatement = (
   ) {
     throw new CompilerError(
       '"for" conditions must begin with a variable assignment.',
-      lexemes.get(),
+      lexemes.peek(),
     );
   }
   const initialisation = parseSimpleStatement(
@@ -48,29 +42,32 @@ const parseForStatement = (
   if (initialisation.kind !== "variableAssignment") {
     throw new CompilerError(
       '"for" conditions must begin with a variable assignment.',
-      lexemes.get(-1),
+      lexemes.peek(-1),
     );
   }
   if (initialisation.variable.type !== "integer") {
-    throw new CompilerError("Loop variable must be an integer.", lexemes.get());
+    throw new CompilerError(
+      "Loop variable must be an integer.",
+      lexemes.peek(),
+    );
   }
   eosCheck(lexemes);
 
-  if (!lexemes.get()) {
+  if (lexemes.atEnd()) {
     throw new CompilerError(
       '"for (...;" must be followed by a loop condition.',
-      lexemes.get(-1),
+      lexemes.peek(-1),
     );
   }
   let condition = parseExpression(lexemes, routine);
   condition = typeCheck(routine.language, condition, "boolean");
   eosCheck(lexemes);
 
-  const firstChangeLexeme = lexemes.get();
+  const firstChangeLexeme = lexemes.peek();
   if (!firstChangeLexeme) {
     throw new CompilerError(
       '"for" conditions must begin with a variable assignment.',
-      lexemes.get(-1),
+      lexemes.peek(-1),
     );
   }
   if (
@@ -86,23 +83,20 @@ const parseForStatement = (
   if (change.kind !== "variableAssignment") {
     throw new CompilerError(
       '"for" loop variable must be changed on each loop.',
-      lexemes.get(-1),
+      lexemes.peek(-1),
     );
   }
   if (change.variable !== initialisation.variable) {
     throw new CompilerError(
       "Initial loop variable and change loop variable must be the same.",
-      lexemes.get(-1),
+      lexemes.peek(-1),
     );
   }
 
-  if (!lexemes.get() || lexemes.get()?.content !== ")") {
-    throw new CompilerError(
-      'Closing bracket ")" missing after "for" loop initialisation.',
-      lexemes.get(-1),
-    );
-  }
-  lexemes.next();
+  lexemes.expectAfter(
+    ")",
+    'Closing bracket ")" missing after "for" loop initialisation.',
+  );
 
   const forStatement = makeForStatement(
     forLexeme,
@@ -111,13 +105,10 @@ const parseForStatement = (
     change,
   );
 
-  if (!lexemes.get() || lexemes.get()?.content !== "{") {
-    throw new CompilerError(
-      '"for (...)" must be followed by an opening bracket "{".',
-      lexemes.get(-1),
-    );
-  }
-  lexemes.next();
+  lexemes.expectAfter(
+    "{",
+    '"for (...)" must be followed by an opening bracket "{".',
+  );
 
   routine.loopDepth += 1;
   forStatement.statements.push(...parseBlock(lexemes, routine));

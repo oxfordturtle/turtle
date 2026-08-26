@@ -3,12 +3,12 @@ import { CompilerError } from "../../tools/error.ts";
 import type { Lexemes } from "../definitions/lexemes.ts";
 
 export default function type(lexemes: Lexemes): [Type | null, number] {
-  const typeLexeme = lexemes.get();
+  const typeLexeme = lexemes.peek();
 
   if (!typeLexeme) {
     throw new CompilerError(
       'Expected type definition ("bool", "char", "int", "string", or "void").',
-      lexemes.get(-1),
+      lexemes.peek(-1),
     );
   }
   if (typeLexeme.type !== "type") {
@@ -18,45 +18,44 @@ export default function type(lexemes: Lexemes): [Type | null, number] {
     );
   }
   const type = typeLexeme.subtype;
-  lexemes.next();
+  lexemes.advance();
 
   let stringLength = 64;
-  if (lexemes.get()?.content === "[") {
-    lexemes.next();
-    const integerLexeme = lexemes.get();
+  if (lexemes.match("[")) {
+    const integerLexeme = lexemes.peek();
     if (!integerLexeme) {
       throw new CompilerError(
         "Expecting string size specification.",
-        lexemes.get(-1),
+        lexemes.peek(-1),
       );
     }
     if (
       integerLexeme.type !== "literal" ||
       integerLexeme.subtype !== "integer"
     ) {
-      throw new CompilerError("String size must be an integer.", lexemes.get());
+      throw new CompilerError(
+        "String size must be an integer.",
+        lexemes.peek(),
+      );
     }
     if (integerLexeme.value <= 0) {
       throw new CompilerError(
         "String size must be greater than zero.",
-        lexemes.get(),
+        lexemes.peek(),
       );
     }
     stringLength = integerLexeme.value;
-    lexemes.next();
-    if (!lexemes.get()) {
+    lexemes.advance();
+    if (lexemes.atEnd()) {
       throw new CompilerError(
         'Closing bracket "]" missing after string size specification.',
-        lexemes.get(-1),
+        lexemes.peek(-1),
       );
     }
-    if (lexemes.get()?.content !== "]") {
-      throw new CompilerError(
-        'Closing bracket "]" missing after string size specification.',
-        lexemes.get(),
-      );
-    }
-    lexemes.next();
+    lexemes.expect(
+      "]",
+      'Closing bracket "]" missing after string size specification.',
+    );
   }
 
   return [type, stringLength];

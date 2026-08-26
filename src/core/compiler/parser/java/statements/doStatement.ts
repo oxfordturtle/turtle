@@ -17,41 +17,26 @@ const parseDoStatement = (
   lexemes: Lexemes,
   routine: Subroutine,
 ): RepeatStatement => {
-  if (!lexemes.get() || lexemes.get()?.content !== "{") {
-    throw new CompilerError(
-      '"do" must be followed by an opening bracket "{".',
-      lexemes.get(-1),
-    );
-  }
-  lexemes.next();
+  lexemes.expectAfter("{", '"do" must be followed by an opening bracket "{".');
 
   routine.loopDepth += 1;
   const repeatStatements = parseBlock(lexemes, routine);
   routine.loopDepth -= 1;
 
-  if (!lexemes.get() || lexemes.get()?.content !== "while") {
-    throw new CompilerError(
-      '"do { ... }" must be followed by "while".',
-      lexemes.get(-1),
-    );
-  }
-  lexemes.next();
+  lexemes.expectAfter("while", '"do { ... }" must be followed by "while".');
 
-  if (!lexemes.get() || lexemes.get()?.content !== "(") {
-    throw new CompilerError(
-      '"while" must be followed by an opening bracket "(".',
-      lexemes.get(-1),
-    );
-  }
-  lexemes.next();
+  lexemes.expectAfter(
+    "(",
+    '"while" must be followed by an opening bracket "(".',
+  );
 
   // deno-coverage-ignore-start -- unreachable: the last consumed lexeme is
   // "(", which can never be the program's final lexeme (program.ts guarantees
   // that's "}"), so the stream cannot be dry here
-  if (!lexemes.get()) {
+  if (lexemes.atEnd()) {
     throw new CompilerError(
       '"while (" must be followed by a boolean expression.',
-      lexemes.get(-1),
+      lexemes.peek(-1),
     );
   }
   // deno-coverage-ignore-stop
@@ -66,13 +51,10 @@ const parseDoStatement = (
   const notLexeme = operatorLexeme(notToken, "C");
   condition = makeCompoundExpression(notLexeme, null, condition, "not");
 
-  if (!lexemes.get() || lexemes.get()?.content !== ")") {
-    throw new CompilerError(
-      '"while (..." must be followed by a closing bracket ")".',
-      lexemes.get(-1),
-    );
-  }
-  lexemes.next();
+  lexemes.expectAfter(
+    ")",
+    '"while (..." must be followed by a closing bracket ")".',
+  );
 
   eosCheck(lexemes);
 

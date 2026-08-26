@@ -27,7 +27,7 @@ const parseStatement = (
 
   switch (lexeme.type) {
     case "comment":
-      lexemes.next();
+      lexemes.advance();
       statement = makePassStatement();
       break;
 
@@ -47,7 +47,7 @@ const parseStatement = (
     // '=' (at the end of a function)
     case "operator":
       if (lexeme.subtype === "eqal") {
-        lexemes.next();
+        lexemes.advance();
         statement = parseReturnStatement(lexeme, lexemes, routine);
       } else {
         throw new CompilerError("Statement cannot begin with {lex}.", lexeme);
@@ -62,14 +62,14 @@ const parseStatement = (
       switch (lexeme.subtype) {
         // CONST statement
         case "const":
-          lexemes.next();
+          lexemes.advance();
           routine.constants.push(constant(lexemes, routine));
           statement = makePassStatement();
           break;
 
         // DIM statement
         case "dim":
-          lexemes.next();
+          lexemes.advance();
           routine.variables.push(array(lexemes, routine));
           statement = makePassStatement();
           break;
@@ -79,10 +79,10 @@ const parseStatement = (
           if (routine.kind === "Program") {
             throw new CompilerError(
               "Main program cannot declare any LOCAL variables.",
-              lexemes.get(),
+              lexemes.peek(),
             );
           }
-          lexemes.next();
+          lexemes.advance();
           routine.variables.push(...variables(lexemes, routine));
           statement = makePassStatement();
           break;
@@ -92,10 +92,10 @@ const parseStatement = (
           if (routine.kind === "Program") {
             throw new CompilerError(
               "Main program cannot declare any PRIVATE variables.",
-              lexemes.get(),
+              lexemes.peek(),
             );
           }
-          lexemes.next();
+          lexemes.advance();
           const privateVariables = variables(lexemes, routine);
           for (const privateVariable of privateVariables) {
             privateVariable.private = routine;
@@ -106,22 +106,22 @@ const parseStatement = (
         }
 
         case "if":
-          lexemes.next();
+          lexemes.advance();
           statement = parseIfStatement(lexeme, lexemes, routine);
           break;
 
         case "for":
-          lexemes.next();
+          lexemes.advance();
           statement = parseForStatement(lexeme, lexemes, routine);
           break;
 
         case "repeat":
-          lexemes.next();
+          lexemes.advance();
           statement = parseRepeatStatement(lexeme, lexemes, routine);
           break;
 
         case "while":
-          lexemes.next();
+          lexemes.advance();
           statement = parseWhileStatement(lexeme, lexemes, routine);
           break;
 
@@ -140,7 +140,7 @@ const parseStatement = (
         default:
           throw new CompilerError(
             "Statement cannot begin with {lex}.",
-            lexemes.get(),
+            lexemes.peek(),
           );
       }
       break;
@@ -148,29 +148,29 @@ const parseStatement = (
     default:
       throw new CompilerError(
         "Statement cannot begin with {lex}.",
-        lexemes.get(),
+        lexemes.peek(),
       );
   }
 
   // end of statement check
   // bypass within oneLine IF...THEN...ELSE statement (check occurs at the end of the whole statement)
-  if (!oneLine && lexemes.get()) {
+  if (!oneLine && lexemes.peek()) {
     if (
-      lexemes.get()?.content === ":" ||
-      lexemes.get()?.type === "newline" ||
-      lexemes.get()?.type === "comment"
+      lexemes.peek()?.content === ":" ||
+      lexemes.peek()?.type === "newline" ||
+      lexemes.peek()?.type === "comment"
     ) {
       while (
-        lexemes.get()?.content === ":" ||
-        lexemes.get()?.type === "newline" ||
-        lexemes.get()?.type === "comment"
+        lexemes.peek()?.content === ":" ||
+        lexemes.peek()?.type === "newline" ||
+        lexemes.peek()?.type === "comment"
       ) {
-        lexemes.next();
+        lexemes.advance();
       }
     } else {
       throw new CompilerError(
         "Statements must be separated by a colon or placed on different lines.",
-        lexemes.get(),
+        lexemes.peek(),
       );
     }
   }

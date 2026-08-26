@@ -4,12 +4,12 @@ import type { Lexemes } from "../definitions/lexemes.ts";
 import type { SubroutineType } from "../definitions/routines/subroutine.ts";
 
 export function identifier(lexemes: Lexemes): string {
-  const identifier = lexemes.get();
+  const identifier = lexemes.peek();
 
   if (!identifier) {
     throw new CompilerError(
       "{lex} must be followed by an identifier.",
-      lexemes.get(-1),
+      lexemes.peek(-1),
     );
   }
 
@@ -24,7 +24,7 @@ export function identifier(lexemes: Lexemes): string {
     );
   }
 
-  lexemes.next();
+  lexemes.advance();
 
   return identifier.content;
 }
@@ -42,7 +42,7 @@ export function subroutineName(
   } else {
     throw new CompilerError(
       '{lex} is not a valid subroutine name. (Procedure names must begin with "PROC", and function names must begin with "FN".)',
-      lexemes.get(-1),
+      lexemes.peek(-1),
     );
   }
 
@@ -75,7 +75,7 @@ export function variableName(lexemes: Lexemes): [string, Type, number] {
   } else {
     throw new CompilerError(
       '{lex} is not the name of any recognised command or a valid variable name. (Boolean and integer variables end with "%", and string variables end with "$".)',
-      lexemes.get(-1),
+      lexemes.peek(-1),
     );
   }
 

@@ -8,7 +8,7 @@ import subroutine from "./subroutine.ts";
 
 export default (lexemes: Lexemes): Program => {
   const program = makeProgram("Python");
-  program.end = lexemes.lexemes.length;
+  program.end = lexemes.length;
 
   parseBody(lexemes, program);
 
@@ -19,10 +19,10 @@ export default (lexemes: Lexemes): Program => {
 
 const parseBody = (lexemes: Lexemes, routine: Program | Subroutine): void => {
   let indents = 0;
-  lexemes.index = routine.start;
-  while (lexemes.index < routine.end) {
-    const lexeme = lexemes.get() as Lexeme;
-    lexemes.next();
+  lexemes.seek(routine.start);
+  while (lexemes.before(routine.end)) {
+    const lexeme = lexemes.peek() as Lexeme;
+    lexemes.advance();
     switch (lexeme.type) {
       case "indent":
         indents += 1;
@@ -42,10 +42,10 @@ const parseBody = (lexemes: Lexemes, routine: Program | Subroutine): void => {
     }
   }
 
-  lexemes.index = routine.start;
-  while (lexemes.index < routine.end) {
+  lexemes.seek(routine.start);
+  while (lexemes.before(routine.end)) {
     routine.statements.push(
-      statement(lexemes.get() as Lexeme, lexemes, routine),
+      statement(lexemes.peek() as Lexeme, lexemes, routine),
     );
   }
   for (const sub of routine.subroutines) {

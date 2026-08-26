@@ -1,5 +1,6 @@
 import type { Language } from "@/core/constants.ts";
 import type { Constant } from "./constant.ts";
+import type { Mark } from "./lexemes.ts";
 import type { Statement } from "./statement.ts";
 import { getLength, type Variable } from "./variable.ts";
 import type { Program } from "./routines/program.ts";
@@ -11,8 +12,9 @@ export interface RoutineCommon {
   readonly language: Language;
   name: string;
   index: number;
-  start: number;
-  end: number;
+  // the first lexeme of this routine's body, and the one just past its end
+  start: Mark;
+  end: Mark;
   constants: Constant[];
   variables: Variable[];
   subroutines: Subroutine[];

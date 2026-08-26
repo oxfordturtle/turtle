@@ -10,7 +10,7 @@ import variable from "./variable.ts";
 
 export default function typescript(lexemes: Lexemes): Program {
   const program = makeProgram("TypeScript");
-  program.end = lexemes.lexemes.length;
+  program.end = lexemes.length;
 
   parseBody(lexemes, program);
 
@@ -19,11 +19,11 @@ export default function typescript(lexemes: Lexemes): Program {
 
 function parseBody(lexemes: Lexemes, routine: Program | Subroutine): void {
   // first pass: hoist all constants, variables, and functions
-  lexemes.index = routine.start;
+  lexemes.seek(routine.start);
   // TODO: allow block-scoped variables with 'let' and make constants block-scoped as well
-  while (lexemes.index < routine.end) {
-    const lexeme = lexemes.get() as Lexeme;
-    lexemes.next();
+  while (lexemes.before(routine.end)) {
+    const lexeme = lexemes.peek() as Lexeme;
+    lexemes.advance();
     switch (lexeme.type) {
       case "keyword":
         switch (lexeme.subtype) {
@@ -45,10 +45,10 @@ function parseBody(lexemes: Lexemes, routine: Program | Subroutine): void {
     }
   }
 
-  lexemes.index = routine.start;
-  while (lexemes.index < routine.end) {
+  lexemes.seek(routine.start);
+  while (lexemes.before(routine.end)) {
     routine.statements.push(
-      parseStatement(lexemes.get() as Lexeme, lexemes, routine),
+      parseStatement(lexemes.peek() as Lexeme, lexemes, routine),
     );
   }
   for (const sub of routine.subroutines) {

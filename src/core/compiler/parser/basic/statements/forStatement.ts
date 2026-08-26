@@ -8,7 +8,6 @@ import { CompilerError } from "../../../tools/error.ts";
 import evaluate from "../../common/evaluate.ts";
 import parseExpression from "../../common/expression.ts";
 import * as find from "../../common/find.ts";
-import skipComments from "../../common/skipComments.ts";
 import typeCheck from "../../common/typeCheck.ts";
 import makeCompoundExpression from "../../definitions/expressions/compoundExpression.ts";
 import makeIntegerValue from "../../definitions/expressions/integerValue.ts";
@@ -33,7 +32,7 @@ const parseForStatement = (
   lexemes: Lexemes,
   routine: Program | Subroutine,
 ): ForStatement => {
-  const variableLexeme = lexemes.get();
+  const variableLexeme = lexemes.peek();
   if (!variableLexeme) {
     throw new CompilerError(
       '"FOR" must be followed by an integer variable.',
@@ -60,10 +59,13 @@ const parseForStatement = (
     program.variables.push(foo);
   } else {
     foo = existing;
-    lexemes.next();
+    lexemes.advance();
   }
   if (foo.type !== "integer" && foo.type !== "boolint") {
-    throw new CompilerError("{lex} is not an integer variable.", lexemes.get());
+    throw new CompilerError(
+      "{lex} is not an integer variable.",
+      lexemes.peek(),
+    );
   }
 
   const initialisation = parseVariableAssignment(
@@ -73,24 +75,18 @@ const parseForStatement = (
     foo,
   );
 
-  if (!lexemes.get()) {
+  if (lexemes.atEnd()) {
     throw new CompilerError(
       '"FOR" loop initialisation must be followed by "TO".',
-      lexemes.get(-1),
+      lexemes.peek(-1),
     );
   }
-  if (lexemes.get()?.content !== "TO") {
-    throw new CompilerError(
-      '"FOR" loop initialisation must be followed by "TO".',
-      lexemes.get(),
-    );
-  }
-  lexemes.next();
+  lexemes.expect("TO", '"FOR" loop initialisation must be followed by "TO".');
 
-  if (!lexemes.get()) {
+  if (lexemes.atEnd()) {
     throw new CompilerError(
       '"TO" must be followed by an integer (or integer constant).',
-      lexemes.get(-1),
+      lexemes.peek(-1),
     );
   }
   let finalValue = parseExpression(lexemes, routine);
@@ -120,12 +116,12 @@ const parseForStatement = (
   let condition = makeCompoundExpression(lseqLexeme, left, finalValue, "lseq");
 
   // "STEP" permissible here
-  if (lexemes.get() && lexemes.get()?.content === "STEP") {
-    lexemes.next();
-    if (!lexemes.get()) {
+  if (lexemes.peek()?.content === "STEP") {
+    lexemes.advance();
+    if (lexemes.atEnd()) {
       throw new CompilerError(
         '"STEP" instruction must be followed by an integer value.',
-        lexemes.get(-1),
+        lexemes.peek(-1),
       );
     }
     const stepValue = typeCheck(
@@ -157,8 +153,8 @@ const parseForStatement = (
     change,
   );
 
-  skipComments(lexemes);
-  if (!lexemes.get()) {
+  lexemes.skipComments();
+  if (lexemes.atEnd()) {
     throw new CompilerError(
       'No statements found after "FOR" loop initialisation.',
       lexeme,
@@ -168,8 +164,8 @@ const parseForStatement = (
   // way it runs to the matching "NEXT", and parseBlock copes with both
   // (parseStatement eats whichever separator - colon or line break - comes
   // after each statement)
-  while (lexemes.get()?.type === "newline") {
-    lexemes.next();
+  while (lexemes.peek()?.type === "newline") {
+    lexemes.advance();
   }
   forStatement.statements.push(...parseBlock(lexemes, routine, "FOR"));
 

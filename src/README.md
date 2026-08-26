@@ -73,6 +73,16 @@ passing silently. See `TODO.md` §3.2.
 - `parser/definitions/` — the AST node types themselves, plus the per-language
   operator precedence ladders.
 
+`parser/definitions/lexemes.ts` holds the cursor every parser is handed. Its
+index is private, so the only way through the stream is its own API: `peek`,
+`advance`, `atEnd`, `match` and the two match-or-throw methods, `expect` (which
+blames whatever was found) and `expectAfter` (which blames the lexeme the
+expected content was meant to follow, and so still has something to point at
+when the stream has run dry). BASIC, Java, Python and TypeScript are two-pass —
+they scan once for the subroutine boundaries, recording each routine's `start`
+and `end`, then rewind and parse the bodies — so the cursor also offers named
+random access: `mark`, `seek`, `before`, `at` and `indexOf`.
+
 Precedence lives in `parser/definitions/operators.ts` as a table of rungs,
 loosest first, which `common/expression.ts` walks. The tightest-binding prefixes
 (`-`, `!`, `~`) have no rung: they bottom out in `common/factor.ts`.

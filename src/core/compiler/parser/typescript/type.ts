@@ -10,25 +10,19 @@ export default function type(
   lexemes: Lexemes,
   routine: Routine,
 ): [Type | null, number, [number, number][]] {
-  if (!lexemes.get()) {
+  if (lexemes.atEnd()) {
     throw new CompilerError(
       'Expected type specification (": <type>").',
-      lexemes.get(-1),
+      lexemes.peek(-1),
     );
   }
-  if (lexemes.get()?.content !== ":") {
-    throw new CompilerError(
-      'Expected type specification (": <type>").',
-      lexemes.get(),
-    );
-  }
-  lexemes.next();
+  lexemes.expect(":", 'Expected type specification (": <type>").');
 
-  const typeLexeme = lexemes.get();
+  const typeLexeme = lexemes.peek();
   if (!typeLexeme) {
     throw new CompilerError(
       'Expected type definition ("boolean", "number", "string", or "void").',
-      lexemes.get(-1),
+      lexemes.peek(-1),
     );
   }
   if (typeLexeme.type !== "type") {
@@ -38,17 +32,16 @@ export default function type(
     );
   }
   const type = typeLexeme.subtype;
-  lexemes.next();
+  lexemes.advance();
 
   let stringLength = 64;
   if (type === "string") {
-    if (lexemes.get()?.content === "(") {
-      lexemes.next();
-      const integer = lexemes.get();
+    if (lexemes.match("(")) {
+      const integer = lexemes.peek();
       if (!integer) {
         throw new CompilerError(
           "Expected string size specification.",
-          lexemes.get(-1),
+          lexemes.peek(-1),
         );
       }
       if (integer.type !== "literal" || integer.subtype !== "integer") {
@@ -57,35 +50,32 @@ export default function type(
       if (integer.value <= 0) {
         throw new CompilerError(
           "String size must be greater than zero.",
-          lexemes.get(),
+          lexemes.peek(),
         );
       }
       stringLength = integer.value;
-      lexemes.next();
-      if (!lexemes.get()) {
+      lexemes.advance();
+      if (lexemes.atEnd()) {
         throw new CompilerError(
           'Closing bracket ")" missing after string size specification.',
-          lexemes.get(-1),
+          lexemes.peek(-1),
         );
       }
-      if (lexemes.get()?.content !== ")") {
-        throw new CompilerError(
-          'Closing bracket ")" missing after string size specification.',
-          lexemes.get(),
-        );
-      }
-      lexemes.next();
+      lexemes.expect(
+        ")",
+        'Closing bracket ")" missing after string size specification.',
+      );
     }
   }
 
   const arrayDimensions: [number, number][] = [];
-  while (lexemes.get()?.content === "[") {
-    lexemes.next();
+  while (lexemes.peek()?.content === "[") {
+    lexemes.advance();
 
-    if (!lexemes.get()) {
+    if (lexemes.atEnd()) {
       throw new CompilerError(
         'Opening bracket "[" must be followed by an array size.',
-        lexemes.get(-1),
+        lexemes.peek(-1),
       );
     }
     const exp = parseExpression(lexemes, routine);
@@ -98,27 +88,24 @@ export default function type(
     // in languagesWithCharacterType, which excludes TypeScript - a TypeScript
     // string index is typed "string" and fails the typeCheck above first
     if (typeof value === "string") {
-      throw new CompilerError("Array size must be an integer.", lexemes.get());
+      throw new CompilerError("Array size must be an integer.", lexemes.peek());
     }
     // deno-coverage-ignore-stop
     if (value <= 0) {
-      throw new CompilerError("Array size must be positive.", lexemes.get());
+      throw new CompilerError("Array size must be positive.", lexemes.peek());
     }
     arrayDimensions.push([0, value - 1]); // -1 because arrays are indexed from zero
 
-    if (!lexemes.get()) {
+    if (lexemes.atEnd()) {
       throw new CompilerError(
         'Array size specification must be followed by closing bracket "]".',
-        lexemes.get(-1),
+        lexemes.peek(-1),
       );
     }
-    if (lexemes.get()?.content !== "]") {
-      throw new CompilerError(
-        'Array size specification must be followed by closing bracket "]".',
-        lexemes.get(),
-      );
-    }
-    lexemes.next();
+    lexemes.expect(
+      "]",
+      'Array size specification must be followed by closing bracket "]".',
+    );
   }
 
   if (type === null && arrayDimensions.length > 0) {

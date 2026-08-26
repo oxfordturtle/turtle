@@ -4,7 +4,7 @@ import type { Routine } from "../definitions/routine.ts";
 import * as find from "../common/find.ts";
 
 export default function identifier(lexemes: Lexemes, routine: Routine): string {
-  const identifier = lexemes.get();
+  const identifier = lexemes.peek();
 
   // deno-coverage-ignore-start -- unreachable: identifier() is only ever
   // called right after type() has succeeded, whose last consumed lexeme (a
@@ -13,7 +13,7 @@ export default function identifier(lexemes: Lexemes, routine: Routine): string {
   if (!identifier) {
     throw new CompilerError(
       "{lex} must be followed by an identifier.",
-      lexemes.get(-1),
+      lexemes.peek(-1),
     );
   }
   // deno-coverage-ignore-stop
@@ -36,7 +36,7 @@ export default function identifier(lexemes: Lexemes, routine: Routine): string {
     );
   }
 
-  lexemes.next();
+  lexemes.advance();
 
   return identifier.value;
 }

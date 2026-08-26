@@ -7,12 +7,12 @@ import parseStatement from "../statement.ts";
 export default (lexemes: Lexemes, routine: Routine): Statement[] => {
   const statements: Statement[] = [];
 
-  while (lexemes.get() && lexemes.get()?.type !== "dedent") {
-    statements.push(parseStatement(lexemes.get() as Lexeme, lexemes, routine));
+  while (!lexemes.atEnd() && lexemes.peek()?.type !== "dedent") {
+    statements.push(parseStatement(lexemes.peek() as Lexeme, lexemes, routine));
   }
 
-  if (lexemes.get()) {
-    lexemes.next();
+  if (lexemes.peek()) {
+    lexemes.advance();
   }
 
   return statements;

@@ -26,15 +26,15 @@ const parseSimpleStatement = (
   switch (lexeme.type) {
     // (because "const" is the only keyword that will bring us here)
     case "keyword":
-      lexemes.next();
+      lexemes.advance();
       routine.constants.push(constant(lexemes, routine));
       return makePassStatement();
 
     case "type": {
-      const variableLexeme = lexemes.get(1) as IdentifierLexeme; // it will be if the next line doesn't throw an error
+      const variableLexeme = lexemes.peek(1) as IdentifierLexeme; // it will be if the next line doesn't throw an error
       const foo = variable(lexemes, routine);
       routine.variables.push(foo);
-      if (lexemes.get()?.content === "=") {
+      if (lexemes.peek()?.content === "=") {
         return parseVariableAssignment(variableLexeme, lexemes, routine, foo);
       } else {
         return makePassStatement();
@@ -45,14 +45,14 @@ const parseSimpleStatement = (
       const bar = find.variable(routine, lexeme.value);
       const baz = find.command(routine, lexeme.value);
       if (bar) {
-        lexemes.next();
+        lexemes.advance();
         return parseVariableAssignment(lexeme, lexemes, routine, bar);
       } else if (baz) {
-        lexemes.next();
+        lexemes.advance();
         const statement = parseProcedureCall(lexeme, lexemes, routine, baz);
         return statement;
       } else {
-        throw new CompilerError("{lex} is not defined.", lexemes.get());
+        throw new CompilerError("{lex} is not defined.", lexemes.peek());
       }
     }
   }

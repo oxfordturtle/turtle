@@ -17,10 +17,10 @@ const parseRepeatStatement = (
 ): RepeatStatement => {
   const repeatStatements = parseBlock(lexemes, routine, "repeat");
 
-  if (!lexemes.get()) {
+  if (lexemes.atEnd()) {
     throw new CompilerError(
       '"UNTIL" must be followed by a boolean expression.',
-      lexemes.get(-1),
+      lexemes.peek(-1),
     );
   }
   let condition = parseExpression(lexemes, routine);

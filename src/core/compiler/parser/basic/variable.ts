@@ -15,7 +15,7 @@ export function variable(lexemes: Lexemes, routine: Routine): Variable {
   if (find.isDuplicate(routine, name)) {
     throw new CompilerError(
       "{lex} is already defined in the current scope.",
-      lexemes.get(-1),
+      lexemes.peek(-1),
     );
   }
 
@@ -29,31 +29,28 @@ export function variable(lexemes: Lexemes, routine: Routine): Variable {
 export function array(lexemes: Lexemes, routine: Routine): Variable {
   const foo = variable(lexemes, routine);
 
-  if (!lexemes.get()) {
+  if (lexemes.atEnd()) {
     throw new CompilerError(
       '"DIM" variable identifier must be followed by dimensions in brackets.',
-      lexemes.get(-1),
+      lexemes.peek(-1),
     );
   }
-  if (lexemes.get()?.content !== "(") {
-    throw new CompilerError(
-      '"DIM" variable identifier must be followed by dimensions in brackets.',
-      lexemes.get(),
-    );
-  }
-  lexemes.next();
+  lexemes.expect(
+    "(",
+    '"DIM" variable identifier must be followed by dimensions in brackets.',
+  );
 
-  while (lexemes.get()?.content !== ")") {
-    if (!lexemes.get()) {
+  while (lexemes.peek()?.content !== ")") {
+    if (lexemes.atEnd()) {
       throw new CompilerError(
         "Expected array size specification.",
-        lexemes.get(-1),
+        lexemes.peek(-1),
       );
     }
-    if (lexemes.get()?.type === "newline") {
+    if (lexemes.peek()?.type === "newline") {
       throw new CompilerError(
         "Array declaration must be one a single line.",
-        lexemes.get(-1),
+        lexemes.peek(-1),
       );
     }
     const exp = parseExpression(lexemes, routine);
@@ -66,23 +63,22 @@ export function array(lexemes: Lexemes, routine: Routine): Variable {
     // variables and function calls are rejected by evaluate itself. The
     // check still narrows `value` to number for the comparison below.
     if (typeof value === "string") {
-      throw new CompilerError("Array size must be an integer.", lexemes.get());
+      throw new CompilerError("Array size must be an integer.", lexemes.peek());
     }
     // deno-coverage-ignore-stop
     if (value <= 0) {
-      throw new CompilerError("Array size must be positive.", lexemes.get());
+      throw new CompilerError("Array size must be positive.", lexemes.peek());
     }
     // N.B. BASIC arrays are indexed from zero up to *and including* the size
     // (so you get one more element than you might think)
     foo.arrayDimensions.push([0, value]);
 
     // move past comma (if there is one)
-    if (lexemes.get()?.content === ",") {
-      lexemes.next();
-      if (lexemes.get()?.content === ")") {
+    if (lexemes.match(",")) {
+      if (lexemes.peek()?.content === ")") {
         throw new CompilerError(
           "Trailing comma in array size specification.",
-          lexemes.get(),
+          lexemes.peek(),
         );
       }
     }
@@ -92,34 +88,33 @@ export function array(lexemes: Lexemes, routine: Routine): Variable {
   // the current lexeme is ")" (a dry stream re-enters the loop, where the
   // "Expected array size specification" check throws first), so the current
   // lexeme is always ")" here
-  if (!lexemes.get() || lexemes.get()?.content !== ")") {
+  if (lexemes.peek()?.content !== ")") {
     throw new CompilerError(
       "Closing bracket missing after array size specification.",
-      lexemes.get(-1),
+      lexemes.peek(-1),
     );
   }
   // deno-coverage-ignore-stop
   if (foo.arrayDimensions.length === 0) {
     throw new CompilerError(
       "Expected array size specification.",
-      lexemes.get(),
+      lexemes.peek(),
     );
   }
-  lexemes.next();
+  lexemes.advance();
 
   return foo;
 }
 
 export function variables(lexemes: Lexemes, routine: Routine): Variable[] {
   const variables: Variable[] = [];
-  while (lexemes.get()?.type !== "newline") {
+  while (lexemes.peek()?.type !== "newline") {
     variables.push(variable(lexemes, routine));
-    if (lexemes.get()?.content === ",") {
-      lexemes.next();
-      if (!lexemes.get() || lexemes.get()?.type === "newline") {
+    if (lexemes.match(",")) {
+      if (lexemes.atEnd() || lexemes.peek()?.type === "newline") {
         throw new CompilerError(
           "Trailing comma at end of line.",
-          lexemes.get(-1),
+          lexemes.peek(-1),
         );
       }
     }

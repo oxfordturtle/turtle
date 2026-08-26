@@ -35,7 +35,7 @@ const parseFunctionCall = (
   if (commandType === "procedure") {
     throw new CompilerError(
       "{lex} is a procedure, not a function.",
-      lexemes.get(-1),
+      lexemes.peek(-1),
     );
   }
 
@@ -50,9 +50,9 @@ const parseFunctionCall = (
       routine.language === "BASIC" &&
       functionCall.command.statements.length === 0
     ) {
-      const previousLexemeIndex = lexemes.index;
+      const resumeFrom = lexemes.mark();
       basicBody(lexemes, functionCall.command);
-      lexemes.index = previousLexemeIndex;
+      lexemes.seek(resumeFrom);
     }
   }
 

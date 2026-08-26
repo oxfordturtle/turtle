@@ -43,9 +43,9 @@ const parseProcedureCall = (
       routine.language === "BASIC" &&
       procedureCall.command.statements.length === 0
     ) {
-      const previousLexemeIndex = lexemes.index;
+      const resumeFrom = lexemes.mark();
       basicBody(lexemes, procedureCall.command);
-      lexemes.index = previousLexemeIndex;
+      lexemes.seek(resumeFrom);
     }
   }
 

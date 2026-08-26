@@ -22,11 +22,14 @@ const parseReturnStatement = (
   if (routine.kind === "Program") {
     throw new CompilerError(
       '"RETURN" statements are only valid within the body of a function.',
-      lexemes.get(),
+      lexemes.peek(),
     );
   }
   if (getSubroutineType(routine) !== "function") {
-    throw new CompilerError("Procedures cannot return a value.", lexemes.get());
+    throw new CompilerError(
+      "Procedures cannot return a value.",
+      lexemes.peek(),
+    );
   }
 
   let value = parseExpression(lexemes, routine);

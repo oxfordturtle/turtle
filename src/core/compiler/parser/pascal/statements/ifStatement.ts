@@ -1,7 +1,6 @@
 import type { KeywordLexeme } from "../../../lexer/lexeme.ts";
 import { CompilerError } from "../../../tools/error.ts";
 import parseExpression from "../../common/expression.ts";
-import skipComments from "../../common/skipComments.ts";
 import typeCheck from "../../common/typeCheck.ts";
 import type { Lexemes } from "../../definitions/lexemes.ts";
 import type { Program } from "../../definitions/routines/program.ts";
@@ -17,7 +16,7 @@ const parseIfStatement = (
   lexemes: Lexemes,
   routine: Program | Subroutine,
 ): IfStatement => {
-  if (!lexemes.get()) {
+  if (lexemes.atEnd()) {
     throw new CompilerError(
       '"IF" must be followed by a boolean expression.',
       ifLexeme,
@@ -28,24 +27,24 @@ const parseIfStatement = (
 
   const ifStatement = makeIfStatement(ifLexeme, condition);
 
-  if (!lexemes.get() || lexemes.get()?.content?.toLowerCase() !== "then") {
+  if (lexemes.peek()?.content?.toLowerCase() !== "then") {
     throw new CompilerError(
       '"IF ..." must be followed by "THEN".',
       condition.lexeme,
     );
   }
-  lexemes.next();
+  lexemes.advance();
 
-  skipComments(lexemes);
-  const firstSubLexeme = lexemes.get();
+  lexemes.skipComments();
+  const firstSubLexeme = lexemes.peek();
   if (!firstSubLexeme) {
     throw new CompilerError(
       'No commands found after "IF ... THEN".',
-      lexemes.get(-1),
+      lexemes.peek(-1),
     );
   }
   if (firstSubLexeme.content?.toLowerCase() === "begin") {
-    lexemes.next();
+    lexemes.advance();
     ifStatement.ifStatements.push(...parseBlock(lexemes, routine, "begin"));
   } else {
     ifStatement.ifStatements.push(
@@ -53,18 +52,18 @@ const parseIfStatement = (
     );
   }
 
-  if (lexemes.get() && lexemes.get()?.content?.toLowerCase() === "else") {
-    lexemes.next();
-    skipComments(lexemes);
-    const firstSubLexeme = lexemes.get();
+  if (lexemes.peek()?.content?.toLowerCase() === "else") {
+    lexemes.advance();
+    lexemes.skipComments();
+    const firstSubLexeme = lexemes.peek();
     if (!firstSubLexeme) {
       throw new CompilerError(
         'No commands found after "ELSE".',
-        lexemes.get(-1),
+        lexemes.peek(-1),
       );
     }
     if (firstSubLexeme.content?.toLowerCase() === "begin") {
-      lexemes.next();
+      lexemes.advance();
       ifStatement.elseStatements.push(...parseBlock(lexemes, routine, "begin"));
     } else {
       ifStatement.elseStatements.push(

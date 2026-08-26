@@ -24,14 +24,14 @@ const parseSimpleStatement = (
   // N.B. look for variable before command, in case variable name overwrites a native command
   const variable = find.variable(routine, lexeme.value);
   if (variable) {
-    lexemes.next();
+    lexemes.advance();
     return parseVariableAssignment(lexeme, lexemes, routine, variable);
   }
 
   // look for a command
   const command = find.command(routine, lexeme.value);
   if (command) {
-    lexemes.next();
+    lexemes.advance();
     return parseProcedureCall(lexeme, lexemes, routine, command);
   }
 

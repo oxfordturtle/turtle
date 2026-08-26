@@ -41,19 +41,19 @@ const parseSliceBound = (
   close: string,
   fallbackLexeme: Lexeme,
 ): Expression | null => {
-  if (lexemes.get()?.content === ":") {
+  if (lexemes.peek()?.content === ":") {
     throw new CompilerError(
       'Slices with a step ("s[a:b:c]") are not supported.',
-      lexemes.get(),
+      lexemes.peek(),
     );
   }
-  if (!lexemes.get()) {
+  if (lexemes.atEnd()) {
     throw new CompilerError(
       `Closing bracket "${close}" missing after string variable index.`,
       fallbackLexeme,
     );
   }
-  if (lexemes.get()?.content === close) {
+  if (lexemes.peek()?.content === close) {
     return null;
   }
   return typeCheck(
@@ -83,8 +83,8 @@ const parseStringSubscript = (
 
   // checked before parsing anything: with the start bound omitted there is no
   // first expression whose trailing ":" would give the slice away
-  if (routine.language === "Python" && lexemes.get()?.content === ":") {
-    lexemes.next();
+  if (routine.language === "Python" && lexemes.peek()?.content === ":") {
+    lexemes.advance();
     slice = [null, parseSliceBound(lexemes, routine, close, fallbackLexeme)];
   } else {
     const exp = typeCheck(
@@ -92,30 +92,30 @@ const parseStringSubscript = (
       parseExpression(lexemes, routine),
       "integer",
     );
-    if (routine.language === "Python" && lexemes.get()?.content === ":") {
-      lexemes.next();
+    if (routine.language === "Python" && lexemes.peek()?.content === ":") {
+      lexemes.advance();
       slice = [exp, parseSliceBound(lexemes, routine, close, fallbackLexeme)];
     } else {
       index = exp;
     }
   }
 
-  if (!lexemes.get() || lexemes.get()?.content !== close) {
+  if (lexemes.peek()?.content !== close) {
     // a step slice, worth naming rather than reporting as a missing bracket
-    if (slice !== null && lexemes.get()?.content === ":") {
+    if (slice !== null && lexemes.peek()?.content === ":") {
       throw new CompilerError(
         'Slices with a step ("s[a:b:c]") are not supported.',
-        lexemes.get(),
+        lexemes.peek(),
       );
     }
     // the previous lexeme rather than the bound's own: with the start omitted
     // there may not be one
     throw new CompilerError(
       `Closing bracket "${close}" missing after string variable index.`,
-      lexemes.get(-1),
+      lexemes.peek(-1),
     );
   }
-  lexemes.next();
+  lexemes.advance();
 
   return { index, slice };
 };
@@ -124,23 +124,23 @@ const parseFactor = (lexemes: Lexemes, routine: Routine): Expression => {
   // an expression can legitimately end a program (a BASIC function's closing
   // "=<expression>" line), so the lexemes really can run out here; without
   // this the cast below turns that into a raw TypeError
-  if (!lexemes.get()) {
-    throw new CompilerError("Expression expected.", lexemes.get(-1));
+  if (lexemes.atEnd()) {
+    throw new CompilerError("Expression expected.", lexemes.peek(-1));
   }
-  const lexeme = lexemes.get() as Lexeme;
+  const lexeme = lexemes.peek() as Lexeme;
   let exp: Expression;
 
   switch (lexeme.type) {
     case "operator":
       switch (lexeme.subtype) {
         case "subt":
-          lexemes.next();
+          lexemes.advance();
           exp = parseFactor(lexemes, routine);
           exp = typeCheck(routine.language, exp, "integer");
           return makeCompoundExpression(lexeme, null, exp, "neg");
 
         case "not":
-          lexemes.next();
+          lexemes.advance();
           exp = parseFactor(lexemes, routine);
           exp = typeCheck(routine.language, exp, "boolint");
           return makeCompoundExpression(lexeme, null, exp, "not");
@@ -149,10 +149,10 @@ const parseFactor = (lexemes: Lexemes, routine: Routine): Expression => {
           if (routine.language !== "C") {
             throw new CompilerError(
               "Expression cannot begin with {lex}.",
-              lexemes.get(),
+              lexemes.peek(),
             );
           }
-          lexemes.next();
+          lexemes.advance();
           exp = parseFactor(lexemes, routine);
           if (exp.kind !== "variable") {
             throw new CompilerError(
@@ -173,7 +173,7 @@ const parseFactor = (lexemes: Lexemes, routine: Routine): Expression => {
       }
 
     case "literal":
-      lexemes.next();
+      lexemes.advance();
       return lexeme.subtype === "string"
         ? makeStringValue(lexeme)
         : makeIntegerValue(lexeme);
@@ -181,7 +181,7 @@ const parseFactor = (lexemes: Lexemes, routine: Routine): Expression => {
     case "input": {
       const input = find.input(routine, lexeme.value);
       if (input) {
-        lexemes.next();
+        lexemes.advance();
         return makeInputValue(lexeme, input);
         // deno-coverage-ignore-start -- the throw is unreachable: the
         // tokenizer only makes an "inputCode" token for names on the same
@@ -198,7 +198,7 @@ const parseFactor = (lexemes: Lexemes, routine: Routine): Expression => {
     case "query": {
       const query = find.query(routine, lexeme.value);
       if (query) {
-        lexemes.next();
+        lexemes.advance();
         return makeQueryValue(lexeme, query);
         // deno-coverage-ignore-start -- the throw is unreachable, for the
         // same reason as the input case above: only names find.query itself
@@ -213,22 +213,20 @@ const parseFactor = (lexemes: Lexemes, routine: Routine): Expression => {
       const constant = find.constant(routine, lexeme.value);
       if (constant) {
         const constantValue = makeConstantValue(lexeme, constant);
-        lexemes.next();
+        lexemes.advance();
         const open = routine.language === "BASIC" ? "(" : "[";
         const close = routine.language === "BASIC" ? ")" : "]";
-        if (lexemes.get() && lexemes.get()?.content === open) {
+        if (lexemes.peek()?.content === open) {
           if (constant.type === "string") {
-            lexemes.next();
+            lexemes.advance();
             let exp = parseExpression(lexemes, routine);
             exp = typeCheck(routine.language, exp, "integer");
             constantValue.indexes.push(exp);
-            if (!lexemes.get() || lexemes.get()?.content !== close) {
-              throw new CompilerError(
-                `Closing bracket "${close}" missing after string variable index.`,
-                exp.lexeme,
-              );
-            }
-            lexemes.next();
+            lexemes.expect(
+              close,
+              `Closing bracket "${close}" missing after string variable index.`,
+              exp.lexeme,
+            );
           } else {
             throw new CompilerError("{lex} is not a string constant.", lexeme);
           }
@@ -239,13 +237,13 @@ const parseFactor = (lexemes: Lexemes, routine: Routine): Expression => {
       const variable = find.variable(routine, lexeme.value);
       if (variable) {
         const variableValue = makeVariableValue(lexeme, variable);
-        lexemes.next();
+        lexemes.advance();
         const open = routine.language === "BASIC" ? "(" : "[";
         const close = routine.language === "BASIC" ? ")" : "]";
-        if (lexemes.get() && lexemes.get()?.content === open) {
+        if (lexemes.peek()?.content === open) {
           if (isArray(variable)) {
-            lexemes.next();
-            while (lexemes.get() && lexemes.get()?.content !== close) {
+            lexemes.advance();
+            while (!lexemes.atEnd() && lexemes.peek()?.content !== close) {
               let exp = parseExpression(lexemes, routine);
               exp = typeCheck(routine.language, exp, "integer");
               variableValue.indexes.push(exp);
@@ -253,34 +251,33 @@ const parseFactor = (lexemes: Lexemes, routine: Routine): Expression => {
                 routine.language === "BASIC" ||
                 routine.language === "Pascal"
               ) {
-                if (lexemes.get()?.content === ",") {
-                  lexemes.next();
-                  if (lexemes.get()?.content === close) {
+                if (lexemes.match(",")) {
+                  if (lexemes.peek()?.content === close) {
                     throw new CompilerError(
                       "Trailing comma at the end of array indexes.",
-                      lexemes.get(-1),
+                      lexemes.peek(-1),
                     );
                   }
                 }
               } else {
                 if (
-                  lexemes.get()?.content === close &&
-                  lexemes.get(1)?.content === open
+                  lexemes.peek()?.content === close &&
+                  lexemes.peek(1)?.content === open
                 ) {
-                  lexemes.next();
-                  lexemes.next();
+                  lexemes.advance();
+                  lexemes.advance();
                 }
               }
             }
-            if (!lexemes.get()) {
+            if (lexemes.atEnd()) {
               throw new CompilerError(
                 `Closing bracket "${close}" needed after array indexes.`,
-                lexemes.get(-1),
+                lexemes.peek(-1),
               );
             }
-            lexemes.next();
+            lexemes.advance();
           } else if (variable.type === "string") {
-            lexemes.next();
+            lexemes.advance();
             const subscript = parseStringSubscript(
               lexemes,
               routine,
@@ -294,43 +291,39 @@ const parseFactor = (lexemes: Lexemes, routine: Routine): Expression => {
             }
           } else if (variable.isList) {
             // two levels only, matching Variable.isListOfLists's own scope
-            lexemes.next();
+            lexemes.advance();
             exp = parseExpression(lexemes, routine);
             exp = typeCheck(routine.language, exp, "integer");
             variableValue.indexes.push(exp);
-            if (!lexemes.get() || lexemes.get()?.content !== close) {
-              throw new CompilerError(
-                `Closing bracket "${close}" missing after list variable index.`,
-                exp.lexeme,
-              );
-            }
-            lexemes.next();
-            if (variable.isListOfLists && lexemes.get()?.content === open) {
-              lexemes.next();
+            lexemes.expect(
+              close,
+              `Closing bracket "${close}" missing after list variable index.`,
+              exp.lexeme,
+            );
+            if (variable.isListOfLists && lexemes.peek()?.content === open) {
+              lexemes.advance();
               let exp2 = parseExpression(lexemes, routine);
               exp2 = typeCheck(routine.language, exp2, "integer");
               variableValue.indexes.push(exp2);
-              if (!lexemes.get() || lexemes.get()?.content !== close) {
-                throw new CompilerError(
-                  `Closing bracket "${close}" missing after list variable index.`,
-                  exp2.lexeme,
-                );
-              }
-              lexemes.next();
+              lexemes.expect(
+                close,
+                `Closing bracket "${close}" missing after list variable index.`,
+                exp2.lexeme,
+              );
             }
             // once the list indexes are exhausted, a further "[...]" indexes
             // into the *element*. getType() reports the element's own kind
             // only because every list level has been consumed; while any
             // remain it reports "boolint", so a sublist can't be read as a
             // string.
-            if (lexemes.get()?.content === open) {
+            if (lexemes.peek()?.content === open) {
               if (getType(variableValue) !== "string") {
                 throw new CompilerError(
                   "{lex} is not a list of strings, so its elements cannot be indexed or sliced.",
                   lexeme,
                 );
               }
-              lexemes.next();
+              lexemes.advance();
               const subscript = parseStringSubscript(
                 lexemes,
                 routine,
@@ -359,13 +352,12 @@ const parseFactor = (lexemes: Lexemes, routine: Routine): Expression => {
             );
           }
         }
-        if (lexemes.get()?.content === ".") {
-          lexemes.next();
-          const methodLexeme = lexemes.get();
+        if (lexemes.match(".")) {
+          const methodLexeme = lexemes.peek();
           if (methodLexeme?.type !== "identifier") {
             throw new CompilerError(
               "Method name missing after '.'.",
-              lexemes.get(),
+              lexemes.peek(),
             );
           }
           const method = find.nativeCommand(
@@ -379,7 +371,7 @@ const parseFactor = (lexemes: Lexemes, routine: Routine): Expression => {
               methodLexeme,
             );
           }
-          lexemes.next();
+          lexemes.advance();
           return parseMethodFunctionCall(
             methodLexeme,
             lexemes,
@@ -393,13 +385,13 @@ const parseFactor = (lexemes: Lexemes, routine: Routine): Expression => {
 
       const colour = find.colour(routine, lexeme.value);
       if (colour) {
-        lexemes.next();
+        lexemes.advance();
         return makeColourValue(lexeme, colour);
       }
 
       const command = find.command(routine, lexeme.value);
       if (command) {
-        lexemes.next();
+        lexemes.advance();
         return parseFunctionCall(lexeme, lexemes, routine, command);
       }
 
@@ -415,11 +407,11 @@ const parseFactor = (lexemes: Lexemes, routine: Routine): Expression => {
     default: {
       if (
         (routine.language === "C" || routine.language === "Java") &&
-        lexemes.get()?.content === "(" &&
-        lexemes.get(1)?.type === "type"
+        lexemes.peek()?.content === "(" &&
+        lexemes.peek(1)?.type === "type"
       ) {
-        lexemes.next();
-        const typeLexeme = lexemes.get() as TypeLexeme;
+        lexemes.advance();
+        const typeLexeme = lexemes.peek() as TypeLexeme;
         const type = typeLexeme.subtype;
         if (type === null) {
           throw new CompilerError(
@@ -427,14 +419,12 @@ const parseFactor = (lexemes: Lexemes, routine: Routine): Expression => {
             typeLexeme,
           );
         }
-        lexemes.next();
-        if (lexemes.get()?.content !== ")") {
-          throw new CompilerError(
-            'Type in type cast expression must be followed by a closing bracket ")".',
-            typeLexeme,
-          );
-        }
-        lexemes.next();
+        lexemes.advance();
+        lexemes.expect(
+          ")",
+          'Type in type cast expression must be followed by a closing bracket ")".',
+          typeLexeme,
+        );
         exp = parseExpression(lexemes, routine);
         const expType = getType(exp);
         if (type !== expType) {
@@ -473,12 +463,12 @@ const parseFactor = (lexemes: Lexemes, routine: Routine): Expression => {
         return exp;
       } else if (
         routine.language === "Python" &&
-        lexemes.get()?.content === "["
+        lexemes.peek()?.content === "["
       ) {
-        const openLexeme = lexemes.get() as Lexeme;
-        lexemes.next();
+        const openLexeme = lexemes.peek() as Lexeme;
+        lexemes.advance();
         const elements: Expression[] = [];
-        while (lexemes.get() && lexemes.get()?.content !== "]") {
+        while (!lexemes.atEnd() && lexemes.peek()?.content !== "]") {
           let element = parseExpression(lexemes, routine);
           const first = elements[0];
           if (first !== undefined) {
@@ -508,28 +498,24 @@ const parseFactor = (lexemes: Lexemes, routine: Routine): Expression => {
             }
           }
           elements.push(element);
-          if (lexemes.get()?.content === ",") {
-            lexemes.next();
-            if (lexemes.get()?.content === "]") {
+          if (lexemes.match(",")) {
+            if (lexemes.peek()?.content === "]") {
               throw new CompilerError(
                 "Trailing comma at the end of list elements.",
-                lexemes.get(-1),
+                lexemes.peek(-1),
               );
             }
-          } else if (lexemes.get()?.content !== "]") {
+          } else if (lexemes.peek()?.content !== "]") {
             throw new CompilerError(
               'Closing bracket "]" needed after list elements.',
-              lexemes.get(-1),
+              lexemes.peek(-1),
             );
           }
         }
-        if (!lexemes.get()) {
-          throw new CompilerError(
-            'Closing bracket "]" needed after list elements.',
-            lexemes.get(-1),
-          );
-        }
-        lexemes.next();
+        lexemes.expectAfter(
+          "]",
+          'Closing bracket "]" needed after list elements.',
+        );
         const firstElement = elements[0];
         const isListOfLists =
           firstElement !== undefined && isListExpression(firstElement);
@@ -551,12 +537,11 @@ const parseFactor = (lexemes: Lexemes, routine: Routine): Expression => {
           innerListElementKind,
         );
       } // bracketed expression
-      else if (lexemes.get()?.content === "(") {
-        lexemes.next();
+      else if (lexemes.match("(")) {
         exp = parseExpression(lexemes, routine);
 
-        if (lexemes.get() && lexemes.get()?.content === ")") {
-          lexemes.next();
+        if (lexemes.peek()?.content === ")") {
+          lexemes.advance();
           return exp;
         } else {
           throw new CompilerError(
@@ -594,14 +579,14 @@ const parseFactorWithMethods = (
 
   while (
     routine.language === "Python" &&
-    lexemes.get()?.content === "." &&
-    lexemes.get(1)?.type === "identifier" &&
+    lexemes.peek()?.content === "." &&
+    lexemes.peek(1)?.type === "identifier" &&
     // every other receiver type is let in so parseMethodFunctionCall's own type
     // check can give "not defined for type X" rather than a syntax error
     !isListExpression(exp)
   ) {
-    lexemes.next(); // move past "."
-    const methodLexeme = lexemes.get() as IdentifierLexeme;
+    lexemes.advance(); // move past "."
+    const methodLexeme = lexemes.peek() as IdentifierLexeme;
     const method = find.nativeCommand(routine, `.${methodLexeme.value}`, false);
     if (!method) {
       throw new CompilerError(
@@ -609,7 +594,7 @@ const parseFactorWithMethods = (
         methodLexeme,
       );
     }
-    lexemes.next(); // move past the method name
+    lexemes.advance(); // move past the method name
     exp = parseMethodFunctionCall(methodLexeme, lexemes, routine, method, exp);
   }
 

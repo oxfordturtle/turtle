@@ -15,20 +15,20 @@ import type from "./type.ts";
 export default function java(lexemes: Lexemes): Program {
   const prog = program(lexemes);
 
-  lexemes.index = prog.start;
-  while (lexemes.index < prog.end) {
-    const lexeme = lexemes.get() as Lexeme;
-    const lexemeIndex = lexemes.index;
+  lexemes.seek(prog.start);
+  while (lexemes.before(prog.end)) {
+    const lexeme = lexemes.peek() as Lexeme;
+    const declarationStart = lexemes.mark();
 
     switch (lexeme.type) {
       case "comment":
-        lexemes.next();
+        lexemes.advance();
         break;
 
       // constant definitions
       case "keyword":
         if (lexeme.subtype === "final") {
-          lexemes.next();
+          lexemes.advance();
           prog.constants.push(constant(lexemes, prog));
           eosCheck(lexemes);
         } else {
@@ -44,12 +44,12 @@ export default function java(lexemes: Lexemes): Program {
         type(lexemes, prog);
         identifier(lexemes, prog);
 
-        if (lexemes.get()?.content === "(") {
-          lexemes.index = lexemeIndex; // go back to the start
+        if (lexemes.peek()?.content === "(") {
+          lexemes.seek(declarationStart); // go back to the start
           prog.subroutines.push(subroutine(lexeme, lexemes, prog));
         } // otherwise its a variable declaration/assignment
         else {
-          lexemes.index = lexemeIndex; // go back to the start
+          lexemes.seek(declarationStart); // go back to the start
           prog.statements.push(parseSimpleStatement(lexeme, lexemes, prog));
           eosCheck(lexemes);
         }
@@ -64,10 +64,10 @@ export default function java(lexemes: Lexemes): Program {
   }
 
   for (const subroutine of getAllSubroutines(prog)) {
-    lexemes.index = subroutine.start;
-    while (lexemes.index < subroutine.end) {
+    lexemes.seek(subroutine.start);
+    while (lexemes.before(subroutine.end)) {
       subroutine.statements.push(
-        parseStatement(lexemes.get() as Lexeme, lexemes, subroutine),
+        parseStatement(lexemes.peek() as Lexeme, lexemes, subroutine),
       );
     }
   }

@@ -14,40 +14,31 @@ const parseWhileStatement = (
   lexemes: Lexemes,
   routine: Subroutine,
 ): WhileStatement => {
-  if (!lexemes.get() || lexemes.get()?.content !== "(") {
-    throw new CompilerError(
-      '"while" must be followed by an opening bracket "(".',
-      lexemes.get(-1),
-    );
-  }
-  lexemes.next();
+  lexemes.expectAfter(
+    "(",
+    '"while" must be followed by an opening bracket "(".',
+  );
 
-  if (!lexemes.get()) {
+  if (lexemes.atEnd()) {
     throw new CompilerError(
       '"while (" must be followed by a Boolean expression.',
-      lexemes.get(-1),
+      lexemes.peek(-1),
     );
   }
   let condition = parseExpression(lexemes, routine);
   condition = typeCheck(routine.language, condition, "boolean");
 
-  if (!lexemes.get() || lexemes.get()?.content !== ")") {
-    throw new CompilerError(
-      '"while (..." must be followed by a closing bracket ")".',
-      lexemes.get(-1),
-    );
-  }
-  lexemes.next();
+  lexemes.expectAfter(
+    ")",
+    '"while (..." must be followed by a closing bracket ")".',
+  );
 
   const whileStatement = makeWhileStatement(whileLexeme, condition);
 
-  if (!lexemes.get() || lexemes.get()?.content !== "{") {
-    throw new CompilerError(
-      '"while (...)" must be followed by an opening curly bracket "{".',
-      lexemes.get(-1),
-    );
-  }
-  lexemes.next();
+  lexemes.expectAfter(
+    "{",
+    '"while (...)" must be followed by an opening curly bracket "{".',
+  );
 
   routine.loopDepth += 1;
   whileStatement.statements.push(...parseBlock(lexemes, routine));

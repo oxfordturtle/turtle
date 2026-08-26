@@ -8,12 +8,12 @@ export default function identifier(
   routine: Routine,
   duplicateCheck: boolean,
 ): string {
-  const identifier = lexemes.get();
+  const identifier = lexemes.peek();
 
   if (!identifier) {
     throw new CompilerError(
       "{lex} must be followed by an identifier.",
-      lexemes.get(-1),
+      lexemes.peek(-1),
     );
   }
 
@@ -38,7 +38,7 @@ export default function identifier(
     }
   }
 
-  lexemes.next();
+  lexemes.advance();
 
   return identifier.value;
 }

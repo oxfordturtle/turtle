@@ -1,7 +1,6 @@
 import type { KeywordLexeme } from "../../lexer/lexeme.ts";
 import { CompilerError } from "../../tools/error.ts";
 import * as find from "../common/find.ts";
-import skipComments from "../common/skipComments.ts";
 import type { Lexemes } from "../definitions/lexemes.ts";
 import { getAllSubroutines, type Routine } from "../definitions/routine.ts";
 import makeSubroutine, {
@@ -28,16 +27,14 @@ export default (
 
   subroutine.variables.push(...parameters(lexemes, subroutine));
 
-  if (lexemes.get()?.content === "->") {
-    lexemes.next();
-
+  if (lexemes.match("->")) {
     const [isConstant, returnType, stringLength, arrayDimensions, isList] =
       type(lexemes, parent);
 
     if (isConstant) {
       throw new CompilerError(
         "Functions cannot return constant values.",
-        lexemes.get(),
+        lexemes.peek(),
       );
     }
 
@@ -48,7 +45,7 @@ export default (
     if (arrayDimensions.length > 0) {
       throw new CompilerError(
         "Functions cannot return arrays.",
-        lexemes.get(-1),
+        lexemes.peek(-1),
       );
     }
     // deno-coverage-ignore-stop
@@ -56,7 +53,7 @@ export default (
     if (isList) {
       throw new CompilerError(
         "Functions cannot return lists.",
-        lexemes.get(-1),
+        lexemes.peek(-1),
       );
     }
 
@@ -68,57 +65,54 @@ export default (
     subroutine.typeIsCertain = true;
   }
 
-  if (!lexemes.get()) {
+  if (lexemes.atEnd()) {
     throw new CompilerError(
       'Subroutine declaration must be followed by a colon ":".',
-      lexemes.get(-1),
+      lexemes.peek(-1),
     );
   }
-  if (lexemes.get()?.content !== ":") {
-    throw new CompilerError(
-      'Subroutine declaration must be followed by a colon ":".',
-      lexemes.get(),
-    );
-  }
-  lexemes.next();
+  lexemes.expect(
+    ":",
+    'Subroutine declaration must be followed by a colon ":".',
+  );
 
   // first - see python/statements/whileStatement.ts's equivalent check for
   // why)
-  skipComments(lexemes);
-  if (!lexemes.get()) {
+  lexemes.skipComments();
+  if (lexemes.atEnd()) {
     throw new CompilerError(
       "No statements found after subroutine definition.",
-      lexemes.get(-1),
+      lexemes.peek(-1),
     );
   }
-  if (lexemes.get()?.type !== "newline") {
+  if (lexemes.peek()?.type !== "newline") {
     throw new CompilerError(
       "Subroutine definition must be followed by a line break.",
-      lexemes.get(),
+      lexemes.peek(),
     );
   }
-  lexemes.next();
-  if (!lexemes.get()) {
+  lexemes.advance();
+  if (lexemes.atEnd()) {
     throw new CompilerError(
       "No statements found after subroutine definition.",
-      lexemes.get(-1),
+      lexemes.peek(-1),
     );
   }
-  if (lexemes.get()?.type !== "indent") {
+  if (lexemes.peek()?.type !== "indent") {
     throw new CompilerError(
       "Indent needed after subroutine definition.",
-      lexemes.get(),
+      lexemes.peek(),
     );
   }
   subroutine.indent = baseIndent + 1;
-  lexemes.next();
+  lexemes.advance();
 
-  subroutine.start = lexemes.index;
+  subroutine.start = lexemes.mark();
 
   // move past the subroutine's lexemes, hoisting any undefined globals
   let indents = 0;
-  while (lexemes.get() && indents >= 0) {
-    const lexeme = lexemes.get()!;
+  while (!lexemes.atEnd() && indents >= 0) {
+    const lexeme = lexemes.peek()!;
     switch (lexeme.type) {
       case "indent":
         indents += 1;
@@ -128,7 +122,7 @@ export default (
         break;
       case "keyword":
         if (lexeme.subtype === "global") {
-          lexemes.next();
+          lexemes.advance();
           const globals = identifiers(lexemes, subroutine, "global");
           for (const global of globals) {
             if (!find.variable(subroutine, global)) {
@@ -139,57 +133,49 @@ export default (
         }
         break;
     }
-    lexemes.next();
+    lexemes.advance();
   }
 
-  subroutine.end = lexemes.index - 1;
+  subroutine.end = lexemes.mark() - 1;
 
   return subroutine;
 };
 
 const parameters = (lexemes: Lexemes, routine: Subroutine): Variable[] => {
-  if (!lexemes.get()) {
+  if (lexemes.atEnd()) {
     throw new CompilerError(
       'Opening bracket "(" missing after function name.',
-      lexemes.get(-1),
+      lexemes.peek(-1),
     );
   }
-  if (lexemes.get()?.content !== "(") {
-    throw new CompilerError(
-      'Opening bracket "(" missing after function name.',
-      lexemes.get(),
-    );
-  }
-  lexemes.next();
+  lexemes.expect("(", 'Opening bracket "(" missing after function name.');
 
   const parameters: Variable[] = [];
-  while (lexemes.get()?.content !== ")") {
+  while (lexemes.peek()?.content !== ")") {
     const parameter = variable(lexemes, routine);
     if (parameter.kind === "constant") {
       throw new CompilerError(
         "Subroutine parameters cannot be constants.",
-        lexemes.get(-1),
+        lexemes.peek(-1),
       );
     }
     parameter.isParameter = true;
     parameters.push(parameter);
-    if (lexemes.get()?.content === ",") {
-      lexemes.next();
-    }
+    lexemes.match(",");
   }
 
   // deno-coverage-ignore-start -- unreachable: the loop above only exits when
   // the current lexeme is ")" - if the lexemes run dry first, variable() ->
   // identifier() throws '"..." must be followed by an identifier.' inside the
   // loop body instead
-  if (lexemes.get()?.content !== ")") {
+  if (lexemes.peek()?.content !== ")") {
     throw new CompilerError(
       "Closing bracket missing after function parameters.",
-      lexemes.get(-1),
+      lexemes.peek(-1),
     );
   }
   // deno-coverage-ignore-stop
-  lexemes.next();
+  lexemes.advance();
 
   return parameters;
 };

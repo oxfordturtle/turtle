@@ -27,7 +27,10 @@ export default function subroutine(
   const [subroutineType, stringLength, arrayDimensions] = type(lexemes, parent);
 
   if (arrayDimensions.length > 0) {
-    throw new CompilerError("Functions cannot return arrays.", lexemes.get(-1));
+    throw new CompilerError(
+      "Functions cannot return arrays.",
+      lexemes.peek(-1),
+    );
   }
 
   if (subroutineType !== null) {
@@ -37,66 +40,55 @@ export default function subroutine(
     subroutine.variables.unshift(variable);
   }
 
-  if (!lexemes.get()) {
+  if (lexemes.atEnd()) {
     throw new CompilerError(
       'Method parameters must be followed by an opening bracket "{".',
-      lexemes.get(-1),
+      lexemes.peek(-1),
     );
   }
-  if (lexemes.get()?.content !== "{") {
-    throw new CompilerError(
-      'Method parameters must be followed by an opening bracket "{".',
-      lexemes.get(),
-    );
-  }
-  lexemes.next();
+  lexemes.expect(
+    "{",
+    'Method parameters must be followed by an opening bracket "{".',
+  );
 
-  subroutine.start = lexemes.index;
+  subroutine.start = lexemes.mark();
 
   let brackets = 0;
-  while (lexemes.get() && brackets >= 0) {
-    if (lexemes.get()?.content === "{") {
+  while (!lexemes.atEnd() && brackets >= 0) {
+    if (lexemes.peek()?.content === "{") {
       brackets += 1;
-    } else if (lexemes.get()?.content === "}") {
+    } else if (lexemes.peek()?.content === "}") {
       brackets -= 1;
     }
-    lexemes.next();
+    lexemes.advance();
   }
 
-  subroutine.end = lexemes.index - 1;
+  subroutine.end = lexemes.mark() - 1;
 
   return subroutine;
 }
 
 /** parses lexemes at subroutine parameters, and returns the parameters */
 function parameters(lexemes: Lexemes, subroutine: Subroutine): Variable[] {
-  if (!lexemes.get()) {
+  if (lexemes.atEnd()) {
     throw new CompilerError(
       'Opening bracket "(" missing after function name.',
-      lexemes.get(-1),
+      lexemes.peek(-1),
     );
   }
-  if (lexemes.get()?.content !== "(") {
-    throw new CompilerError(
-      'Opening bracket "(" missing after function name.',
-      lexemes.get(),
-    );
-  }
-  lexemes.next();
+  lexemes.expect("(", 'Opening bracket "(" missing after function name.');
 
   const parameters: Variable[] = [];
-  while (lexemes.get()?.content !== ")") {
+  while (lexemes.peek()?.content !== ")") {
     const parameter = variable(lexemes, subroutine, true);
     parameter.isParameter = true;
     parameters.push(parameter);
-    if (lexemes.get()?.content === ",") {
-      lexemes.next();
-    }
+    lexemes.match(",");
   }
 
   // N.B. no check for the closing bracket here: the loop above only exits
   // once it has already found ")", so a check here would be unreachable
-  lexemes.next();
+  lexemes.advance();
 
   return parameters;
 }

@@ -30,7 +30,7 @@ export default (
 
   switch (lexeme.type) {
     case "comment":
-      lexemes.next();
+      lexemes.advance();
       statement = makePassStatement();
       break;
 
@@ -38,31 +38,31 @@ export default (
       // usually impossible - new lines are eaten at the end of the previous
       // statement - but it can happen at the start of the program or a block,
       // if there's a comment on the
-      lexemes.next();
+      lexemes.advance();
       statement = makePassStatement();
       break;
 
     case "identifier": {
-      const name = lexemes.get()?.content as string;
+      const name = lexemes.peek()?.content as string;
       // "foo" is a read-position lookup, which falls through to an enclosing
       // scope: a method receiver, and an indexed write like "mylist[i] = v",
       // read rather than rebind the name. A plain "name = value" is a real
       // binding and must not fall through - see find.assignmentTarget.
-      const isIndexed = lexemes.get(1)?.content === "[";
+      const isIndexed = lexemes.peek(1)?.content === "[";
       const foo = find.variable(routine, name);
       const assignTarget = isIndexed
         ? undefined
         : find.assignmentTarget(routine, name);
       const bar = find.command(routine, name);
-      if (foo && lexemes.get(1)?.content === ".") {
+      if (foo && lexemes.peek(1)?.content === ".") {
         // "mylist.append(64)" as a bare statement
-        lexemes.next(); // move past the variable name
-        lexemes.next(); // move past "."
-        const methodLexeme = lexemes.get();
+        lexemes.advance(); // move past the variable name
+        lexemes.advance(); // move past "."
+        const methodLexeme = lexemes.peek();
         if (methodLexeme?.type !== "identifier") {
           throw new CompilerError(
             "Method name missing after '.'.",
-            lexemes.get(),
+            lexemes.peek(),
           );
         }
         const method = find.nativeCommand(
@@ -76,7 +76,7 @@ export default (
             methodLexeme,
           );
         }
-        lexemes.next();
+        lexemes.advance();
         const variableValue = makeVariableValue(lexeme, foo);
         statement = parseMethodProcedureCall(
           methodLexeme,
@@ -87,10 +87,10 @@ export default (
         );
       } else if (isIndexed && foo) {
         // an indexed write is not a name-binding, so "foo" is the right lookup
-        lexemes.next();
+        lexemes.advance();
         statement = parseVariableAssignment(lexeme, lexemes, routine, foo);
       } else if (assignTarget) {
-        lexemes.next();
+        lexemes.advance();
         statement = parseVariableAssignment(
           lexeme,
           lexemes,
@@ -102,7 +102,7 @@ export default (
         // assigning to it creates a local that shadows it
         statement = parseVariableDeclaration(lexeme, lexemes, routine);
       } else if (bar) {
-        lexemes.next();
+        lexemes.advance();
         statement = parseProcedureCall(lexeme, lexemes, routine, bar);
       } else {
         statement = parseVariableDeclaration(lexeme, lexemes, routine);
@@ -116,25 +116,25 @@ export default (
         case "def": {
           const sub = find.subroutine(
             routine,
-            lexemes.get(1)?.content as string,
+            lexemes.peek(1)?.content as string,
           ) as Subroutine;
           // already defined in the first pass; lexemes[sub.end] is the final
           // DEDENT, so jump past it
-          lexemes.index = sub.end + 1;
+          lexemes.seek(sub.end + 1);
           statement = makePassStatement();
           break;
         }
 
         case "global":
         case "nonlocal":
-          lexemes.next();
+          lexemes.advance();
           if (routine.kind === "Program") {
             throw new CompilerError(
               "{lex} statements can only occur inside a subroutine.",
-              lexemes.get(-1),
+              lexemes.peek(-1),
             );
           }
-          if (lexemes.get(-1)?.content === "global") {
+          if (lexemes.peek(-1)?.content === "global") {
             routine.globals.push(...identifiers(lexemes, routine, "global"));
           } else {
             routine.nonlocals.push(
@@ -146,33 +146,33 @@ export default (
           break;
 
         case "return":
-          lexemes.next();
+          lexemes.advance();
           statement = parseReturnStatement(lexeme, lexemes, routine);
           break;
 
         case "if":
-          lexemes.next();
+          lexemes.advance();
           statement = parseIfStatement(lexeme, lexemes, routine);
           break;
 
         case "else":
           throw new CompilerError(
             'Statement cannot begin with "else". If you have an "if" above, this line may need to be indented more.',
-            lexemes.get(),
+            lexemes.peek(),
           );
 
         case "for":
-          lexemes.next();
+          lexemes.advance();
           statement = parseForStatement(lexeme, lexemes, routine);
           break;
 
         case "while":
-          lexemes.next();
+          lexemes.advance();
           statement = parseWhileStatement(lexeme, lexemes, routine);
           break;
 
         case "pass":
-          lexemes.next();
+          lexemes.advance();
           eosCheck(lexemes);
           statement = makePassStatement();
           break;
@@ -184,7 +184,7 @@ export default (
               lexeme,
             );
           }
-          lexemes.next();
+          lexemes.advance();
           eosCheck(lexemes);
           statement = makeBreakStatement();
           break;
@@ -196,7 +196,7 @@ export default (
               lexeme,
             );
           }
-          lexemes.next();
+          lexemes.advance();
           eosCheck(lexemes);
           statement = makeContinueStatement();
           break;

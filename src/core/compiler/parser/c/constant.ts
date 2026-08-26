@@ -13,28 +13,22 @@ export default (lexemes: Lexemes, routine: Routine): Constant => {
   if (constantType === null) {
     throw new CompilerError(
       'Constant type cannot be void (expected "bool", "char", "int", or "string").',
-      lexemes.get(),
+      lexemes.peek(),
     );
   }
 
   const name = identifier(lexemes, routine);
 
-  if (!lexemes.get()) {
+  if (lexemes.atEnd()) {
     throw new CompilerError(
       `Constant ${name} must be assigned a value.`,
-      lexemes.get(-1),
+      lexemes.peek(-1),
     );
   }
-  if (lexemes.get()?.content === "[") {
-    throw new CompilerError("Constant cannot be an array.", lexemes.get(-1));
+  if (lexemes.peek()?.content === "[") {
+    throw new CompilerError("Constant cannot be an array.", lexemes.peek(-1));
   }
-  if (lexemes.get()?.content !== "=") {
-    throw new CompilerError(
-      `Constant ${name} must be assigned a value.`,
-      lexemes.get(),
-    );
-  }
-  lexemes.next();
+  lexemes.expect("=", `Constant ${name} must be assigned a value.`);
 
   const exp = parseExpression(lexemes, routine);
   typeCheck(routine.language, exp, constantType);
