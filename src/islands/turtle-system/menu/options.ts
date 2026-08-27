@@ -4,12 +4,11 @@ import {
   getSettings,
   hiddenUnless,
   resetDefaults,
-  saveSettings as saveCurrentSettings,
 } from "@/islands/settings.ts";
 import { menuSources, openSubmenu, submenu } from "../menu.ts";
 
 // The system menu's Options submenu, which is settings all the way down —
-// including the two command links at the bottom, which call the settings store
+// including the command link at the bottom, which calls the settings store
 // rather than doing anything this component does itself.
 //
 // The three auto-on-load options aren't implemented in the online system, so
@@ -53,25 +52,12 @@ define("options-menu", {
           disabled
         />
         <hr />
-        <a on-click="saveSettings"
-          ><span>Save current settings (login required)</span></a
-        >
-        <setting-checkbox
-          setting="alwaysSaveSettings"
-          label="Always save current settings (login required)"
-        />
         <a on-click="resetSettings"><span>Reset settings to default</span></a>
       `,
     );
   },
   actions: {
     openSubmenu,
-    // Aliased on the way in, because the action and the store function it calls
-    // want the same name and only one of them can have it here.
-    saveSettings: (): undefined => {
-      saveCurrentSettings();
-      return undefined;
-    },
     resetSettings: (): undefined => {
       resetDefaults();
       return undefined;

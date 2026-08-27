@@ -3,7 +3,7 @@ import type { RequestParams } from "./types.ts";
 import page from "./_layout/page.ts";
 import { htmlResponse } from "./utils/response.ts";
 
-export type ErrorCode = 404 | 405 | 400 | 500 | 403;
+export type ErrorCode = 404 | 405 | 400 | 500;
 
 export default (
   requestParams: RequestParams,
@@ -34,15 +34,6 @@ const errorPages: Record<ErrorCode, (requestParams: RequestParams) => string> =
     [400]: errorPage(
       html` <h1>Bad Request</h1> `,
       html` <p>The data you sent doesn't make sense.</p> `,
-    ),
-    [403]: errorPage(
-      html` <h1>Login Required</h1> `,
-      html`
-        <p>
-          This page is for registered users only. Please register or sign up for
-          a free account.
-        </p>
-      `,
     ),
     [500]: errorPage(
       html` <h1>Internal Server Error</h1> `,

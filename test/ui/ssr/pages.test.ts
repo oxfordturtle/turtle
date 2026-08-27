@@ -18,8 +18,8 @@ import { renderRoute } from "./lib/render.ts";
 // does with a request that isn't a happy-path GET for a page - assets, POSTs,
 // redirects, errors - and the small helpers those paths run on. Everything here
 // drives the real router with a constructed Request wherever a URL can reach
-// the behaviour; only things no URL reaches (the 400/403/405/500 error pages,
-// the unused tool exports) are called directly.
+// the behaviour; only things no URL reaches (the 400/405/500 error pages, the
+// unused tool exports) are called directly.
 
 const request = (path: string, init?: RequestInit): Request =>
   new Request(`http://localhost${path}`, init);
@@ -203,9 +203,9 @@ describe("the error pages", () => {
     assertStringIncludes(markup, "This page could not be found.");
   });
 
-  // Nothing in the router produces 400, 403, 405 or 500 today (the 500 branch
-  // is unreachable - see src/pages/router.ts) - these pages are kept for
-  // handlers that will need them, so they are pinned by direct call.
+  // Nothing in the router produces 400, 405 or 500 today (the 500 branch is
+  // unreachable - see src/pages/router.ts) - these pages are kept for handlers
+  // that will need them, so they are pinned by direct call.
   it("send Bad Request as a full page", async () => {
     const response = await errorPage(await paramsFor("/"), 400);
     assertEquals(response.status, 400);
@@ -213,14 +213,6 @@ describe("the error pages", () => {
     const markup = await response.text();
     assertStringIncludes(markup, "<h1>Bad Request</h1>");
     assertStringIncludes(markup, "The data you sent doesn't make sense.");
-  });
-
-  it("send Login Required as a full page", async () => {
-    const response = await errorPage(await paramsFor("/"), 403);
-    assertEquals(response.status, 403);
-    const markup = await response.text();
-    assertStringIncludes(markup, "<h1>Login Required</h1>");
-    assertStringIncludes(markup, "This page is for registered users only.");
   });
 
   it("send Method not Allowed as a full page", async () => {

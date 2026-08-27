@@ -17,40 +17,22 @@ import {
   exampleFromDisk,
   requests,
 } from "./lib/examples.ts";
-import {
-  assert,
-  assertEquals,
-  assertInstanceOf,
-  assertStrictEquals,
-} from "@std/assert";
+import { assert, assertEquals, assertStrictEquals } from "@std/assert";
 import { afterEach, beforeEach, describe, it } from "@std/testing/bdd";
 
 // The client startup itself (src/client/index.ts): every `mountRoute` runs the
 // real `init()`, so these tests assert what a freshly loaded page can do that
 // unwired modules cannot - the machine draws through its ports, the passes have
-// swept the prose, the URL's file parameters opened something, and errors reach
-// the user.
+// swept the prose, the URL's example parameter opened something, and errors
+// reach the user.
 
 // Rule 6: every test ends with Womble having reported nothing.
 afterEach(assertNoWombleLogs);
 
 /**
- * Replaces the error handler `init()` registered with a recording one. The
- * registered handler calls `alert`, which exists in Deno and blocks on stdin -
- * so every test that triggers an error path re-registers this first, after
- * every mount (each mount runs `init()` and re-registers the alert handler).
- */
-const captureErrors = (): unknown[] => {
-  const captured: unknown[] = [];
-  errors.setErrorHandler((error) => captured.push(error));
-  return captured;
-};
-
-/**
  * Records what `init()`'s own registered handler does - `console.error` then
  * `alert` - with the blocking `alert` swapped for a recorder. For the tests
- * that cover that handler itself, and the ones (`?f=`) where an error fires
- * *during* `init()`, before any test could re-register.
+ * that cover that handler itself.
  */
 const stubReporting = (): {
   alerts: string[];
@@ -226,7 +208,7 @@ describe("init opens the file the URL names", () => {
   });
 
   it("?x= fetches the example for the ?l= language", async () => {
-    // the settings initialise before the URL's file parameters are read, so
+    // the settings initialise before the URL's example parameter is read, so
     // the example arrives in the language the same link asked for
     await mountRoute("/?l=BASIC&x=Triangle1");
     await eventually(
@@ -238,25 +220,11 @@ describe("init opens the file the URL names", () => {
     await settle();
   });
 
-  it("?f= reports that remote files are not yet available", async () => {
-    // the error fires *during* init, while init's own alert-calling handler is
-    // registered - so the capture is the stubbed alert, not setErrorHandler
-    const reporting = stubReporting();
-    try {
-      await mountRoute("/?f=https://example.com/file.tpy");
-      assertEquals(reporting.alerts, ["Feature not yet available."]);
-      assertEquals(reporting.logged.length, 1);
-      assertInstanceOf(reporting.logged[0], errors.SystemError);
-    } finally {
-      reporting.restore();
-    }
-  });
-
-  it("neither runs on a page without the system", async () => {
+  it("does not run on a page without the system", async () => {
     // without the gate, this link would silently replace the open file
     const reporting = stubReporting();
     try {
-      await mountRoute("/documentation/reference?x=Triangle1&f=whatever");
+      await mountRoute("/documentation/reference?x=Triangle1");
       await settle();
       assertEquals(requests, []);
       assertEquals(program.getFilename(), "");
@@ -264,39 +232,6 @@ describe("init opens the file the URL names", () => {
       assertEquals(reporting.alerts, []);
     } finally {
       reporting.restore();
-    }
-  });
-});
-
-describe("init's beforeunload listener", () => {
-  // `setupDom` swaps `Event` for jsdom's, whose instances Deno's global
-  // `dispatchEvent` rejects - but `MessageEvent` is still Deno-native, the
-  // listener registry is Deno's global one (bare `addEventListener` in init),
-  // and the listener never reads the event. So this is how a test unloads.
-  const fireBeforeUnload = (): void => {
-    dispatchEvent(new MessageEvent("beforeunload"));
-  };
-
-  it("does nothing while alwaysSaveSettings is off", async () => {
-    await mountRoute("/");
-    const captured = captureErrors();
-    fireBeforeUnload();
-    assertEquals(captured, []);
-  });
-
-  it("reports the unimplemented settings save when it is on", async () => {
-    await mountRoute("/");
-    const captured = captureErrors();
-    settings.setSetting("alwaysSaveSettings", true);
-    await settle();
-    fireBeforeUnload();
-    // Each mount in this file ran init() and added another listener, so the
-    // dispatch fires all of them - a non-issue on a real page, where init runs
-    // exactly once per load. Every report must still be this one error.
-    assert(captured.length >= 1);
-    for (const error of captured) {
-      assertInstanceOf(error, errors.SystemError);
-      assertEquals(error.message, "Not yet implemented.");
     }
   });
 });
@@ -329,7 +264,7 @@ describe("init's registered error handler", () => {
 });
 
 describe("the storage behind it all (src/client/state/storage.ts)", () => {
-  // what init's beforeunload listener and every settings read go through
+  // what every settings read goes through
   it("round-trips a value through the session, preserving its type", () => {
     storage.save("editorFontSize", 16);
     assertStrictEquals(storage.load("editorFontSize"), 16);
@@ -340,6 +275,6 @@ describe("the storage behind it all (src/client/state/storage.ts)", () => {
   it("falls back to the declared default when nothing is stored", () => {
     sessionStorage.clear();
     assertStrictEquals(storage.load("language"), "Python");
-    assertStrictEquals(storage.load("alwaysSaveSettings"), false);
+    assertStrictEquals(storage.load("autoRunOnLoad"), false);
   });
 });

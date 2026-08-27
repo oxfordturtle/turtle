@@ -23,7 +23,6 @@ export type SystemSettings = {
   autoCompileOnLoad: boolean;
   autoRunOnLoad: boolean;
   autoFormatOnLoad: boolean;
-  alwaysSaveSettings: boolean;
   showCanvasOnRun: boolean;
   showOutputOnWrite: boolean;
   showMemoryOnDump: boolean;

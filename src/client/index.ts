@@ -7,8 +7,7 @@ import {
   languageVisibility,
   modeVisibility,
 } from "./passes.ts";
-import { load } from "./state/storage.ts";
-import { setErrorHandler, showError, SystemError } from "./tools/error.ts";
+import { setErrorHandler } from "./tools/error.ts";
 
 // The machine's outbound ports. None touches the DOM as it loads:
 // `<canvas-tab>` and `<output-tab>` hand them their elements from their own
@@ -75,24 +74,16 @@ export const init = (): void => {
     modeVisibility();
   });
 
-  // A link into the system can carry an example (?x=) or a remote file (?f=)
-  // to open, and a language (?l=), which the settings store reads for itself
-  // above. None of the three is state, so all are taken straight off the URL.
+  // A link into the system can carry an example (?x=) to open, and a language
+  // (?l=), which the settings store reads for itself above. Neither is state,
+  // so both are taken straight off the URL.
   //
-  // This runs on every page, so the two file parameters are gated on the
-  // system app being present: without it, `/documentation/reference?x=Triangle`
-  // would quietly replace whatever file the user has open.
+  // This runs on every page, so the example parameter is gated on the system
+  // app being present: without it, `/documentation/reference?x=Triangle` would
+  // quietly replace whatever file the user has open.
   if (document.querySelector("turtle-system")) {
     const parameters = new URLSearchParams(document.location.search);
     const example = parameters.get("x");
-    const file = parameters.get("f");
     if (example) program.openExampleFile(example);
-    if (file) program.openRemoteFile(file);
   }
-
-  addEventListener("beforeunload", function () {
-    if (load("alwaysSaveSettings")) {
-      showError(new SystemError("Not yet implemented."));
-    }
-  });
 };

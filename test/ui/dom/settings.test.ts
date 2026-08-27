@@ -226,20 +226,6 @@ describe("resetting the settings to their defaults", () => {
   });
 });
 
-// Both blocked on an account system that doesn't exist - see TODO.md 3.4.
-// `saveSettings` is reached from the Options menu (controls.test.ts);
-// `loadSavedSettings` has no call site yet at all, and is pinned here so that
-// giving it one can't quietly change what it does.
-describe("saving settings to an account", () => {
-  it("reports that neither half is implemented", () => {
-    const captured: string[] = [];
-    errors.setErrorHandler((error) => captured.push((error as Error).message));
-    settings.saveSettings();
-    settings.loadSavedSettings();
-    assertEquals(captured, ["Not yet implemented.", "Not yet implemented."]);
-  });
-});
-
 describe("the language, which every page shares", () => {
   it("re-renders the reference tables when the header's select changes", async () => {
     await mountRoute("/documentation/reference");

@@ -21,8 +21,6 @@ type Writable<T> = { -readonly [K in keyof T]: T[K] };
  * src/islands/settings.ts.
  */
 export type PropertyValues = {
-  // whether user's saved settings have been loaded in this session
-  savedSettingsHaveBeenLoaded: boolean;
   // system settings
   language: string;
   mode: string;
@@ -37,7 +35,6 @@ export type PropertyValues = {
   autoCompileOnLoad: boolean;
   autoRunOnLoad: boolean;
   autoFormatOnLoad: boolean;
-  alwaysSaveSettings: boolean;
   // help page properties
   commandsCategoryIndex: number;
   showSimpleCommands: boolean;
@@ -52,8 +49,6 @@ export type PropertyValues = {
 export type Property = keyof PropertyValues;
 
 export const defaults: PropertyValues = {
-  // whether user's saved settings have been loaded in this session
-  savedSettingsHaveBeenLoaded: false,
   // system settings
   language: "Python",
   mode: "normal",
@@ -68,7 +63,6 @@ export const defaults: PropertyValues = {
   autoCompileOnLoad: false,
   autoRunOnLoad: false,
   autoFormatOnLoad: false,
-  alwaysSaveSettings: false,
   // help page properties
   commandsCategoryIndex: 0,
   showSimpleCommands: true,

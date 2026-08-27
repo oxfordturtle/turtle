@@ -11,7 +11,7 @@ export default (requestParams: RequestParams): Promise<Response> =>
 // `src/islands/turtle-system.ts` renders the header, the menu and both sections
 // of the IDE, and its subtree renders everything inside them.
 //
-// The query parameters a link into the system can carry (`?l=`, `?x=`, `?f=`)
-// are not passed as attributes: nothing renders differently for any of them, so
+// The query parameters a link into the system can carry (`?l=`, `?x=`) are not
+// passed as attributes: nothing renders differently for either of them, so
 // their two readers take them off `document.location` instead.
 const main = (): HtmlResult => html` <turtle-system /> `;

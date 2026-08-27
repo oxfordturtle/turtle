@@ -29,8 +29,6 @@ import { applyLanguage } from "./turtle-system/program.ts";
  * as the Delphi version's own settings dialogue groups them.
  */
 export const settingNames = [
-  // whether the user's saved settings have been loaded in this session
-  "savedSettingsHaveBeenLoaded",
   // system settings
   "language",
   "mode",
@@ -45,7 +43,6 @@ export const settingNames = [
   "autoCompileOnLoad",
   "autoRunOnLoad",
   "autoFormatOnLoad",
-  "alwaysSaveSettings",
   // machine runtime options
   "showCanvasOnRun",
   "showOutputOnWrite",
@@ -119,14 +116,13 @@ export const settingsStore = store("settings", {
     },
 
     /**
-     * Every setting but `savedSettingsHaveBeenLoaded`, in one commit and one
-     * notification. `language` is included, but its *file-level* half is
-     * `resetDefaults`'s to run afterwards.
+     * Every setting, in one commit and one notification. `language` is
+     * included, but its *file-level* half is `resetDefaults`'s to run
+     * afterwards.
      */
     reset: () => {
       const next: Partial<Settings> = {};
       for (const name of settingNames) {
-        if (name === "savedSettingsHaveBeenLoaded") continue;
         const value = defaultSettings[name];
         save(name, value);
         write(next, name, value);
@@ -200,15 +196,6 @@ export const resetDefaults = (): void => {
   requestCloseMenu();
 };
 
-// Both stubs: the account persistence they need doesn't exist.
-export const saveSettings = (): void => {
-  showError(new SystemError("Not yet implemented."));
-};
-
-export const loadSavedSettings = (): void => {
-  showError(new SystemError("Not yet implemented."));
-};
-
 /**
  * Picks up a language change that originated in the file memory - opening a file
  * in another language adopts it - so the language <select> and the
@@ -280,12 +267,6 @@ const readSettings = (): Settings => {
   for (const name of settingNames) {
     write(settings, name, load(name));
   }
-  // both are persisted but force-reset on every page load: the "save settings"
-  // feature needs a login that doesn't exist yet
-  settings.savedSettingsHaveBeenLoaded = false;
-  settings.alwaysSaveSettings = false;
-  save("savedSettingsHaveBeenLoaded", false);
-  save("alwaysSaveSettings", false);
   // ?l=<language> beats the stored value, and is read straight off the URL
   // rather than out of an attribute: it isn't state
   const urlLanguage = languageFromUrl(

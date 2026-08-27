@@ -400,10 +400,6 @@ export const openLocalFile = (): void => {
   fileInput.click();
 };
 
-export const openRemoteFile = (_url: string): void => {
-  showError(new SystemError("Feature not yet available."));
-};
-
 // What the example loaders below call instead of the global `fetch`: the jsdom
 // test layer has no network, so it installs a fetcher that serves
 // `assets/examples/` from disk. A wrapper rather than a bare alias, so the real
@@ -452,10 +448,6 @@ export const saveLocalFile = (): void => {
   const file = getCurrentFile();
   if (!file) return;
   download(file.code, file.filename);
-};
-
-export const saveRemoteFile = (): void => {
-  showError(new SystemError("Feature not yet available."));
 };
 
 // Notifies, because the backup is a field on a file the store owns: a mutation
