@@ -3,7 +3,7 @@
   "runMode": "bounded",
   "pcode": {
     "lines": 1301,
-    "hash": "88ffe27b60bb1c05"
+    "hash": "fd9465652afd2279"
   },
   "hitIterationCap": true,
   "consoleText": "          ARISTOTELIAN SYLLOGISM TESTING PROGRAM\nAristotelian syllogisms consist of two premises followed by a\nconclusion. The first (Major) premise connects the predicates M\nand P, the second (Minor) premise connects the predicates S and\nM, while the Conclusion connects the predicates S and P. Four\ndifferent types of logical connection are available, with a\ntraditional shorthand code using the vowels A, E, I and O:\n    A     All Fs are G.       E     No F is G.\n    I     Some F is G.        O     Some F is not G.\nThere are thus 4 possible relations in the Major Premise, 4 in\nthe Minor Premise, and 4 in the Conclusion (so 64 combinations\noverall), but in addition, there are four different \"Figures\",\nwhich indicate the order of the predicates in each proposition:\n   Figure 1   Major: M-P   Minor: S-M   Conclusion: S-P\n   Figure 2   Major: P-M   Minor: S-M   Conclusion: S-P\n   Figure 3   Major: M-P   Minor: M-S   Conclusion: S-P\n   Figure 4   Major: P-M   Minor: M-S   Conclusion: S-P\nHence there are 256 possible syllogisms altogether. Here is the\nsyllogism of Figure 1 coded \"EIO\":\n   No M is P;  Some S is M;  therefore  Some S is not P.\nAnd here is the syllogism of Figure 4 coded \"AEO\":\n   All Ps are M;  No M is S;  therefore  Some S is not P.\nThe vowel codes were used in the Middle Ages as mnemonics for\nthe forms of syllogism that were accepted as valid - in these\ncases \"Ferio\" (1:EIO) and \"Calemos\" (4:AEO) respectively. But\nnote that Calemos is invalid (i.e. its premises can be true and\nyet its conclusion turn out false) if we allow a world in which\nthere is no S at all. Aristotle's theory takes for granted that\nall three predicates are at least satisfied by something.\n\nNow press \"f\" or \"F\" for Fregean validity testing, which does not\nassume that the relevant predicates M, P and S are satisfied\nby anything; press \"a\" or \"A\" for Aristotelian validity testing.\nCapital \"F\" or \"A\" will display all 256 possible population types\nas they are generated and tested.  ",
@@ -25,7 +25,7 @@
       "clear": 1,
       "setCursor": 1
     },
-    "logHash": "b07f16cad649eb4f",
+    "logHash": "0ea9e12fef4264d3",
     "head": [
       "setResolution([1000,1000,false])",
       "setVirtualCanvas([0,0,1000,1000])",

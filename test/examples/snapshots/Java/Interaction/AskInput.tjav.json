@@ -3,7 +3,7 @@
   "runMode": "readline",
   "pcode": {
     "lines": 16,
-    "hash": "2b6859e051e7e51c"
+    "hash": "6b5e1ffc57aded20"
   },
   "hitIterationCap": false,
   "consoleText": "What is your name?  Amyas\n\nHello, Amyas, ...  How are you?\n",
@@ -25,7 +25,7 @@
       "clear": 1,
       "setCursor": 1
     },
-    "logHash": "d982706e7ecfaa0e",
+    "logHash": "e979ab2e1015f772",
     "head": [
       "setResolution([1000,1000,false])",
       "setVirtualCanvas([0,0,1000,1000])",

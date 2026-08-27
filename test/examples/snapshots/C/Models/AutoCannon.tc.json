@@ -3,7 +3,7 @@
   "runMode": "bounded",
   "pcode": {
     "lines": 105,
-    "hash": "a1e91c3aaa18672d"
+    "hash": "50c028cd8d6f4831"
   },
   "hitIterationCap": true,
   "consoleText": "Elevation: 0  Distance: 2266  Time: 21\nElevation: 1  Distance: 2458  Time: 23\nElevation: 2  Distance: 2554  Time: 24\nElevation: 3  Distance: 2842  Time: 27\nElevation: 4  Distance: 3034  Time: 29\nElevation: 5  Distance: 3226  Time: 31\nElevation: 6  Distance: 3480  Time: 34\nElevation: 7  Distance: 3765  Time: 37\nElevation: 8",
@@ -28,7 +28,7 @@
       "drawArc": 297,
       "readPixel": 490
     },
-    "logHash": "50acab280e910aa6",
+    "logHash": "e7f2cc462ca5355a",
     "head": [
       "setResolution([1000,1000,false])",
       "setVirtualCanvas([0,0,1000,1000])",

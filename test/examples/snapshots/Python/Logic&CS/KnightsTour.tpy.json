@@ -3,7 +3,7 @@
   "runMode": "bounded",
   "pcode": {
     "lines": 250,
-    "hash": "7db28be4594d33e5"
+    "hash": "339656457d034699"
   },
   "hitIterationCap": true,
   "consoleText": "Random search or Clever search? (R/C) \n",
@@ -24,7 +24,7 @@
       "setVirtualCanvas": 2,
       "clear": 1
     },
-    "logHash": "99710e8860a79822",
+    "logHash": "2a987742ea3c995e",
     "head": [
       "setResolution([1000,1000,false])",
       "setVirtualCanvas([0,0,1000,1000])",

@@ -3,7 +3,7 @@
   "runMode": "bounded",
   "pcode": {
     "lines": 61,
-    "hash": "9abab0c35771a5cf"
+    "hash": "0637f8af113d0473"
   },
   "hitIterationCap": false,
   "consoleText": "This program selects two random numbers a and b, in the range\n100-999, and then outputs various mathematical functions of the\nfraction a/b. The results are expressed to 4 decimal places, and a\ndenominator of 1000000 is used in the calculations to provide\nprecision, even though the Turtle functions strictly operate only\non integers and produce integer results.\n\na = 100; b = 738\na / b = 100 / 738 = 0.1355\n\nsquare(100/738) = 0.0184\nsquare root(100/738) = 0.3681\ncube(100/738) = 0.0025\ncube root(100/738) = 0.5136\n\nhypot(100,738) = 744.7443\ncalculated hypot(100,738) = 744.7443\n\nsin(100/738°) = 0.0024\ncos(100/738°) = 1.0000\ntan(100/738°) = 0.0024\n\nln(100/738) = -1.9988\nexp(100/738) = 1.1451\nlog10(100/738) = -0.8681\nantilog(100/738) = 1.3662\n\narccos(100/738) = 82.2124°\narcsin(100/738) = 7.7876°\narctan(100/738) = 7.7167°\n",
@@ -25,7 +25,7 @@
       "clear": 1,
       "setCursor": 1
     },
-    "logHash": "d982706e7ecfaa0e",
+    "logHash": "e979ab2e1015f772",
     "head": [
       "setResolution([1000,1000,false])",
       "setVirtualCanvas([0,0,1000,1000])",

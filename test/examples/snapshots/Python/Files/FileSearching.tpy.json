@@ -3,7 +3,7 @@
   "runMode": "asyncFiles",
   "pcode": {
     "lines": 37,
-    "hash": "5d3c903b8a58eefc"
+    "hash": "bbd7b01c6eb9b6e0"
   },
   "hitIterationCap": false,
   "consoleText": "Turtle directories (up to first level) and their files ...\n\nBase directory:\n  <no files>\n\n",
@@ -25,7 +25,7 @@
       "clear": 1,
       "setCursor": 1
     },
-    "logHash": "d982706e7ecfaa0e",
+    "logHash": "e979ab2e1015f772",
     "head": [
       "setResolution([1000,1000,false])",
       "setVirtualCanvas([0,0,1000,1000])",

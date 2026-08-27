@@ -3,7 +3,7 @@
   "runMode": "bounded",
   "pcode": {
     "lines": 43,
-    "hash": "bf2e8fcb30279a8c"
+    "hash": "bee309ac31143d90"
   },
   "hitIterationCap": false,
   "consoleText": "You will see this on a clear light blue Console\n",
@@ -25,7 +25,7 @@
       "clear": 1,
       "setCursor": 1
     },
-    "logHash": "d982706e7ecfaa0e",
+    "logHash": "e979ab2e1015f772",
     "head": [
       "setResolution([1000,1000,false])",
       "setVirtualCanvas([0,0,1000,1000])",

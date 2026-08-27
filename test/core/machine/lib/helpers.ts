@@ -216,15 +216,21 @@ export const compileExample = (language: Language, code: string): number[][] =>
  * whose default 10000-iteration `flush()` is meant to catch genuine hangs in
  * hand-written fixtures that are never supposed to loop that long, and
  * therefore rethrows).
+ *
+ * Accepts an optional pre-built `FakeCanvas` for the same reason
+ * `runExampleBoundedAsync` accepts a `FakeFiles`: the snapshot suite builds
+ * one with a digesting sink rather than letting 43 million recorded calls
+ * accumulate in `.calls` (see `test/examples/lib/record.ts`).
  */
 export const runExampleBounded = (
   pcode: number[][],
   maxIterations = 500,
   optionsOverrides: Partial<MachineOptions> = {},
+  canvasOverride?: FakeCanvas,
 ): RunResult & { hitIterationCap: boolean } => {
   const timers = fakeTimers();
   const output = fakeOutput();
-  const canvas = fakeCanvas();
+  const canvas = canvasOverride ?? fakeCanvas();
   const files = fakeFiles();
   const options = { ...defaultMachineOptions, ...optionsOverrides };
   run(pcode, options, timers, output, canvas, files);
@@ -264,10 +270,11 @@ export const runExampleBoundedAsync = async (
   maxOuterIterations = 20,
   optionsOverrides: Partial<MachineOptions> = {},
   filesOverride?: FakeFiles,
+  canvasOverride?: FakeCanvas,
 ): Promise<RunResult & { hitIterationCap: boolean }> => {
   const timers = fakeTimers();
   const output = fakeOutput();
-  const canvas = fakeCanvas();
+  const canvas = canvasOverride ?? fakeCanvas();
   const files: FakeFiles = filesOverride ?? fakeFiles();
   const options = { ...defaultMachineOptions, ...optionsOverrides };
   run(pcode, options, timers, output, canvas, files);

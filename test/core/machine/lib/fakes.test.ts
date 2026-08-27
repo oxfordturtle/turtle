@@ -1,6 +1,6 @@
 import { describe, it } from "@std/testing/bdd";
 import { assert, assertEquals, assertFalse } from "@std/assert";
-import { fakeFiles } from "./fakes.ts";
+import { fakeCanvas, fakeFiles } from "./fakes.ts";
 
 /**
  * Coverage for `fakeFiles()` itself, not for any `src/core` code: a standalone
@@ -173,5 +173,57 @@ describe("machine/lib/fakes: fakeFiles()", () => {
       existedBefore: true,
       existedAfter: true,
     });
+  });
+});
+
+/**
+ * Coverage for `fakeCanvas()`'s two non-obvious behaviours - the call sink the
+ * snapshot suite runs on, and the packed pixel key - for the same reason as
+ * above: so a machine test that reads back a pixel is debugging the machine,
+ * not the fake.
+ */
+describe("machine/lib/fakes: fakeCanvas()", () => {
+  it("records into .calls by default, and into a sink instead when given one", () => {
+    const plain = fakeCanvas();
+    plain.setCursor(1);
+    plain.writePixel(3, 4, 0x00ff00, false);
+    assertEquals(plain.calls, [
+      { method: "setCursor", args: [1] },
+      { method: "writePixel", args: [3, 4, 0x00ff00, false] },
+    ]);
+
+    const sunk: string[] = [];
+    const sinking = fakeCanvas((method, args) => {
+      sunk.push(`${method}(${JSON.stringify(args)})`);
+    });
+    sinking.setCursor(1);
+    sinking.writePixel(3, 4, 0x00ff00, false);
+    assertEquals(sunk, ["setCursor([1])", "writePixel([3,4,65280,false])"]);
+    assertEquals(sinking.calls, []);
+  });
+
+  it("round-trips pixels by coordinate, including outside the packed-key range", () => {
+    const canvas = fakeCanvas();
+    canvas.clear("#FFFFFF");
+
+    // neighbouring coordinates must not share a key: (x, y) and (x - 1, y +
+    // 65536) would collide under a naive `x * 65536 + y`
+    canvas.writePixel(1, 0, 0x111111, false);
+    canvas.writePixel(0, 1, 0x222222, false);
+    assertEquals(canvas.readPixel(1, 0), 0x111111);
+    assertEquals(canvas.readPixel(0, 1), 0x222222);
+
+    // negative and beyond +-32768, where the packed key gives way to a string
+    canvas.writePixel(-5, -7, 0x333333, false);
+    canvas.writePixel(40000, -40000, 0x444444, false);
+    assertEquals(canvas.readPixel(-5, -7), 0x333333);
+    assertEquals(canvas.readPixel(40000, -40000), 0x444444);
+
+    // an unwritten pixel reads back as whatever clear() last set
+    assertEquals(canvas.readPixel(9, 9), 0xffffff);
+    assertEquals(canvas.pixelAt(1, 0), 0x111111);
+
+    canvas.clear("#000000");
+    assertEquals(canvas.readPixel(1, 0), 0x000000);
   });
 });

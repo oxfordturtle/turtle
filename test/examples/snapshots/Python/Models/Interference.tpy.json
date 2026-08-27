@@ -3,7 +3,7 @@
   "runMode": "bounded",
   "pcode": {
     "lines": 194,
-    "hash": "481563784c76d338"
+    "hash": "5ff43b180f7bcec4"
   },
   "hitIterationCap": true,
   "consoleText": "Press \"1\" or \"2\" for the dimensionality required,\nor press \"R\" to pick random new wavelengths: \n",
@@ -28,7 +28,7 @@
       "drawPolygon": 2649,
       "drawArc": 96
     },
-    "logHash": "c18d90878a19c3e1",
+    "logHash": "8160ddc12635091d",
     "head": [
       "setResolution([1000,1000,false])",
       "setVirtualCanvas([0,0,1000,1000])",

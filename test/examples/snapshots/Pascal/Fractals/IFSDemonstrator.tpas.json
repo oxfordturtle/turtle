@@ -3,7 +3,7 @@
   "runMode": "bounded",
   "pcode": {
     "lines": 235,
-    "hash": "214d26748470ecf8"
+    "hash": "0e7103d81f26ccc4"
   },
   "hitIterationCap": true,
   "consoleText": "ITERATED FUNCTION SYSTEMS DEMONSTRATOR PROGRAM\n\nSelect Barnsley fern, Sierpinski, or Dragon curve? (B/S/D) ",
@@ -24,7 +24,7 @@
       "setVirtualCanvas": 2,
       "clear": 1
     },
-    "logHash": "99710e8860a79822",
+    "logHash": "2a987742ea3c995e",
     "head": [
       "setResolution([1000,1000,false])",
       "setVirtualCanvas([0,0,1000,1000])",

@@ -5,10 +5,13 @@
  * review the diff like any other code change - the diff IS the review surface,
  * which is why records are one-per-example files rather than one big blob.
  *
- * This can never bless a new runtime error: `examples.test.ts` asserts "no
+ * This can never bless a new runtime error: `lib/suite.ts` asserts "no
  * unexpected runtime errors" against `EXPECTED_RUNTIME_ERRORS` *before* it
  * compares the record to the golden, so an update that bakes an error into a
  * record just moves the failure, it doesn't hide it.
+ *
+ * Unlike the suite, this is one sequential pass over all six languages - it
+ * writes files, and the whole point is a single reviewable diff at the end.
  */
 import { allExamples, runExample } from "./harness.ts";
 import { buildRecord, goldenUrl, readGolden } from "./record.ts";
@@ -19,8 +22,8 @@ let changed = 0;
 let created = 0;
 
 for (const entry of examples) {
-  const { runMode, pcode, result } = await runExample(entry);
-  const record = buildRecord(runMode, pcode, result);
+  const { runMode, pcode, result, canvas } = await runExample(entry);
+  const record = buildRecord(runMode, pcode, result, canvas);
   const existing = await readGolden(entry.path);
   const url = goldenUrl(entry.path);
   await Deno.mkdir(new URL(".", url), { recursive: true });

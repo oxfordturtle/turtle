@@ -3,7 +3,7 @@
   "runMode": "bounded",
   "pcode": {
     "lines": 123,
-    "hash": "f2a4d039fd1bbe7c"
+    "hash": "bbe9475cde7a4cc0"
   },
   "hitIterationCap": false,
   "consoleText": "Some User-Defined String Functions\n\nORIGINAL STRING:               \"CREATING is better than LEARNING\"\nREVERSED (by iteration):       \"GNINRAEL naht retteb si GNITAERC\"\nREVERSED (by recursion):       \"GNINRAEL naht retteb si GNITAERC\"\nINITIAL CAPITAL ALL WORDS:     \"CREATING 쎕쎗 쎙쎛쎝쎟쎡쎣 쎥쎧쎩쎫 LEARNING\"\nTITLE CASE:                    \"Creating Is Better Than Learning\"\nREVERSED THEN INITIAL CAPITAL: \"GNINRAEL 옧옩옫옭 옯옱옳옵옷옹 옻옽 GNITAERC\"\nREVERSED THEN TITLE CASE:      \"Gninrael Naht Retteb Si Gnitaerc\"\nCAESAR CIPHER (1 letter):      \"쎗쎛쎟쎣쎧쎫쎯쎳 쎷쎻 쎿쏃쏇쏋쏏쏓 쏗쏛쏟쏣 쏧쏫쏯쏳쏷쏻쏿쐃\"\nCAESAR DECRYPT (1+25 = 26):    \"쎗쎛쎟쎣쎧쎫쎯쎳 쎷쎻 쎿쏃쏇쏋쏏쏓 쏗쏛쏟쏣 쏧쏫쏯쏳쏷쏻쏿쐃\"\nCAESAR CIPHER (4 letters):     \"쎗쎛쎟쎣쎧쎫쎯쎳 쎷쎻 쎿쏃쏇쏋쏏쏓 쏗쏛쏟쏣 쏧쏫쏯쏳쏷쏻쏿쐃\"\nCAESAR DECRYPT (4+22 = 26):    \"쎗쎛쎟쎣쎧쎫쎯쎳 쎷쎻 쎿쏃쏇쏋쏏쏓 쏗쏛쏟쏣 쏧쏫쏯쏳쏷쏻쏿쐃\"\n\nORIGINAL STRING:               \"indeed it's the Essence of Life!\"\nREVERSED (by iteration):       \"!efiL fo ecnessE eht s'ti deedni\"\nREVERSED (by recursion):       \"!efiL fo ecnessE eht s'ti deedni\"\nINITIAL CAPITAL ALL WORDS:     \"쎕쎗쎙쎛쎝쎟 쎡쎣'쎥 쎧쎩쎫 Essence 쎭쎯 Life!\"\nTITLE CASE:                    \"Indeed It's The Essence Of Life!\"\nREVERSED THEN INITIAL CAPITAL: \"!옧옩옫L 옭옯 옱옳옵옷옹옻E 옽옿왁 왃'왅왇 왉왋왍왏왑왓\"\nREVERSED THEN TITLE CASE:      \"!efil Fo Ecnesse Eht S'ti Deedni\"\nCAESAR CIPHER (1 letter):      \"쎗쎛쎟쎣쎧쎫 쎯쎳'쎷 쎻쎿쏃 쏇쏋쏏쏓쏗쏛쏟 쏣쏧 쏫쏯쏳쏷!\"\nCAESAR DECRYPT (1+25 = 26):    \"쎗쎛쎟쎣쎧쎫 쎯쎳'쎷 쎻쎿쏃 쏇쏋쏏쏓쏗쏛쏟 쏣쏧 쏫쏯쏳쏷!\"\nCAESAR CIPHER (4 letters):     \"쎗쎛쎟쎣쎧쎫 쎯쎳'쎷 쎻쎿쏃 쏇쏋쏏쏓쏗쏛쏟 쏣쏧 쏫쏯쏳쏷!\"\nCAESAR DECRYPT (4+22 = 26):    \"쎗쎛쎟쎣쎧쎫 쎯쎳'쎷 쎻쎿쏃 쏇쏋쏏쏓쏗쏛쏟 쏣쏧 쏫쏯쏳쏷!\"\n",
@@ -25,7 +25,7 @@
       "clear": 1,
       "setCursor": 1
     },
-    "logHash": "d982706e7ecfaa0e",
+    "logHash": "e979ab2e1015f772",
     "head": [
       "setResolution([1000,1000,false])",
       "setVirtualCanvas([0,0,1000,1000])",

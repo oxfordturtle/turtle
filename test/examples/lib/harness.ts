@@ -1,4 +1,4 @@
-import type { Language } from "@/core/constants.ts";
+import { type Language, languages } from "@/core/constants.ts";
 import {
   defaultMachineOptions,
   isRunning,
@@ -7,6 +7,7 @@ import {
   updateKeyUp,
 } from "@/core/machine.ts";
 import {
+  type FakeCanvas,
   fakeCanvas,
   fakeFiles,
   fakeOutput,
@@ -19,18 +20,20 @@ import {
   runExampleBoundedAsync,
   type RunResult,
 } from "../../core/machine/lib/helpers.ts";
+import { type CanvasSummary, canvasDigest } from "./record.ts";
 
 /**
  * The machinery for running every real program under `assets/examples/`
  * deterministically under the fake ports, shared between the snapshot suite
- * (`examples.test.ts`) and the golden updater (`lib/update.ts`) so the two can
+ * (`lib/suite.ts`, one file per language) and the golden updater
+ * (`lib/update.ts`) so the two can
  * never diverge on how an example is run.
  *
  * Determinism is what makes the golden records possible, and it rests on one
  * fact: `fakeTimers().now()` starts at 0 and only moves via `advance()`, which
  * nothing here calls - so the machine's PRNG seed (`seed = timers.now()` at
  * `run()`) and every `?time` query are identical on every run. The sentinel
- * test in `examples.test.ts` runs one randomness-heavy example twice to fail
+ * test in `determinism.test.ts` runs one randomness-heavy example twice to fail
  * loudly if that ever changes.
  */
 
@@ -69,11 +72,11 @@ export type BoundedRun = RunResult & { hitIterationCap: boolean };
 export const runWithReadlines = (
   pcode: number[][],
   prompts: ReadlinePrompt[],
+  canvas: FakeCanvas,
   finalMaxIterations = 500,
 ): BoundedRun => {
   const timers = fakeTimers();
   const output = fakeOutput();
-  const canvas = fakeCanvas();
   const files = fakeFiles();
   run(pcode, defaultMachineOptions, timers, output, canvas, files);
   for (const prompt of prompts) {
@@ -130,11 +133,11 @@ export type ReadlinePrompt = { untilOutputIncludes: string; line: string };
 export const runWithKeypresses = (
   pcode: number[][],
   presses: KeyPress[],
+  canvas: FakeCanvas,
   finalMaxIterations: number,
 ): BoundedRun => {
   const timers = fakeTimers();
   const output = fakeOutput();
-  const canvas = fakeCanvas();
   const files = fakeFiles();
   run(pcode, defaultMachineOptions, timers, output, canvas, files);
   for (const press of presses) {
@@ -178,54 +181,51 @@ export type KeyPress = {
 
 export type ExampleEntry = { language: Language; path: string };
 
-const LANGUAGE_DIRECTORIES: {
-  language: Language;
-  directory: string;
-  extension: string;
-}[] = [
-  { language: "BASIC", directory: "BASIC", extension: ".tbas" },
-  { language: "C", directory: "C", extension: ".tc" },
-  { language: "Java", directory: "Java", extension: ".tjav" },
-  { language: "Pascal", directory: "Pascal", extension: ".tpas" },
-  { language: "Python", directory: "Python", extension: ".tpy" },
-  { language: "TypeScript", directory: "TypeScript", extension: ".tts" },
-];
-
-/** Every example on disk, sorted per language - the suite is index-free, so a
- * file dropped into `assets/examples/` is picked up automatically. */
-export const allExamples = async (): Promise<ExampleEntry[]> => {
-  const collect = async (
-    directory: string,
-    extension: string,
-  ): Promise<string[]> => {
-    const paths: string[] = [];
-    const walk = async (relativeDir: string): Promise<void> => {
-      const url = new URL(
-        `../../../assets/examples/${relativeDir}`,
-        import.meta.url,
-      );
-      for await (const entry of Deno.readDir(url)) {
-        const relativeEntry = `${relativeDir}/${entry.name}`;
-        if (entry.isDirectory) {
-          await walk(relativeEntry);
-        } else if (entry.isFile && entry.name.endsWith(extension)) {
-          paths.push(relativeEntry);
-        }
-      }
-    };
-    await walk(directory);
-    paths.sort();
-    return paths;
-  };
-  return (
-    await Promise.all(
-      LANGUAGE_DIRECTORIES.map(async ({ language, directory, extension }) => {
-        const paths = await collect(directory, extension);
-        return paths.map((path) => ({ language, path }));
-      }),
-    )
-  ).flat();
+const LANGUAGE_DIRECTORIES: Record<
+  Language,
+  { directory: string; extension: string }
+> = {
+  BASIC: { directory: "BASIC", extension: ".tbas" },
+  C: { directory: "C", extension: ".tc" },
+  Java: { directory: "Java", extension: ".tjav" },
+  Pascal: { directory: "Pascal", extension: ".tpas" },
+  Python: { directory: "Python", extension: ".tpy" },
+  TypeScript: { directory: "TypeScript", extension: ".tts" },
 };
+
+/** Every example on disk for one language, sorted - the suite is index-free,
+ * so a file dropped into `assets/examples/` is picked up automatically. */
+export const examplesFor = async (
+  language: Language,
+): Promise<ExampleEntry[]> => {
+  const { directory, extension } = LANGUAGE_DIRECTORIES[language];
+  const paths: string[] = [];
+  const walk = async (relativeDir: string): Promise<void> => {
+    const url = new URL(
+      `../../../assets/examples/${relativeDir}`,
+      import.meta.url,
+    );
+    for await (const entry of Deno.readDir(url)) {
+      const relativeEntry = `${relativeDir}/${entry.name}`;
+      if (entry.isDirectory) {
+        await walk(relativeEntry);
+      } else if (entry.isFile && entry.name.endsWith(extension)) {
+        paths.push(relativeEntry);
+      }
+    }
+  };
+  await walk(directory);
+  paths.sort();
+  return paths.map((path) => ({ language, path }));
+};
+
+/** Every example on disk, all six languages in `LANGUAGE_DIRECTORIES` order -
+ * what the golden updater rewrites in one pass. The test suite itself goes a
+ * language at a time, one file each, so `deno test --parallel` can run them
+ * in separate processes (the machine is a module-level singleton, so tests
+ * can only be concurrent across processes, not within one). */
+export const allExamples = async (): Promise<ExampleEntry[]> =>
+  (await Promise.all(languages.map(examplesFor))).flat();
 
 // Canned (prompt substring, line to type) pairs, one per blocking read the
 // program is expected to perform, in order - see runWithReadlines's own doc
@@ -335,33 +335,66 @@ export const EXPECTED_RUNTIME_ERRORS: Record<string, RegExp> = {};
 
 export type RunMode = "bounded" | "readline" | "keypress" | "asyncFiles";
 
-/** Read, compile and run one example the way its dispatch entry says. */
+/**
+ * Read, compile and run one example the way its dispatch entry says.
+ *
+ * The canvas is built here rather than inside each run mode because it is
+ * given a digesting sink: across the library the examples make 43 million
+ * canvas calls, and folding each one into the record as it happens - instead
+ * of accumulating them all in `FakeCanvas.calls` and walking them afterwards -
+ * is what keeps that affordable. `result.canvas.calls` is therefore *empty*;
+ * the returned `canvas` digest is the observation, and callers pass its
+ * `summary()` to `buildRecord` - at the call site, not before returning here,
+ * for the reason `canvasDigest` sets out.
+ */
 export const runExample = async (
   entry: ExampleEntry,
-): Promise<{ runMode: RunMode; pcode: number[][]; result: BoundedRun }> => {
+): Promise<{
+  runMode: RunMode;
+  pcode: number[][];
+  result: BoundedRun;
+  canvas: CanvasSummary;
+}> => {
   const code = await readExample(entry.path);
   const pcode = compileExample(entry.language, code);
+  const digest = canvasDigest();
+  const canvas = fakeCanvas(digest.sink);
+
+  // The summary is taken the instant each run returns, with no `await`
+  // between, and that placement is load-bearing rather than tidy. A `bounded`
+  // example that suspended on a file promise (the `Files/` programs not in
+  // FILE_PROCESSING_ASYNC all do) goes on running whenever a macrotask turn
+  // happens to pass, so a summary taken any later than this records however
+  // far some unrelated `await` elsewhere let it get - which is to say, not a
+  // property of the program at all. End of run is the one point that is.
   if (entry.path in READLINE_INPUTS) {
-    return {
-      runMode: "readline",
+    const result = runWithReadlines(
       pcode,
-      result: runWithReadlines(pcode, READLINE_INPUTS[entry.path]!),
-    };
+      READLINE_INPUTS[entry.path]!,
+      canvas,
+    );
+    return { runMode: "readline", pcode, result, canvas: digest.summary() };
   }
   if (entry.path in KEYPRESS_INPUTS) {
     const { presses, finalMaxIterations } = KEYPRESS_INPUTS[entry.path]!;
-    return {
-      runMode: "keypress",
+    const result = runWithKeypresses(
       pcode,
-      result: runWithKeypresses(pcode, presses, finalMaxIterations),
-    };
+      presses,
+      canvas,
+      finalMaxIterations,
+    );
+    return { runMode: "keypress", pcode, result, canvas: digest.summary() };
   }
   if (FILE_PROCESSING_ASYNC.has(entry.path)) {
-    return {
-      runMode: "asyncFiles",
+    const result = await runExampleBoundedAsync(
       pcode,
-      result: await runExampleBoundedAsync(pcode, 50),
-    };
+      50,
+      {},
+      undefined,
+      canvas,
+    );
+    return { runMode: "asyncFiles", pcode, result, canvas: digest.summary() };
   }
-  return { runMode: "bounded", pcode, result: runExampleBounded(pcode, 500) };
+  const result = runExampleBounded(pcode, 500, {}, canvas);
+  return { runMode: "bounded", pcode, result, canvas: digest.summary() };
 };

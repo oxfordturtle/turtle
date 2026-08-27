@@ -3,7 +3,7 @@
   "runMode": "bounded",
   "pcode": {
     "lines": 47,
-    "hash": "33893ef199de0499"
+    "hash": "af699fb97adf1545"
   },
   "hitIterationCap": false,
   "consoleText": "PROGRAM Quine;\nVAR lines: array[0..14] of string[82];\n    i: integer;\nBEGIN\n output(true,cream,true);\n lines[0]:='PROGRAM Quine;'\n lines[1]:='VAR lines: array[0..14] of string[82];'\n lines[2]:='    i: integer;'\n lines[3]:='BEGIN'\n lines[4]:=' output(true,cream,true);'\n lines[5]:=' for i:=0 to 4 do'\n lines[6]:='  writeln(lines[i]);'\n lines[7]:=' for i:=0 to 14 do'\n lines[8]:='  writeln(chr(32)+lines[12]+str(i)+lines[13]+chr(39)+lines[i]+chr(39)+lines[14]);'\n lines[9]:=' for i:=5 to 11 do'\n lines[10]:='  writeln(lines[i])'\n lines[11]:='END.'\n lines[12]:='lines['\n lines[13]:=']:='\n lines[14]:=''\n for i:=0 to 4 do\n  writeln(lines[i]);\n for i:=0 to 14 do\n  writeln(chr(32)+lines[12]+str(i)+lines[13]+chr(39)+lines[i]+chr(39)+lines[14]);\n for i:=5 to 11 do\n  writeln(lines[i])\nEND.\n",
@@ -25,7 +25,7 @@
       "clear": 1,
       "setCursor": 1
     },
-    "logHash": "d982706e7ecfaa0e",
+    "logHash": "e979ab2e1015f772",
     "head": [
       "setResolution([1000,1000,false])",
       "setVirtualCanvas([0,0,1000,1000])",

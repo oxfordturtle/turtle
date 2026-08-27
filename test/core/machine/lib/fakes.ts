@@ -85,7 +85,11 @@ export const fakeTimers = (): FakeTimers => {
  * Fake `Canvas` port.
  *
  * Every method call is recorded (in call order) into `.calls`, so tests can
- * assert exactly what the machine asked the canvas to do. `readPixel`,
+ * assert exactly what the machine asked the canvas to do - unless a `sink` is
+ * passed, in which case the calls go there instead and `.calls` stays empty.
+ * That is for the example suite, which makes 43 million calls and only wants
+ * a digest of them (see `test/examples/lib/record.ts`); everything else wants
+ * the array and should keep taking the default. `readPixel`,
  * `writePixel`, and `floodFill` are also backed by a real in-memory pixel
  * map keyed by `"x,y"` (defaulting to whatever colour `clear()` last set),
  * so a `pixs`-then-`pixc` round trip in the machine actually round-trips
@@ -99,18 +103,33 @@ export type FakeCanvas = Canvas & {
   pixelAt(x: number, y: number): number;
 };
 
-export const fakeCanvas = (): FakeCanvas => {
+/** Where a fake port sends its calls, when `.calls` is not what's wanted. */
+export type CallSink = (method: string, args: unknown[]) => void;
+
+export const fakeCanvas = (sink?: CallSink): FakeCanvas => {
   const calls: RecordedCall[] = [];
-  const pixels = new Map<string, number>();
+  const pixels = new Map<number | string, number>();
   let background = 0xffffff;
 
-  const record = (method: string, args: unknown[]) => {
-    calls.push({ method, args });
-  };
+  const record: CallSink =
+    sink ??
+    ((method, args) => {
+      calls.push({ method, args });
+    });
+
+  // The pixel map is hot: the example suite reads 37 million pixels, and a
+  // `${x},${y}` key allocates a string for every one of them. Canvas
+  // coordinates are comfortably inside +-32768, so pack the pair into a
+  // single integer, falling back to the string form outside that range (a
+  // number key and a string key can never collide in the same Map).
+  const pixelKey = (x: number, y: number): number | string =>
+    x >= -32768 && x < 32768 && y >= -32768 && y < 32768
+      ? (x + 32768) * 65536 + (y + 32768)
+      : `${x},${y}`;
 
   return {
     calls,
-    pixelAt: (x: number, y: number) => pixels.get(`${x},${y}`) ?? background,
+    pixelAt: (x: number, y: number) => pixels.get(pixelKey(x, y)) ?? background,
     setResolution: (width: number, height: number, doubled: boolean) => {
       record("setResolution", [width, height, doubled]);
     },
@@ -163,11 +182,11 @@ export const fakeCanvas = (): FakeCanvas => {
     },
     readPixel: (x: number, y: number) => {
       record("readPixel", [x, y]);
-      return pixels.get(`${x},${y}`) ?? background;
+      return pixels.get(pixelKey(x, y)) ?? background;
     },
     writePixel: (x: number, y: number, colour: number, doubled: boolean) => {
       record("writePixel", [x, y, colour, doubled]);
-      pixels.set(`${x},${y}`, colour);
+      pixels.set(pixelKey(x, y), colour);
     },
     floodFill: (
       x: number,
@@ -177,7 +196,7 @@ export const fakeCanvas = (): FakeCanvas => {
       boundaryMode: boolean,
     ) => {
       record("floodFill", [x, y, fillColour, boundaryColour, boundaryMode]);
-      pixels.set(`${x},${y}`, fillColour);
+      pixels.set(pixelKey(x, y), fillColour);
     },
   };
 };

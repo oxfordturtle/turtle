@@ -3,7 +3,7 @@
   "runMode": "bounded",
   "pcode": {
     "lines": 44,
-    "hash": "bf32548d5f47b255"
+    "hash": "25efec750803fbc9"
   },
   "hitIterationCap": false,
   "consoleText": "First, by recursion:\nfib(1) = 1\nfib(2) = 1\nfib(3) = 2\nfib(4) = 3\nfib(5) = 5\nfib(6) = 8\nfib(7) = 13\nfib(8) = 21\nfib(9) = 34\nfib(10) = 55\nfib(11) = 89\nfib(12) = 144\nfib(13) = 233\nfib(14) = 377\nfib(15) = 610\nfib(16) = 987\nfib(17) = 1597\nfib(18) = 2584\nfib(19) = 4181\nfib(20) = 6765\nfib(21) = 10946\nfib(22) = 17711\nfib(23) = 28657\nfib(24) = 46368\nfib(25) = 75025\nTime taken: 0.00 seconds\n\nThen, by iteration:\nfib(1) = 1\nfib(2) = 1\nfib(3) = 2\nfib(4) = 3\nfib(5) = 5\nfib(6) = 8\nfib(7) = 13\nfib(8) = 21\nfib(9) = 34\nfib(10) = 55\nfib(11) = 89\nfib(12) = 144\nfib(13) = 233\nfib(14) = 377\nfib(15) = 610\nfib(16) = 987\nfib(17) = 1597\nfib(18) = 2584\nfib(19) = 4181\nfib(20) = 6765\nfib(21) = 10946\nfib(22) = 17711\nfib(23) = 28657\nfib(24) = 46368\nfib(25) = 75025\nTime taken: 0.00 seconds\n",
@@ -25,7 +25,7 @@
       "clear": 1,
       "setCursor": 1
     },
-    "logHash": "d982706e7ecfaa0e",
+    "logHash": "e979ab2e1015f772",
     "head": [
       "setResolution([1000,1000,false])",
       "setVirtualCanvas([0,0,1000,1000])",

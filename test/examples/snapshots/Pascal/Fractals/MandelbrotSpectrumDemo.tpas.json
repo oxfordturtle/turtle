@@ -3,7 +3,7 @@
   "runMode": "keypress",
   "pcode": {
     "lines": 113,
-    "hash": "06e0caaaad5a8541"
+    "hash": "b960f6613155479d"
   },
   "hitIterationCap": false,
   "consoleText": "MANDELBROT SET DISPLAY PROGRAM\n\nSelect Whole set, or Zoom on mini \"lake\" at -0.1592,-1.0330 (W/Z)W\n\nSelect Fast/Medium/Slow, giving resolution 300/750/1500: (F/M/S) F\nMandelbrot will be plotted over the following real range:\n-2.0000 < x < 0.9900    -1.5000 < y < 1.4900\nScaling factor: 100    Image resolution: 300x300\nTime taken: 0.0 seconds.\n",
@@ -26,7 +26,7 @@
       "writePixel": 90000,
       "setCursor": 1
     },
-    "logHash": "ac9f8e3c0b26c3fe",
+    "logHash": "f9ab1d1e9d376c42",
     "head": [
       "setResolution([1000,1000,false])",
       "setVirtualCanvas([0,0,1000,1000])",

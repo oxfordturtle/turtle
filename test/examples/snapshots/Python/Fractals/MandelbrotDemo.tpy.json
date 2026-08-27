@@ -3,7 +3,7 @@
   "runMode": "bounded",
   "pcode": {
     "lines": 93,
-    "hash": "1a93abb5f2529fb1"
+    "hash": "333ee851cba7226d"
   },
   "hitIterationCap": true,
   "consoleText": "MANDELBROT SET DISPLAY PROGRAM\n\nSelect Whole set, or Zoom on mini \"lake\" at -0.1592,-1.0330 (W/Z)",
@@ -24,7 +24,7 @@
       "setVirtualCanvas": 2,
       "clear": 1
     },
-    "logHash": "99710e8860a79822",
+    "logHash": "2a987742ea3c995e",
     "head": [
       "setResolution([1000,1000,false])",
       "setVirtualCanvas([0,0,1000,1000])",

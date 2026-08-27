@@ -3,7 +3,7 @@
   "runMode": "bounded",
   "pcode": {
     "lines": 21,
-    "hash": "99bac977ed34e3c9"
+    "hash": "f54b6b29a918bdb5"
   },
   "hitIterationCap": false,
   "consoleText": "1! = 1\n2! = 2\n3! = 6\n4! = 24\n5! = 120\n6! = 720\n7! = 5040\n8! = 40320\n9! = 362880\n10! = 3628800\n",
@@ -25,7 +25,7 @@
       "clear": 1,
       "setCursor": 1
     },
-    "logHash": "d982706e7ecfaa0e",
+    "logHash": "e979ab2e1015f772",
     "head": [
       "setResolution([1000,1000,false])",
       "setVirtualCanvas([0,0,1000,1000])",

@@ -3,7 +3,7 @@
   "runMode": "asyncFiles",
   "pcode": {
     "lines": 67,
-    "hash": "d2c5f0a62531e721"
+    "hash": "d71c24c14feaae3d"
   },
   "hitIterationCap": false,
   "consoleText": "Code on entry = $16\nCode on exit = $00\nNo subdirectory on entry\n\nMKDIR(TESTSUBDIR) returns TRUE\nDIREXISTS(TESTSUBDIR) returns TRUE\n\nMKDIR(TESTSUBDIR) returns TRUE\nDIREXISTS(TESTSUBDIR) returns TRUE\n\nRMDIR(TESTSUBDIR) returns TRUE\nDIREXISTS(TESTSUBDIR) returns FALSE\n\nRMDIR(TESTSUBDIR) returns TRUE\nDIREXISTS(TESTSUBDIR) returns FALSE\n\nMKDIR(TESTSUBDIR) returns TRUE\nDIREXISTS(TESTSUBDIR) returns TRUE\n\nMKDIR(TESTSUBDIR) returns TRUE\nDIREXISTS(TESTSUBDIR) returns TRUE\n\nFile could not be created\nRMDIR(TESTSUBDIR) returns TRUE\nDIREXISTS(TESTSUBDIR) returns FALSE\n\nFile has been deleted\nRMDIR(TESTSUBDIR) returns TRUE\nDIREXISTS(TESTSUBDIR) returns FALSE\n",
@@ -25,7 +25,7 @@
       "clear": 1,
       "setCursor": 1
     },
-    "logHash": "d982706e7ecfaa0e",
+    "logHash": "e979ab2e1015f772",
     "head": [
       "setResolution([1000,1000,false])",
       "setVirtualCanvas([0,0,1000,1000])",
