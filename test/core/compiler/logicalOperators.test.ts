@@ -371,14 +371,6 @@ describe("compiler: logical operator precedence", () => {
   });
 
   describe("BASIC keeps Pascal's precedence", () => {
-    // [known limitation] BASIC's AND/OR/EOR are documented (see
-    // src/pages/documentation/help/BASIC/operators.ts) as bitwise-and-
-    // boolean operators between integers, exactly as in BBC BASIC, and
-    // that same page tells students "complex expressions require
-    // brackets". Moving them would be moving the *bitwise* operators. So
-    // unbracketed "a% = b% AND c% = d%" still parses as
-    // "a% = (b% AND c%) = d%" and still answers "no" - deliberately, and pinned
-    // here so the decision has to be revisited rather than stumbled into.
     it("parses an unbracketed AND of comparisons the Pascal way", () => {
       assertEquals(answer("BASIC", "a%=b% AND c%=d%"), "no");
       assertEquals(rootOperator("BASIC", "a%=b% AND c%=d%"), "eqal");
@@ -716,11 +708,6 @@ describe("compiler: logical operator short-circuiting", () => {
   });
 
   describe("Pascal and BASIC stay eager", () => {
-    // [known limitation] deliberate, and pinned rather than left to drift:
-    // standard Pascal doesn't guarantee short-circuit evaluation (Delphi
-    // selects it with the $B switch, and Turtle's Pascal is modelled on
-    // Delphi), and BASIC's AND/OR are the bitwise operators, which can't
-    // short-circuit at all - both bits of an integer AND are needed.
     it("Pascal evaluates the right operand of an already-true or", () => {
       const output = runProgram(
         "Pascal",
