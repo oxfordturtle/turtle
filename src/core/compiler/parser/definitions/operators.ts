@@ -39,7 +39,8 @@ const comparisons: readonly Operator[] = [
  *
  * BASIC keeps this table too. Turtle's BASIC is modelled on BBC BASIC, whose
  * AND/OR/EOR are bitwise operators over integers rather than logical
- * connectives, so moving them would be moving the *bitwise* operators.
+ * connectives, so they can't follow `bitwiseLevels` below without also moving
+ * BASIC's only spelling of "and"/"or" - and BBC BASIC's own rule is this one.
  */
 const pascalLevels: readonly PrecedenceLevel[] = [
   { operators: comparisons },
@@ -50,36 +51,62 @@ const pascalLevels: readonly PrecedenceLevel[] = [
 /**
  * The additive and multiplicative rungs shared by the four languages whose
  * logical operators bind looser than their comparisons.
- *
- * The *bitwise* "or"/"xor"/"and" stay pinned here, which is nobody's real rule:
- * real Python puts them between the comparisons and the shifts, real C between
- * "&&" and the comparisons (hence C's "a & b == c" gotcha). The two disagree,
- * and no example program depends on either.
  */
 const arithmeticLevels: readonly PrecedenceLevel[] = [
-  { operators: ["plus", "scat", "subt", "or", "xor"] },
-  { operators: ["and", "div", "divr", "mod", "mult"] },
+  { operators: ["plus", "scat", "subt"] },
+  { operators: ["div", "divr", "mod", "mult"] },
 ];
 
-/** C, Java and TypeScript: "||" loosest, then "&&", then the comparisons. */
+/**
+ * The bitwise "|", "^" and "&", three rungs of their own in that order, as
+ * they are in both real Python and the real C family. They are looser than
+ * every arithmetic operator in both, so "a + b & c" is "(a + b) & c"; where
+ * the two families differ is only in where the trio as a whole sits relative
+ * to the comparisons, which is why this is spliced into each ladder below at
+ * a different point rather than shared wholesale.
+ */
+const bitwiseLevels: readonly PrecedenceLevel[] = [
+  { operators: ["or"] },
+  { operators: ["xor"] },
+  { operators: ["and"] },
+];
+
+/**
+ * C, Java and TypeScript: "||" loosest, then "&&", then the bitwise trio,
+ * then the comparisons. All three really do put the bitwise operators looser
+ * than "==", so "x & 1 == 0" means "x & (1 == 0)" - the classic C gotcha,
+ * faithfully reproduced. Turtle catches it where C and JavaScript don't,
+ * though: "integer & boolean" fails `common/typeCheck.ts`, so the mis-parse
+ * is a compile error rather than a silent zero, as it is in real Java and
+ * real TypeScript.
+ *
+ * The comparisons share one rung here, where real C splits the relational
+ * operators from the equality ones. That doesn't affect the bitwise
+ * placement - "&" is looser than both halves in real C - so the trio sits
+ * below the merged rung and is right either way.
+ */
 const cFamilyLevels: readonly PrecedenceLevel[] = [
   { operators: ["orl"] },
   { operators: ["andl"] },
+  ...bitwiseLevels,
   { operators: comparisons },
   ...arithmeticLevels,
 ];
 
 /**
- * Python, which additionally puts "not" on its own rung between "and" and
- * the comparisons - so "not x == y" means "not (x == y)". (C/Java/
- * TypeScript's "!" genuinely *is* tighter than "==", so it stays in
- * `common/factor.ts` with the other prefixes.)
+ * Python, which puts the bitwise trio on the other side of the comparisons -
+ * so "x & 1 == 0" means "(x & 1) == 0", the reading the C family denies you -
+ * and additionally puts "not" on its own rung between "and" and the
+ * comparisons, so "not x == y" means "not (x == y)". (C/Java/TypeScript's "!"
+ * genuinely *is* tighter than "==", so it stays in `common/factor.ts` with
+ * the other prefixes.)
  */
 const pythonLevels: readonly PrecedenceLevel[] = [
   { operators: ["orl"] },
   { operators: ["andl"] },
   { operators: ["not"], unary: true },
   { operators: comparisons },
+  ...bitwiseLevels,
   ...arithmeticLevels,
 ];
 
