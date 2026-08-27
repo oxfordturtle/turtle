@@ -3,7 +3,7 @@
   "runMode": "bounded",
   "pcode": {
     "lines": 52,
-    "hash": "af64c09425a5130f"
+    "hash": "3ca5d46f4a84dd73"
   },
   "hitIterationCap": true,
   "consoleText": "LOOP 1 ...\n\nABOUT TO TRY TO READ TestFile.txt ...\n  TestFile.txt could NOT be opened FOR reading\n\nABOUT TO TRY TO READ TestRename.txt ...\n",
@@ -24,7 +24,7 @@
       "setVirtualCanvas": 2,
       "clear": 1
     },
-    "logHash": "99710e8860a79822",
+    "logHash": "2a987742ea3c995e",
     "head": [
       "setResolution([1000,1000,false])",
       "setVirtualCanvas([0,0,1000,1000])",

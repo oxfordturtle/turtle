@@ -4,14 +4,14 @@ Day-to-day testing conventions for this project.
 
 ## The suites
 
-| Task                        | What it runs                                                                                        | Speed  |
-| --------------------------- | --------------------------------------------------------------------------------------------------- | ------ |
-| `deno task test:core`       | `test/core/**` - unit tests against the three barrels                                               | ~6s    |
-| `deno task test:ui`         | `test/ui/ssr/**` and `test/ui/dom/**` - server markup, then hydration and interaction in jsdom      | ~11s   |
-| `deno task test`            | both of the above, plus `tools/` - the fast set                                                     | ~18s   |
-| `deno task coverage:check`  | the fast set again, instrumented, then the coverage gate                                            | ~37s   |
-| `deno task test:examples`   | `test/examples/**` - compiles and runs all 503 real programs under `assets/examples/`               | ~1m45s |
-| `deno task test:ui:browser` | `test/ui/browser/**` - five smoke tests in a real Chrome, against a server this suite starts itself | ~3s    |
+| Task                        | What it runs                                                                                        | Speed |
+| --------------------------- | --------------------------------------------------------------------------------------------------- | ----- |
+| `deno task test:core`       | `test/core/**` - unit tests against the three barrels                                               | ~6s   |
+| `deno task test:ui`         | `test/ui/ssr/**` and `test/ui/dom/**` - server markup, then hydration and interaction in jsdom      | ~11s  |
+| `deno task test`            | both of the above, plus `tools/` - the fast set                                                     | ~18s  |
+| `deno task coverage:check`  | the fast set again, instrumented, then the coverage gate                                            | ~37s  |
+| `deno task test:examples`   | `test/examples/**` - compiles and runs all 503 real programs under `assets/examples/`               | ~25s  |
+| `deno task test:ui:browser` | `test/ui/browser/**` - five smoke tests in a real Chrome, against a server this suite starts itself | ~3s   |
 
 **Run `test` constantly; run `coverage:check`, `test:examples` and
 `test:ui:browser` before you commit.** Always run `test:examples` after touching
@@ -159,6 +159,15 @@ run.
 against a golden record in `test/examples/snapshots/`, which mirrors the
 examples tree file for file (503 of them, and excluded from prettier).
 
+**One test file per language** - `basic.test.ts`, `c.test.ts`, `java.test.ts`,
+`pascal.test.ts`, `python.test.ts`, `typescript.test.ts` - each a three-line
+call to `lib/suite.ts`'s `describeExamples`, plus `determinism.test.ts` for the
+sentinel below. That split is what the task's `--parallel` needs: Deno
+parallelises across _files_, never across the steps within one, and the machine
+is a module-level singleton that no two runs may share, so a file per language
+is the only way the work goes wide. Python is the long pole (it has the most
+examples and the heaviest ones), so it sets the wall time on its own.
+
 Each record (`lib/record.ts`) holds the pcode as a line count and an FNV-1a
 hash, whether the run hit its iteration cap, the console and output text
 verbatim, any runtime errors, the final turtle, and a digest of the canvas
@@ -170,6 +179,21 @@ not as "something moved".
 `lib/harness.ts` discovers the examples and runs each in one of four modes -
 `bounded` (500 iterations and stop), `readline`, `keypress` and `asyncFiles` -
 with the input each interactive program needs supplied from its own table.
+
+The canvas traffic is folded into the record _as it happens_, by the sink
+`lib/record.ts` hands to `fakeCanvas`: the library makes 43 million canvas
+calls, and keeping them in `FakeCanvas.calls` to walk afterwards costs an
+object each and holds the whole log live. Two consequences worth knowing
+before changing anything here, both of which have already caused a wrong
+record once:
+
+- **`result.canvas.calls` is empty** in this suite. The `canvas` summary
+  `runExample` returns is the observation.
+- **A `bounded` example that suspended on a file promise keeps running**
+  whenever a macrotask turn passes. So the summary is taken the instant the
+  run returns, and `summary()` copies `byMethod` and `head` rather than
+  handing out the live object and array - otherwise late calls mutate a record
+  that was already built.
 
 **When a change moves a golden on purpose:**
 

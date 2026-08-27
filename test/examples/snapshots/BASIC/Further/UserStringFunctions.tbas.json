@@ -3,7 +3,7 @@
   "runMode": "bounded",
   "pcode": {
     "lines": 124,
-    "hash": "6694b744a3396fd0"
+    "hash": "8aa5c5309861a56c"
   },
   "hitIterationCap": false,
   "consoleText": "Some User-Defined String Functions\n\nORIGINAL STRING:               'CREATING is better than LEARNING'\nREVERSED (by iteration):       'GNINRAEL naht retteb si GNITAERC'\nREVERSED (by recursion):       'GNINRAEL naht retteb si GNITAERC'\nINITIAL CAPITAL ALL WORDS:     'CREATING Is Better Than LEARNING'\nREVERSED THEN INITIAL CAPITAL: 'GNINRAEL Naht Retteb Si GNITAERC'\nCAESAR CIPHER (1 letter):      'DSFBUJOH jt cfuufs uibo MFBSOJOH'\nCAESAR DECRYPT (1+25 = 26):    'CREATING is better than LEARNING'\nCAESAR CIPHER (4 letters):     'GVIEXMRK mw fixxiv xler PIEVRMRK'\nCAESAR DECRYPT (4+22 = 26):    'CREATING is better than LEARNING'\n\nORIGINAL STRING:               'indeed it's the Essence of Life!'\nREVERSED (by iteration):       '!efiL fo ecnessE eht s'ti deedni'\nREVERSED (by recursion):       '!efiL fo ecnessE eht s'ti deedni'\nINITIAL CAPITAL ALL WORDS:     'Indeed It'S The Essence Of Life!'\nREVERSED THEN INITIAL CAPITAL: '!EfiL Fo EcnessE Eht S'Ti Deedni'\nCAESAR CIPHER (1 letter):      'joeffe ju't uif Fttfodf pg Mjgf!'\nCAESAR DECRYPT (1+25 = 26):    'indeed it's the Essence of Life!'\nCAESAR CIPHER (4 letters):     'mrhiih mx'w xli Iwwirgi sj Pmji!'\nCAESAR DECRYPT (4+22 = 26):    'indeed it's the Essence of Life!'\n",
@@ -25,7 +25,7 @@
       "clear": 1,
       "setCursor": 1
     },
-    "logHash": "d982706e7ecfaa0e",
+    "logHash": "e979ab2e1015f772",
     "head": [
       "setResolution([1000,1000,false])",
       "setVirtualCanvas([0,0,1000,1000])",

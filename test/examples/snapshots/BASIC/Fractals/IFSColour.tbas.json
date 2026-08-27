@@ -3,7 +3,7 @@
   "runMode": "bounded",
   "pcode": {
     "lines": 201,
-    "hash": "18b2e164774c6cb8"
+    "hash": "ff19c3986faf51c4"
   },
   "hitIterationCap": true,
   "consoleText": "ITERATED FUNCTIONS ON COLOURED BACKGROUND\n\nSelect Sierpinski, Barnsley fern, or Dragon curve? (S/B/D) ",
@@ -24,7 +24,7 @@
       "setVirtualCanvas": 2,
       "clear": 1
     },
-    "logHash": "99710e8860a79822",
+    "logHash": "2a987742ea3c995e",
     "head": [
       "setResolution([1000,1000,false])",
       "setVirtualCanvas([0,0,1000,1000])",

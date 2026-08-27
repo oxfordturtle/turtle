@@ -3,7 +3,7 @@
   "runMode": "readline",
   "pcode": {
     "lines": 101,
-    "hash": "b7fdc071708f84f4"
+    "hash": "fce156d42648b108"
   },
   "hitIterationCap": false,
   "consoleText": "TOWER OF HANOI\n\nHow many disks would you like in the tower? 3\nStart pillar (1, 2, or 3)? 1\nFinish pillar (1, 2 or 3)? 2\n                                   PILE 1   PILE 2   PILE 3\n\nStarting position:                    123                  \n\n   1. Move disk 1 from 1 to 2:         23        1         \n   2. Move disk 2 from 1 to 3:          3        1        2\n   3. Move disk 1 from 2 to 3:          3                12\n   4. Move disk 3 from 1 to 2:                   3       12\n   5. Move disk 1 from 3 to 1:          1        3        2\n   6. Move disk 2 from 3 to 2:          1       23         \n   7. Move disk 1 from 1 to 2:                 123         \n",
@@ -27,7 +27,7 @@
       "drawPolygon": 24,
       "setCursor": 1
     },
-    "logHash": "b2453ff5c76a4510",
+    "logHash": "a3446470c19c052c",
     "head": [
       "setResolution([1000,1000,false])",
       "setVirtualCanvas([0,0,1000,1000])",

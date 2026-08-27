@@ -16,7 +16,7 @@ describe("languages", () => {
 
   it("gives every language a file extension, matching the real example assets", () => {
     // assets/examples/<Language>/**/*.<extension> is where example programs
-    // actually live on disk (see examples.test.ts) -- these must stay in
+    // actually live on disk (see test/examples/) -- these must stay in
     // sync or example lookup breaks silently.
     assertEquals(extension, {
       BASIC: "tbas",

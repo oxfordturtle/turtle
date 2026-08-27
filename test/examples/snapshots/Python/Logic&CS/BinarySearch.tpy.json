@@ -3,7 +3,7 @@
   "runMode": "bounded",
   "pcode": {
     "lines": 38,
-    "hash": "9979e1574ee4927e"
+    "hash": "e310159ef0f64e22"
   },
   "hitIterationCap": true,
   "consoleText": "Please choose a number between 1 and 1000\nThen after each guess, type C/H/L to indicate Correct/High/Low\n\nI guess 500    ",
@@ -24,7 +24,7 @@
       "setVirtualCanvas": 2,
       "clear": 1
     },
-    "logHash": "99710e8860a79822",
+    "logHash": "2a987742ea3c995e",
     "head": [
       "setResolution([1000,1000,false])",
       "setVirtualCanvas([0,0,1000,1000])",

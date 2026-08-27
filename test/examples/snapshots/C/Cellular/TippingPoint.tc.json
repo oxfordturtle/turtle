@@ -3,7 +3,7 @@
   "runMode": "bounded",
   "pcode": {
     "lines": 64,
-    "hash": "e3bc54c02b4a4a96"
+    "hash": "dd54d776e1d668ea"
   },
   "hitIterationCap": false,
   "consoleText": "Contacts per person:       50\nTransmission probability:  2%\nR0 (reproduction number):  1.00\nTotal infected overall:    761 (0.00 sec)\nProportion infected:       7.61%\n",
@@ -27,7 +27,7 @@
       "readPixel": 670741,
       "setCursor": 1
     },
-    "logHash": "959e56801048961e",
+    "logHash": "b37f41be13e266a2",
     "head": [
       "setResolution([1000,1000,false])",
       "setVirtualCanvas([0,0,1000,1000])",

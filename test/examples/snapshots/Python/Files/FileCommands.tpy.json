@@ -3,7 +3,7 @@
   "runMode": "bounded",
   "pcode": {
     "lines": 79,
-    "hash": "93dc9a230f3b3c22"
+    "hash": "8e9c3382bdc5c69e"
   },
   "hitIterationCap": true,
   "consoleText": "Code on entry = $16\nThe initial CHECKFILE command will invoke a message window ...\nCode on exit = $00\nNo file on entry\nNo file on exit\n\n",
@@ -24,7 +24,7 @@
       "setVirtualCanvas": 2,
       "clear": 1
     },
-    "logHash": "99710e8860a79822",
+    "logHash": "2a987742ea3c995e",
     "head": [
       "setResolution([1000,1000,false])",
       "setVirtualCanvas([0,0,1000,1000])",

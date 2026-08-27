@@ -3,7 +3,7 @@
   "runMode": "bounded",
   "pcode": {
     "lines": 93,
-    "hash": "6b5d5de53a991fa3"
+    "hash": "1dcc7bc3f250b13f"
   },
   "hitIterationCap": true,
   "consoleText": "\nTIME = 1\n Xposition = 0 metres\n Yposition = -6371010 metres\n Height = 0.01 km\n Direction = 1.1 degrees\n Thrust = 20.0 newtons per kg\n  Xthrust = 0.2 newtons per kg\n  Ythrust = -20.0 newtons per kg\n Gravity = 9.8 newtons per kg\n  Xgravity = 0.0 newtons per kg\n  Ygravity = 9.8 newtons per kg\n Xvelocity = 0.2 metres per s\n Yvelocity = -10.2 metres per s\n",
@@ -26,7 +26,7 @@
       "drawArc": 498,
       "drawLine": 1992
     },
-    "logHash": "d298b35e9f561fc7",
+    "logHash": "04421de7d72cf39b",
     "head": [
       "setResolution([1000,1000,false])",
       "setVirtualCanvas([0,0,1000,1000])",
