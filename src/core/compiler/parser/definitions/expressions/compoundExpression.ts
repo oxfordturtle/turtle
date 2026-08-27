@@ -1,14 +1,10 @@
 import type { OperatorLexeme } from "../../../lexer/lexeme.ts";
 import type { Operator, Type } from "../../../lexer/types.ts";
-import {
-  type Expression,
-  type ExpressionCommon,
-  makeExpression,
-} from "../expression.ts";
+import type { Expression } from "../expression.ts";
 import { operatorType } from "../operators.ts";
 
-export interface CompoundExpression extends ExpressionCommon {
-  readonly expressionType: "compound";
+export interface CompoundExpression {
+  readonly kind: "compound";
   readonly lexeme: OperatorLexeme;
   readonly left: Expression | null; // left hand side optional (for unary operators 'not' and 'minus')
   readonly right: Expression;
@@ -31,8 +27,7 @@ const makeCompoundExpression = (
   listElementKind?: "integer" | "string",
   listOperandKind?: "integer" | "string",
 ): CompoundExpression => ({
-  ...makeExpression(),
-  expressionType: "compound",
+  kind: "compound",
   lexeme,
   left,
   right,

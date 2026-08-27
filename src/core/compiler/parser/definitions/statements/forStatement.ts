@@ -1,15 +1,12 @@
 import type { KeywordLexeme } from "../../../lexer/lexeme.ts";
 import type { Constant } from "../constant.ts";
 import type { Expression } from "../expression.ts";
-import makeStatement, {
-  type Statement,
-  type StatementCommon,
-} from "../statement.ts";
+import type { Statement } from "../statement.ts";
 import type { Variable } from "../variable.ts";
 import type { VariableAssignment } from "./variableAssignment.ts";
 
-export interface ForStatement extends StatementCommon {
-  readonly statementType: "forStatement";
+export interface ForStatement {
+  readonly kind: "forStatement";
   readonly lexeme: KeywordLexeme;
   readonly initialisation: VariableAssignment;
   readonly condition: Expression;
@@ -25,8 +22,7 @@ const makeForStatement = (
   condition: Expression,
   change: VariableAssignment,
 ): ForStatement => ({
-  ...makeStatement(),
-  statementType: "forStatement",
+  kind: "forStatement",
   lexeme,
   initialisation,
   condition,

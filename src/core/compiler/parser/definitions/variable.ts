@@ -1,9 +1,10 @@
+import { foldCase } from "@/core/constants.ts";
 import type { Type } from "../../lexer/types.ts";
 import type { Routine } from "./routine.ts";
 import type { Subroutine } from "./routines/subroutine.ts";
 
 export interface Variable {
-  readonly __: "Variable";
+  readonly kind: "Variable";
   readonly name: string;
   readonly routine: Routine;
   readonly isGlobal: boolean;
@@ -30,10 +31,10 @@ export interface Variable {
 }
 
 const makeVariable = (name: string, routine: Routine): Variable => ({
-  __: "Variable",
-  name: routine.language === "Pascal" ? name.toLowerCase() : name,
+  kind: "Variable",
+  name: foldCase(routine.language, name),
   routine,
-  isGlobal: routine.__ === "Program",
+  isGlobal: routine.kind === "Program",
   isParameter: false,
   isReferenceParameter: false,
   isPointer: false,
@@ -74,10 +75,9 @@ export const getLength = (variable: Variable): number => {
   }
 
   if (isArray(variable)) {
-    // an array has at least one element, so it has at least one sub-variable
-    return (
-      getLength(getSubVariables(variable)[0]!) * elementCount(variable) + 2
-    ); // +2 for pointer and length byte
+    // every element has the same length, so measure one rather than building
+    // a SubVariable for all of them
+    return getLength(makeSubVariable(variable, 0)) * elementCount(variable) + 2; // +2 for pointer and length byte
   }
 
   return baseLength(variable);

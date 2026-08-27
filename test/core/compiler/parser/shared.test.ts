@@ -27,9 +27,9 @@ import { parseProgram } from "./lib/programs.ts";
  *   token instead, which `lexify.ts` rejects itself ("Unrecognised input
  *   code."/"Unrecognised input query.") before the parser ever sees it.
  * - `common/typeCheck.ts`'s former function-result-type-inference branch
- *   (`found.expressionType === "function" && found.command.__ ===
- *   "Subroutine" && !found.command.typeIsCertain`) was dead code given the
- *   shape of `common/functionCall.ts`'s `parseFunctionCall`: it *always*
+ *   (`found.kind === "function" && found.command.kind === "Subroutine" &&
+ *   !found.command.typeIsCertain`) was dead code given the shape of
+ *   `common/functionCall.ts`'s `parseFunctionCall`: it *always*
  *   flips `command.typeIsCertain` to `true` (creating the "!result"
  *   variable if needed) before returning the `FunctionCall` expression, for
  *   every language including Python and including recursive self-calls --
@@ -117,11 +117,11 @@ describe("parse: shared parser plumbing (common/ and definitions/)", () => {
     it('parses a "not" prefix expression', () => {
       const program = parseProgram("BASIC", "x% = NOT TRUE\nEND");
       const assignment = program.statements.find(
-        (s) => s.statementType === "variableAssignment",
+        (s) => s.kind === "variableAssignment",
       ) as VariableAssignment | undefined;
       assertExists(assignment);
-      assertEquals(assignment.value.expressionType, "compound");
-      if (assignment.value.expressionType === "compound") {
+      assertEquals(assignment.value.kind, "compound");
+      if (assignment.value.kind === "compound") {
         assertEquals(assignment.value.operator, "not");
         assertEquals(assignment.value.left, null);
       }
@@ -143,19 +143,19 @@ describe("parse: shared parser plumbing (common/ and definitions/)", () => {
     it("parses an input code as an expression value", () => {
       const program = parseProgram("Python", "x = \\key");
       const assignment = program.statements.find(
-        (s) => s.statementType === "variableAssignment",
+        (s) => s.kind === "variableAssignment",
       ) as VariableAssignment | undefined;
       assertExists(assignment);
-      assertEquals(assignment.value.expressionType, "input");
+      assertEquals(assignment.value.kind, "input");
     });
 
     it("parses a query code as an expression value", () => {
       const program = parseProgram("Python", "x = ?key");
       const assignment = program.statements.find(
-        (s) => s.statementType === "variableAssignment",
+        (s) => s.kind === "variableAssignment",
       ) as VariableAssignment | undefined;
       assertExists(assignment);
-      assertEquals(assignment.value.expressionType, "query");
+      assertEquals(assignment.value.kind, "query");
     });
   });
 
@@ -163,20 +163,20 @@ describe("parse: shared parser plumbing (common/ and definitions/)", () => {
     it("parses a predefined colour name as an expression value", () => {
       const program = parseProgram("Python", "x = green");
       const assignment = program.statements.find(
-        (s) => s.statementType === "variableAssignment",
+        (s) => s.kind === "variableAssignment",
       ) as VariableAssignment | undefined;
       assertExists(assignment);
-      assertEquals(assignment.value.expressionType, "colour");
+      assertEquals(assignment.value.kind, "colour");
     });
 
     it('normalises the American "gray" spelling to "grey"', () => {
       const program = parseProgram("Python", "x = darkgray");
       const assignment = program.statements.find(
-        (s) => s.statementType === "variableAssignment",
+        (s) => s.kind === "variableAssignment",
       ) as VariableAssignment | undefined;
       assertExists(assignment);
-      assertEquals(assignment.value.expressionType, "colour");
-      if (assignment.value.expressionType === "colour") {
+      assertEquals(assignment.value.kind, "colour");
+      if (assignment.value.kind === "colour") {
         // 0x404040 is "darkgrey"'s defined value in src/core/constants/colours.ts
         assertEquals(assignment.value.colour.value, 0x404040);
       }
@@ -190,11 +190,11 @@ describe("parse: shared parser plumbing (common/ and definitions/)", () => {
         'CONST size$ = "hello"\nx$ = size$(0)\nEND',
       );
       const assignment = program.statements.find(
-        (s) => s.statementType === "variableAssignment",
+        (s) => s.kind === "variableAssignment",
       ) as VariableAssignment | undefined;
       assertExists(assignment);
-      assertEquals(assignment.value.expressionType, "constant");
-      if (assignment.value.expressionType === "constant") {
+      assertEquals(assignment.value.kind, "constant");
+      if (assignment.value.kind === "constant") {
         assertEquals(assignment.value.indexes.length, 1);
       }
     });
@@ -205,12 +205,11 @@ describe("parse: shared parser plumbing (common/ and definitions/)", () => {
         'const size: string = "hello";\nvar x: string;\nx = size[0];',
       );
       const assignment = program.statements.find(
-        (s) =>
-          s.statementType === "variableAssignment" && s.variable.name === "x",
+        (s) => s.kind === "variableAssignment" && s.variable.name === "x",
       ) as VariableAssignment | undefined;
       assertExists(assignment);
-      assertEquals(assignment.value.expressionType, "constant");
-      if (assignment.value.expressionType === "constant") {
+      assertEquals(assignment.value.kind, "constant");
+      if (assignment.value.kind === "constant") {
         assertEquals(assignment.value.indexes.length, 1);
       }
     });
@@ -240,12 +239,11 @@ describe("parse: shared parser plumbing (common/ and definitions/)", () => {
       );
       const sub = program.subroutines[0];
       const assignment = sub?.statements.find(
-        (s) =>
-          s.statementType === "variableAssignment" && s.variable.name === "y",
+        (s) => s.kind === "variableAssignment" && s.variable.name === "y",
       ) as VariableAssignment | undefined;
       assertExists(assignment);
-      assertEquals(assignment.value.expressionType, "variable");
-      if (assignment.value.expressionType === "variable") {
+      assertEquals(assignment.value.kind, "variable");
+      if (assignment.value.kind === "variable") {
         assertEquals(assignment.value.indexes.length, 2);
       }
     });
@@ -256,11 +254,10 @@ describe("parse: shared parser plumbing (common/ and definitions/)", () => {
         "DIM arr%(3,3)\nx% = arr%(1,2)\nEND",
       );
       const assignment = program.statements.find(
-        (s) =>
-          s.statementType === "variableAssignment" && s.variable.name === "x%",
+        (s) => s.kind === "variableAssignment" && s.variable.name === "x%",
       ) as VariableAssignment | undefined;
       assertExists(assignment);
-      if (assignment?.value.expressionType === "variable") {
+      if (assignment?.value.kind === "variable") {
         assertEquals(assignment.value.indexes.length, 2);
       }
     });
@@ -296,11 +293,10 @@ describe("parse: shared parser plumbing (common/ and definitions/)", () => {
     it("parses a Python string slice x[a:b]", () => {
       const program = parseProgram("Python", 's = "hello"\nx = s[1:3]');
       const assignment = program.statements.find(
-        (s) =>
-          s.statementType === "variableAssignment" && s.variable.name === "x",
+        (s) => s.kind === "variableAssignment" && s.variable.name === "x",
       ) as VariableAssignment | undefined;
       assertExists(assignment);
-      if (assignment?.value.expressionType === "variable") {
+      if (assignment?.value.kind === "variable") {
         assertExists(assignment.value.slice);
         assertEquals(assignment.value.slice?.length, 2);
       }
@@ -325,11 +321,10 @@ describe("parse: shared parser plumbing (common/ and definitions/)", () => {
         "program Test;\nvar s: string;\nvar x: integer;\nbegin\nx := s.length;\nend.",
       );
       const assignment = program.statements.find(
-        (s) =>
-          s.statementType === "variableAssignment" && s.variable.name === "x",
+        (s) => s.kind === "variableAssignment" && s.variable.name === "x",
       ) as VariableAssignment | undefined;
       assertExists(assignment);
-      assertEquals(assignment.value.expressionType, "function");
+      assertEquals(assignment.value.kind, "function");
     });
 
     it("throws when a method name is missing after the dot", () => {
@@ -386,7 +381,7 @@ describe("parse: shared parser plumbing (common/ and definitions/)", () => {
       const program = parseProgram("C", 'void main () {\nchar c = "a";\n}');
       const sub = program.subroutines[0];
       const assignment = sub?.statements.find(
-        (s) => s.statementType === "variableAssignment",
+        (s) => s.kind === "variableAssignment",
       ) as VariableAssignment | undefined;
       assertExists(assignment);
     });
@@ -395,16 +390,14 @@ describe("parse: shared parser plumbing (common/ and definitions/)", () => {
       const program = parseProgram("C", "void main () {\nchar c = 97;\n}");
       const sub = program.subroutines[0];
       const assignment = sub?.statements.find(
-        (s) => s.statementType === "variableAssignment",
+        (s) => s.kind === "variableAssignment",
       ) as VariableAssignment | undefined;
       assertExists(assignment);
     });
 
     it("allows an integer where a boolean is expected (Python)", () => {
       const program = parseProgram("Python", "x = 1\nif x:\n    pass");
-      assertExists(
-        program.statements.find((s) => s.statementType === "ifStatement"),
-      );
+      assertExists(program.statements.find((s) => s.kind === "ifStatement"));
     });
 
     it("allows an integer where a boolean is expected (TypeScript)", () => {
@@ -412,9 +405,7 @@ describe("parse: shared parser plumbing (common/ and definitions/)", () => {
         "TypeScript",
         "var x: number = 1;\nif (x) {\n}",
       );
-      assertExists(
-        program.statements.find((s) => s.statementType === "ifStatement"),
-      );
+      assertExists(program.statements.find((s) => s.kind === "ifStatement"));
     });
   });
 
@@ -422,11 +413,11 @@ describe("parse: shared parser plumbing (common/ and definitions/)", () => {
     it('promotes a comparison operator (not just "plus") when a string is involved', () => {
       const program = parseProgram("Python", 'x = "a" == "b"');
       const assignment = program.statements.find(
-        (s) => s.statementType === "variableAssignment",
+        (s) => s.kind === "variableAssignment",
       ) as VariableAssignment | undefined;
       assertExists(assignment);
-      assertEquals(assignment.value.expressionType, "compound");
-      if (assignment.value.expressionType === "compound") {
+      assertEquals(assignment.value.kind, "compound");
+      if (assignment.value.kind === "compound") {
         assertEquals(assignment.value.operator, "seql");
       }
     });
@@ -434,10 +425,10 @@ describe("parse: shared parser plumbing (common/ and definitions/)", () => {
     it('promotes "plus" to string concatenation when a string is involved', () => {
       const program = parseProgram("Python", 'x = "a" + "b"');
       const assignment = program.statements.find(
-        (s) => s.statementType === "variableAssignment",
+        (s) => s.kind === "variableAssignment",
       ) as VariableAssignment | undefined;
       assertExists(assignment);
-      if (assignment?.value.expressionType === "compound") {
+      if (assignment?.value.kind === "compound") {
         assertEquals(assignment.value.operator, "scat");
       }
     });
@@ -454,11 +445,10 @@ describe("parse: shared parser plumbing (common/ and definitions/)", () => {
       );
       const sub = program.subroutines[0];
       const assignment = sub?.statements.find(
-        (s) =>
-          s.statementType === "variableAssignment" && s.variable.name === "s",
+        (s) => s.kind === "variableAssignment" && s.variable.name === "s",
       ) as VariableAssignment | undefined;
       assertExists(assignment);
-      if (assignment?.value.expressionType === "compound") {
+      if (assignment?.value.kind === "compound") {
         assertEquals(assignment.value.operator, "scat");
       }
     });
@@ -472,11 +462,10 @@ describe("parse: shared parser plumbing (common/ and definitions/)", () => {
       );
       const sub = program.subroutines[0];
       const assignment = sub?.statements.find(
-        (s) =>
-          s.statementType === "variableAssignment" && s.variable.name === "b",
+        (s) => s.kind === "variableAssignment" && s.variable.name === "b",
       ) as VariableAssignment | undefined;
       assertExists(assignment);
-      if (assignment?.value.expressionType === "compound") {
+      if (assignment?.value.kind === "compound") {
         assertEquals(assignment.value.operator, "eqal");
       }
     });
@@ -489,10 +478,10 @@ describe("parse: shared parser plumbing (common/ and definitions/)", () => {
       // makes semantic sense for strings
       const program = parseProgram("Python", 'x = "a" - "b"');
       const assignment = program.statements.find(
-        (s) => s.statementType === "variableAssignment",
+        (s) => s.kind === "variableAssignment",
       ) as VariableAssignment | undefined;
       assertExists(assignment);
-      if (assignment?.value.expressionType === "compound") {
+      if (assignment?.value.kind === "compound") {
         assertEquals(assignment.value.operator, "subt");
       }
     });
@@ -625,9 +614,7 @@ describe("parse: shared parser plumbing (common/ and definitions/)", () => {
       );
       const sub = program.subroutines.find((s) => s.name === "PROCa");
       assertExists(sub);
-      assert(
-        sub.statements.some((s) => s.statementType === "variableAssignment"),
-      );
+      assert(sub.statements.some((s) => s.kind === "variableAssignment"));
     });
 
     it("throws when a PRIVATE variable is referenced from another subroutine", () => {
@@ -671,11 +658,11 @@ describe("parse: shared parser plumbing (common/ and definitions/)", () => {
         "program Test;\nvar x: integer;\nbegin\nx := \\KEY;\nend.",
       );
       const assignment = program.statements.find(
-        (s) => s.statementType === "variableAssignment",
+        (s) => s.kind === "variableAssignment",
       ) as VariableAssignment | undefined;
       assertExists(assignment);
-      assertEquals(assignment.value.expressionType, "input");
-      if (assignment.value.expressionType === "input") {
+      assertEquals(assignment.value.kind, "input");
+      if (assignment.value.kind === "input") {
         assertEquals(assignment.value.input.name, "key");
       }
     });
@@ -686,11 +673,11 @@ describe("parse: shared parser plumbing (common/ and definitions/)", () => {
         "program Test;\nvar x: integer;\nbegin\nx := ?KEY;\nend.",
       );
       const assignment = program.statements.find(
-        (s) => s.statementType === "variableAssignment",
+        (s) => s.kind === "variableAssignment",
       ) as VariableAssignment | undefined;
       assertExists(assignment);
-      assertEquals(assignment.value.expressionType, "query");
-      if (assignment.value.expressionType === "query") {
+      assertEquals(assignment.value.kind, "query");
+      if (assignment.value.kind === "query") {
         assertEquals(assignment.value.input.name, "key");
       }
     });
@@ -915,13 +902,13 @@ describe("parse: shared parser plumbing (common/ and definitions/)", () => {
         "program Test;\nvar arr: array[1..5] of integer;\nvar x: integer;\nbegin\nx := length(arr);\nend.",
       );
       const assignment = program.statements.find(
-        (s) => s.statementType === "variableAssignment",
+        (s) => s.kind === "variableAssignment",
       ) as VariableAssignment | undefined;
       assertExists(assignment);
-      assertEquals(assignment.value.expressionType, "function");
-      if (assignment.value.expressionType === "function") {
+      assertEquals(assignment.value.kind, "function");
+      if (assignment.value.kind === "function") {
         assertEquals(assignment.value.arguments.length, 1);
-        assertEquals(assignment.value.arguments[0]?.expressionType, "variable");
+        assertEquals(assignment.value.arguments[0]?.kind, "variable");
       }
     });
   });
@@ -932,14 +919,12 @@ describe("parse: shared parser plumbing (common/ and definitions/)", () => {
         "Python",
         "wins = [[0,1],[2,3]]\nwins.append([4,5])",
       );
-      const call = program.statements.find(
-        (s) => s.statementType === "procedureCall",
-      );
+      const call = program.statements.find((s) => s.kind === "procedureCall");
       assertExists(call);
-      if (call.statementType === "procedureCall") {
+      if (call.kind === "procedureCall") {
         // arguments[0] is the receiver, arguments[1] the appended sublist
         assertEquals(call.arguments.length, 2);
-        assertEquals(call.arguments[1]?.expressionType, "listLiteral");
+        assertEquals(call.arguments[1]?.kind, "listLiteral");
       }
     });
 
@@ -1006,10 +991,10 @@ describe("parse: shared parser plumbing (common/ and definitions/)", () => {
     it("checks an assignment between two list-of-lists variables by element kind", () => {
       const program = parseProgram("Python", "a = [[1,2]]\nb = [[3,4]]\na = b");
       const assignments = program.statements.filter(
-        (s) => s.statementType === "variableAssignment",
+        (s) => s.kind === "variableAssignment",
       ) as VariableAssignment[];
       assertEquals(assignments.length, 3);
-      assertEquals(assignments[2]?.value.expressionType, "variable");
+      assertEquals(assignments[2]?.value.kind, "variable");
     });
   });
 

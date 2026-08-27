@@ -1,4 +1,4 @@
-import { PCode } from "@/core/constants.ts";
+import { PCode, traits } from "@/core/constants.ts";
 import type { VariableAddress } from "../../parser/definitions/expressions/variableAddress.ts";
 import makeVariableValue, {
   type VariableValue,
@@ -34,8 +34,8 @@ export default (
         merge(pcode, [[PCode.ldin, dimensions[0], PCode.subt]]);
       } else if (dimensions === undefined) {
         // this means the final index expression is to a character within an array of strings
-        if (program.language === "Pascal") {
-          merge(pcode, [[PCode.decr]]); // Pascal strings are indexed from 1 instead of zero
+        if (traits[program.language].stringIndexBase === 1) {
+          merge(pcode, [[PCode.decr]]);
         }
       }
       merge(pcode, [[PCode.swap, PCode.test, PCode.plus, PCode.incr]]);
@@ -43,8 +43,7 @@ export default (
   } // character from string variable as array
   else if (exp.variable.type === "string" && exp.indexes.length > 0) {
     pcode.push(...expression(exp.indexes[0]!, program, options));
-    if (program.language === "Pascal") {
-      // Pascal string indexes start from 1 instead of 0
+    if (traits[program.language].stringIndexBase === 1) {
       merge(pcode, [[PCode.decr]]);
     }
     const baseVariableExp = makeVariableValue(exp.lexeme, exp.variable); // same variable, no indexes
@@ -54,7 +53,7 @@ export default (
   else if (exp.variable.turtle) {
     pcode.push([PCode.ldag, turtleAddress(program) + exp.variable.turtle]);
   } // global variable
-  else if (exp.variable.routine.__ === "Program") {
+  else if (exp.variable.routine.kind === "Program") {
     pcode.push([PCode.ldag, variableAddress(exp.variable)]);
   } // local variable
   else {

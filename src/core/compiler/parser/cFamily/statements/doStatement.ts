@@ -3,74 +3,62 @@ import { token } from "../../../tokenizer/token.ts";
 import { CompilerError } from "../../../tools/error.ts";
 import parseExpression from "../../common/expression.ts";
 import typeCheck from "../../common/typeCheck.ts";
+import type { ParserContext } from "../../definitions/context.ts";
 import makeCompoundExpression from "../../definitions/expressions/compoundExpression.ts";
 import type { Lexemes } from "../../definitions/lexemes.ts";
+import type { Program } from "../../definitions/routines/program.ts";
 import { type Subroutine } from "../../definitions/routines/subroutine.ts";
 import makeRepeatStatement, {
   type RepeatStatement,
 } from "../../definitions/statements/repeatStatement.ts";
+import type { CFamilyDialect } from "../dialect.ts";
 import parseBlock from "./block.ts";
-import eosCheck from "./eosCheck.ts";
 
-const parseDoStatement = (
+const parseDoStatement = <R extends Program | Subroutine>(
   doLexeme: KeywordLexeme,
   lexemes: Lexemes,
-  routine: Subroutine,
+  context: ParserContext,
+  routine: R,
+  dialect: CFamilyDialect<R>,
 ): RepeatStatement => {
-  if (!lexemes.get() || lexemes.get()?.content !== "{") {
-    throw new CompilerError(
-      '"do" must be followed by an opening bracket "{".',
-      lexemes.get(-1),
-    );
-  }
-  lexemes.next();
+  lexemes.expectAfter("{", '"do" must be followed by an opening bracket "{".');
 
-  routine.loopDepth += 1;
-  const repeatStatements = parseBlock(lexemes, routine);
-  routine.loopDepth -= 1;
+  const repeatStatements = context.inLoop(routine, () =>
+    parseBlock(lexemes, context, routine, dialect),
+  );
 
-  if (!lexemes.get() || lexemes.get()?.content !== "while") {
-    throw new CompilerError(
-      '"do { ... }" must be followed by "while".',
-      lexemes.get(-1),
-    );
-  }
-  lexemes.next();
+  lexemes.expectAfter("while", '"do { ... }" must be followed by "while".');
 
-  if (!lexemes.get() || lexemes.get()?.content !== "(") {
-    throw new CompilerError(
-      '"while" must be followed by an opening bracket "(".',
-      lexemes.get(-1),
-    );
-  }
-  lexemes.next();
+  lexemes.expectAfter(
+    "(",
+    '"while" must be followed by an opening bracket "(".',
+  );
 
-  if (!lexemes.get()) {
+  if (lexemes.atEnd()) {
     throw new CompilerError(
       '"while (" must be followed by a boolean expression.',
-      lexemes.get(-1),
+      lexemes.peek(-1),
     );
   }
   let condition = parseExpression(lexemes, routine);
   condition = typeCheck(routine.language, condition, "boolean");
+  // "do { ... } while (x)" is a "repeat ... until not x", so the condition is
+  // negated with a "!" the source never had
   const notToken = token(
     "operator",
     "!",
     condition.lexeme.line,
     condition.lexeme.character,
   );
-  const notLexeme = operatorLexeme(notToken, "C");
+  const notLexeme = operatorLexeme(notToken, routine.language);
   condition = makeCompoundExpression(notLexeme, null, condition, "not");
 
-  if (!lexemes.get() || lexemes.get()?.content !== ")") {
-    throw new CompilerError(
-      '"while (..." must be followed by a closing bracket ")".',
-      lexemes.get(-1),
-    );
-  }
-  lexemes.next();
+  lexemes.expectAfter(
+    ")",
+    '"while (..." must be followed by a closing bracket ")".',
+  );
 
-  eosCheck(lexemes);
+  dialect.eosCheck(lexemes);
 
   const repeatStatement = makeRepeatStatement(doLexeme, condition);
   repeatStatement.statements.push(...repeatStatements);

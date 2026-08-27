@@ -1,7 +1,6 @@
 import { type KeywordLexeme } from "../../../lexer/lexeme.ts";
 import { CompilerError } from "../../../tools/error.ts";
 import parseExpression from "../../common/expression.ts";
-import skipComments from "../../common/skipComments.ts";
 import typeCheck from "../../common/typeCheck.ts";
 import type { Lexemes } from "../../definitions/lexemes.ts";
 import type { Program } from "../../definitions/routines/program.ts";
@@ -19,7 +18,7 @@ const parseIfStatement = (
 ): IfStatement => {
   let oneLine: boolean;
 
-  if (!lexemes.get()) {
+  if (lexemes.atEnd()) {
     throw new CompilerError(
       '"IF" must be followed by a boolean expression.',
       lexeme,
@@ -28,34 +27,28 @@ const parseIfStatement = (
   let condition = parseExpression(lexemes, routine);
   condition = typeCheck(routine.language, condition, "boolean");
 
-  if (!lexemes.get()) {
+  if (lexemes.atEnd()) {
     throw new CompilerError(
       '"IF ..." must be followed by "THEN".',
-      lexemes.get(-1),
+      lexemes.peek(-1),
     );
   }
-  if (lexemes.get()?.content !== "THEN") {
-    throw new CompilerError(
-      '"IF ..." must be followed by "THEN".',
-      lexemes.get(),
-    );
-  }
-  lexemes.next();
+  lexemes.expect("THEN", '"IF ..." must be followed by "THEN".');
 
   // ok, create the IF statement
   const ifStatement = makeIfStatement(lexeme, condition);
 
-  skipComments(lexemes);
-  const firstInnerLexeme = lexemes.get();
+  lexemes.skipComments();
+  const firstInnerLexeme = lexemes.peek();
   if (!firstInnerLexeme) {
     throw new CompilerError(
       'No statements found after "IF ... THEN".',
-      lexemes.get(),
+      lexemes.peek(),
     );
   }
   if (firstInnerLexeme.type === "newline") {
-    while (lexemes.get()?.type === "newline") {
-      lexemes.next();
+    while (lexemes.peek()?.type === "newline") {
+      lexemes.advance();
     }
     ifStatement.ifStatements.push(...parseBlock(lexemes, routine, "IF"));
     oneLine = false;
@@ -66,21 +59,21 @@ const parseIfStatement = (
     );
   }
 
-  if (lexemes.get() && lexemes.get()?.content === "ELSE") {
-    lexemes.next();
-    skipComments(lexemes);
-    const firstInnerLexeme = lexemes.get();
+  if (lexemes.peek()?.content === "ELSE") {
+    lexemes.advance();
+    lexemes.skipComments();
+    const firstInnerLexeme = lexemes.peek();
     if (!firstInnerLexeme) {
       throw new CompilerError(
         'No statements found after "ELSE".',
-        lexemes.get(-1),
+        lexemes.peek(-1),
       );
     }
     if (oneLine) {
       if (firstInnerLexeme.type === "newline") {
         throw new CompilerError(
           'Statement following "ELSE" cannot be on a new line.',
-          lexemes.get(1),
+          lexemes.peek(1),
         );
       }
       ifStatement.elseStatements.push(
@@ -94,8 +87,8 @@ const parseIfStatement = (
         );
       }
       // move past all line breaks
-      while (lexemes.get()?.type === "newline") {
-        lexemes.next();
+      while (lexemes.peek()?.type === "newline") {
+        lexemes.advance();
       }
       ifStatement.elseStatements.push(...parseBlock(lexemes, routine, "ELSE"));
     }

@@ -2,15 +2,11 @@ import type {
   IdentifierLexeme,
   OperatorLexeme,
 } from "../../../lexer/lexeme.ts";
-import {
-  type Expression,
-  type ExpressionCommon,
-  makeExpression,
-} from "../expression.ts";
+import type { Expression } from "../expression.ts";
 import type { Variable } from "../variable.ts";
 
-export interface VariableAddress extends ExpressionCommon {
-  readonly expressionType: "address";
+export interface VariableAddress {
+  readonly kind: "address";
   readonly lexeme: IdentifierLexeme | OperatorLexeme;
   readonly variable: Variable;
   readonly indexes: Expression[];
@@ -21,8 +17,7 @@ const makeVariableAddress = (
   lexeme: IdentifierLexeme | OperatorLexeme,
   variable: Variable,
 ): VariableAddress => ({
-  ...makeExpression(),
-  expressionType: "address",
+  kind: "address",
   lexeme,
   variable,
   indexes: [],

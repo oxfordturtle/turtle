@@ -59,6 +59,14 @@ deno task coverage:check      # the gate: what CI runs
 deno task coverage:html       # per-file browsable report, per tree
 ```
 
+The other tool beside it is `tools/benchmark.ts` (`deno task bench`), which
+compiles the example corpus and reports per-stage, per-keystroke and scaling
+figures for the compiler. It has its own tests in the same run, and they assert
+the arithmetic rather than any timing: percentiles, ms-per-unit, and the ratio
+that tells linear from quadratic. Nothing in CI gates on absolute times — they
+are machine-dependent — but `deno task bench --check` gates on the scaling
+ratio, which isn't. `src/README.md` describes what it reports.
+
 100% is a floor, not a goal in itself. Rules 3 and 4 below are what stop it
 turning into a number to game.
 

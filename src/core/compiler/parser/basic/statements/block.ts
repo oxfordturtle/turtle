@@ -16,20 +16,20 @@ const parseBlock = (
   const statements: Statement[] = [];
   let end = false;
 
-  if (!lexemes.get()) {
+  if (lexemes.atEnd()) {
     throw new CompilerError(
       `No commands found after "${start}".`,
-      lexemes.get(-1),
+      lexemes.peek(-1),
     );
   }
 
-  while (!end && lexemes.index < routine.end) {
-    const lexeme = lexemes.get() as Lexeme;
+  while (!end && lexemes.inBody(routine)) {
+    const lexeme = lexemes.peek() as Lexeme;
     end = blockEndCheck(start, lexeme);
     if (end) {
       // move past the next lexeme, unless it's "else"
       if (lexeme.content !== "ELSE") {
-        lexemes.next();
+        lexemes.advance();
       }
     } else {
       // compile the structure
@@ -41,7 +41,7 @@ const parseBlock = (
   if (!end) {
     throw new CompilerError(
       `Unterminated "${start}" statement.`,
-      lexemes.get(-1),
+      lexemes.peek(-1),
     );
   }
 

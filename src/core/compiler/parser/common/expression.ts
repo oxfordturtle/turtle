@@ -35,7 +35,7 @@ const parseMembershipOperator = (
   if (routine.language !== "Python") {
     return null;
   }
-  const first = lexemes.get();
+  const first = lexemes.peek();
   if (!first) {
     return null;
   }
@@ -44,15 +44,15 @@ const parseMembershipOperator = (
   const negated =
     first.type === "operator" &&
     first.subtype === "not" &&
-    isIn(lexemes.get(1));
+    isIn(lexemes.peek(1));
   if (!negated && !isIn(first)) {
     return null;
   }
   if (negated) {
-    lexemes.next(); // move past "not"
+    lexemes.advance(); // move past "not"
   }
-  const inLexeme = lexemes.get() as Lexeme;
-  lexemes.next(); // move past "in"
+  const inLexeme = lexemes.peek() as Lexeme;
+  lexemes.advance(); // move past "in"
   return {
     // the subtype is provisional - which of the four membership operators
     // this really is depends on the right operand, resolved by the caller
@@ -78,9 +78,9 @@ const makeMembershipExpression = (
     // opaque pointers, so "x in wins" would scan heap addresses. Rejected
     // rather than silently answering nonsense; "x in wins[i]" still works.
     const rightIsListOfLists =
-      right.expressionType === "listLiteral"
+      right.kind === "listLiteral"
         ? right.isListOfLists
-        : right.expressionType === "variable" &&
+        : right.kind === "variable" &&
           right.variable.isListOfLists &&
           right.indexes.length === 0;
     if (rightIsListOfLists) {
@@ -133,12 +133,12 @@ const parseExpression = (
   // recursing at the *same* level rather than the next is what makes "not not
   // x" parse
   if (thisLevel.unary) {
-    const lexeme = lexemes.get();
+    const lexeme = lexemes.peek();
     const op = lexeme && operator(lexeme, thisLevel);
     if (!op) {
       return parseExpression(lexemes, routine, level + 1);
     }
-    lexemes.next();
+    lexemes.advance();
     const operand = typeCheck(
       routine.language,
       parseExpression(lexemes, routine, level),
@@ -167,11 +167,11 @@ const parseExpression = (
     );
   }
 
-  while (lexemes.get() && operator(lexemes.get() as Lexeme, thisLevel)) {
-    const lexeme = lexemes.get() as OperatorLexeme;
+  while (!lexemes.atEnd() && operator(lexemes.peek() as Lexeme, thisLevel)) {
+    const lexeme = lexemes.peek() as OperatorLexeme;
     let op = operator(lexeme, thisLevel) as Operator;
 
-    lexemes.next();
+    lexemes.advance();
 
     let nextExp = parseExpression(lexemes, routine, level + 1);
 

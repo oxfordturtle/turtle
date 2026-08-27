@@ -12,26 +12,35 @@ import {
 import makeReturnStatement, {
   type ReturnStatement,
 } from "../../definitions/statements/returnStatement.ts";
-import eosCheck from "./eosCheck.ts";
+import type { StatementEnd } from "../dialect.ts";
 
+/**
+ * The `Program` case is TypeScript's alone: it is the only one of the three
+ * that allows statements outside a subroutine, so it is the only one that can
+ * reach a "return" with nothing to return from.
+ */
 const parseReturnStatement = (
   returnLexeme: KeywordLexeme,
   lexemes: Lexemes,
   routine: Program | Subroutine,
+  dialect: StatementEnd,
 ): ReturnStatement => {
-  if (routine.__ === "Program") {
+  if (routine.kind === "Program") {
     throw new CompilerError(
       '"RETURN" statements are only valid within the body of a function.',
-      lexemes.get(),
+      lexemes.peek(),
     );
   }
   if (getSubroutineType(routine) !== "function") {
-    throw new CompilerError("Procedures cannot return a value.", lexemes.get());
+    throw new CompilerError(
+      "Procedures cannot return a value.",
+      lexemes.peek(),
+    );
   }
 
   let value = parseExpression(lexemes, routine);
   value = typeCheck(routine.language, value, getResultType(routine)!);
-  eosCheck(lexemes);
+  dialect.eosCheck(lexemes);
 
   routine.hasReturnStatement = true;
 

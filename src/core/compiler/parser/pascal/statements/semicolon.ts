@@ -7,16 +7,16 @@ const parseSemicolon = (
   context = "statement",
 ): void => {
   // check for semicolon
-  if (compulsory && (!lexemes.get() || lexemes.get()?.content !== ";")) {
+  if (compulsory && lexemes.peek()?.content !== ";") {
     throw new CompilerError(
       `Semicolon needed after ${context}.`,
-      lexemes.get(-1),
+      lexemes.peek(-1),
     );
   }
 
   // move past any semicolons
-  while (lexemes.get() && lexemes.get()?.content === ";") {
-    lexemes.next();
+  while (lexemes.peek()?.content === ";") {
+    lexemes.advance();
   }
 };
 

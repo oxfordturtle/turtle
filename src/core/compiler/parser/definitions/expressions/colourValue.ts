@@ -1,9 +1,8 @@
 import type { Colour } from "@/core/constants.ts";
 import type { IdentifierLexeme } from "../../../lexer/lexeme.ts";
-import { type ExpressionCommon, makeExpression } from "../expression.ts";
 
-export interface ColourValue extends ExpressionCommon {
-  readonly expressionType: "colour";
+export interface ColourValue {
+  readonly kind: "colour";
   readonly lexeme: IdentifierLexeme;
   readonly type: "integer";
   readonly colour: Colour;
@@ -13,8 +12,7 @@ const makeColourValue = (
   lexeme: IdentifierLexeme,
   colour: Colour,
 ): ColourValue => ({
-  ...makeExpression(),
-  expressionType: "colour",
+  kind: "colour",
   lexeme,
   type: "integer",
   colour,

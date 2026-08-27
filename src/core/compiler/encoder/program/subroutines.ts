@@ -21,15 +21,27 @@ import {
 import type { Options } from "../options.ts";
 import statements from "./statements.ts";
 
+export interface SubroutinesCode {
+  /** the subroutines' pcode, back to back */
+  readonly pcode: number[][];
+  /**
+   * where each subroutine's pcode begins. A call site emits the subroutine's
+   * index, which encode.ts back-patches to the line number recorded here - it
+   * is not knowable until every subroutine before it has been encoded.
+   */
+  readonly startLines: Map<Subroutine, number>;
+}
+
 export default (
   subroutines: Subroutine[],
   startLine: number,
   options: Options,
-): number[][] => {
+): SubroutinesCode => {
   const pcode: number[][] = [];
+  const startLines = new Map<Subroutine, number>();
 
   for (const subroutine of subroutines) {
-    subroutine.startLine = startLine;
+    startLines.set(subroutine, startLine);
 
     const startCode = subroutineStartCode(subroutine, options);
     const innerCode = statements(
@@ -54,7 +66,7 @@ export default (
     pcode.push(...subroutineCode);
   }
 
-  return pcode;
+  return { pcode, startLines };
 };
 
 const subroutineStartCode = (

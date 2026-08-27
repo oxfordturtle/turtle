@@ -28,7 +28,7 @@ const parseStatement = (
     // falling through to the eosCheck() call below, which would wrongly
     // demand one after whatever lexeme follows the comment
     case "comment":
-      lexemes.next();
+      lexemes.advance();
       return makePassStatement();
 
     case "identifier":
@@ -38,22 +38,22 @@ const parseStatement = (
     case "keyword":
       switch (lexeme.subtype) {
         case "if":
-          lexemes.next();
+          lexemes.advance();
           statement = parseIfStatement(lexeme, lexemes, routine);
           break;
 
         case "for":
-          lexemes.next();
+          lexemes.advance();
           statement = parseForStatement(lexeme, lexemes, routine);
           break;
 
         case "repeat":
-          lexemes.next();
+          lexemes.advance();
           statement = parseRepeatStatement(lexeme, lexemes, routine);
           break;
 
         case "while":
-          lexemes.next();
+          lexemes.advance();
           statement = parseWhileStatement(lexeme, lexemes, routine);
           break;
 

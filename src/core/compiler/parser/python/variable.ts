@@ -8,8 +8,8 @@ import type from "./type.ts";
 export default (lexemes: Lexemes, routine: Routine): Constant | Variable => {
   const name = identifier(lexemes, routine, true);
 
-  if (lexemes.get() && lexemes.get()?.content === ":") {
-    lexemes.next();
+  if (lexemes.peek()?.content === ":") {
+    lexemes.advance();
 
     const [isConstant, variableType, stringLength, arrayDimensions, isList] =
       type(lexemes, routine);

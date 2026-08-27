@@ -1,34 +1,32 @@
 import { type KeywordLexeme } from "../../../lexer/lexeme.ts";
 import { CompilerError } from "../../../tools/error.ts";
+import type { CFamilyDialect } from "../../cFamily/dialect.ts";
+import parseBlock from "../../cFamily/statements/block.ts";
 import parseExpression from "../../common/expression.ts";
 import typeCheck from "../../common/typeCheck.ts";
+import type { ParserContext } from "../../definitions/context.ts";
 import type { Lexemes } from "../../definitions/lexemes.ts";
 import type { Program } from "../../definitions/routines/program.ts";
 import { type Subroutine } from "../../definitions/routines/subroutine.ts";
 import makeForStatement, {
   type ForStatement,
 } from "../../definitions/statements/forStatement.ts";
-import parseBlock from "./block.ts";
 import parseSimpleStatement from "./simpleStatement.ts";
 
 const parseForStatement = (
   forLexeme: KeywordLexeme,
   lexemes: Lexemes,
+  context: ParserContext,
   routine: Program | Subroutine,
+  dialect: CFamilyDialect<Program | Subroutine>,
 ): ForStatement => {
-  if (!lexemes.get() || lexemes.get()?.content !== "(") {
-    throw new CompilerError(
-      '"for" must be followed by an opening bracket "(".',
-      lexemes.get(-1),
-    );
-  }
-  lexemes.next();
+  lexemes.expectAfter("(", '"for" must be followed by an opening bracket "(".');
 
-  const firstInitialisationLexeme = lexemes.get();
+  const firstInitialisationLexeme = lexemes.peek();
   if (!firstInitialisationLexeme) {
     throw new CompilerError(
       '"for" conditions must begin with a variable assignment.',
-      lexemes.get(-1),
+      lexemes.peek(-1),
     );
   }
   if (
@@ -45,46 +43,37 @@ const parseForStatement = (
     lexemes,
     routine,
   );
-  if (initialisation.statementType !== "variableAssignment") {
+  if (initialisation.kind !== "variableAssignment") {
     throw new CompilerError(
       '"for" conditions must begin with a variable assignment.',
-      lexemes.get(-1),
+      lexemes.peek(-1),
     );
   }
   if (initialisation.variable.type !== "integer") {
-    throw new CompilerError("Loop variable must be an integer.", lexemes.get());
-  }
-
-  if (!lexemes.get() || lexemes.get()?.content !== ";") {
     throw new CompilerError(
-      '"for (..." must be followed by a semicolon.',
-      lexemes.get(-1),
+      "Loop variable must be an integer.",
+      lexemes.peek(),
     );
   }
-  lexemes.next();
 
-  if (!lexemes.get()) {
+  lexemes.expectAfter(";", '"for (..." must be followed by a semicolon.');
+
+  if (lexemes.atEnd()) {
     throw new CompilerError(
       '"for (...; ...;" must be followed by a loop condition.',
-      lexemes.get(-1),
+      lexemes.peek(-1),
     );
   }
   let condition = parseExpression(lexemes, routine);
   condition = typeCheck(routine.language, condition, "boolean");
 
-  if (!lexemes.get() || lexemes.get()?.content !== ";") {
-    throw new CompilerError(
-      '"for (...; ..." must be followed by a semicolon.',
-      lexemes.get(-1),
-    );
-  }
-  lexemes.next();
+  lexemes.expectAfter(";", '"for (...; ..." must be followed by a semicolon.');
 
-  const firstChangeLexeme = lexemes.get();
+  const firstChangeLexeme = lexemes.peek();
   if (!firstChangeLexeme) {
     throw new CompilerError(
       '"for (...;" must be followed by a loop variable reassignment.',
-      lexemes.get(-1),
+      lexemes.peek(-1),
     );
   }
   if (
@@ -93,38 +82,32 @@ const parseForStatement = (
   ) {
     throw new CompilerError(
       '"for (...;" must be followed by a loop variable reassignment.',
-      lexemes.get(-1),
+      lexemes.peek(-1),
     );
   }
   const change = parseSimpleStatement(firstChangeLexeme, lexemes, routine);
-  if (change.statementType !== "variableAssignment") {
+  if (change.kind !== "variableAssignment") {
     throw new CompilerError(
       '"for (...;" must be followed by a loop variable reassignment.',
-      lexemes.get(-1),
+      lexemes.peek(-1),
     );
   }
   if (change.variable !== initialisation.variable) {
     throw new CompilerError(
       "Initial loop variable and change loop variable must be the same.",
-      lexemes.get(-1),
+      lexemes.peek(-1),
     );
   }
 
-  if (!lexemes.get() || lexemes.get()?.content !== ")") {
-    throw new CompilerError(
-      '"for (...; ...; ..." must be followed by a closing bracket ")".',
-      lexemes.get(-1),
-    );
-  }
-  lexemes.next();
+  lexemes.expectAfter(
+    ")",
+    '"for (...; ...; ..." must be followed by a closing bracket ")".',
+  );
 
-  if (!lexemes.get() || lexemes.get()?.content !== "{") {
-    throw new CompilerError(
-      '"for (...; ...; ...)" must be followed by an opening bracket "{".',
-      lexemes.get(-1),
-    );
-  }
-  lexemes.next();
+  lexemes.expectAfter(
+    "{",
+    '"for (...; ...; ...)" must be followed by an opening bracket "{".',
+  );
 
   const forStatement = makeForStatement(
     forLexeme,
@@ -133,9 +116,11 @@ const parseForStatement = (
     change,
   );
 
-  routine.loopDepth += 1;
-  forStatement.statements.push(...parseBlock(lexemes, routine));
-  routine.loopDepth -= 1;
+  forStatement.statements.push(
+    ...context.inLoop(routine, () =>
+      parseBlock(lexemes, context, routine, dialect),
+    ),
+  );
 
   return forStatement;
 };

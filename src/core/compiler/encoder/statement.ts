@@ -21,7 +21,7 @@ export default (
   // unchanged, since it starts no loop of its own - see loopContext.ts
   loopContext: LoopContext | null = null,
 ): number[][] => {
-  switch (stmt.statementType) {
+  switch (stmt.kind) {
     case "variableAssignment":
       return variableAssignment(stmt, program, startLine, options);
     case "procedureCall":

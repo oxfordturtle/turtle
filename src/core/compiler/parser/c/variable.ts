@@ -5,7 +5,7 @@ import typeCheck from "../common/typeCheck.ts";
 import type { Lexemes } from "../definitions/lexemes.ts";
 import type { Routine } from "../definitions/routine.ts";
 import makeVariable, { type Variable } from "../definitions/variable.ts";
-import identifier from "./identifier.ts";
+import identifier from "../cFamily/identifier.ts";
 import type from "./type.ts";
 
 export default function variable(lexemes: Lexemes, routine: Routine): Variable {
@@ -14,14 +14,13 @@ export default function variable(lexemes: Lexemes, routine: Routine): Variable {
   if (variableType === null) {
     throw new CompilerError(
       'Variable cannot be void (expected "boolean", "char", "int", or "String").',
-      lexemes.get(),
+      lexemes.peek(),
     );
   }
 
   // "*" possible here (to indicate pointer variable)
   let isPointer = false;
-  if (lexemes.get()?.content === "*") {
-    lexemes.next();
+  if (lexemes.match("*")) {
     isPointer = true;
   }
 
@@ -32,39 +31,36 @@ export default function variable(lexemes: Lexemes, routine: Routine): Variable {
   variable.stringLength = stringLength;
   variable.isPointer = isPointer;
 
-  while (lexemes.get()?.content === "[") {
-    lexemes.next();
+  while (lexemes.peek()?.content === "[") {
+    lexemes.advance();
 
-    if (!lexemes.get()) {
+    if (lexemes.atEnd()) {
       throw new CompilerError(
         'Opening bracket "[" must be followed by an array size.',
-        lexemes.get(-1),
+        lexemes.peek(-1),
       );
     }
     const exp = parseExpression(lexemes, routine);
     typeCheck(routine.language, exp, "integer");
     const value = evaluate(exp, "C", "array");
     if (typeof value === "string") {
-      throw new CompilerError("Array size must be an integer.", lexemes.get());
+      throw new CompilerError("Array size must be an integer.", lexemes.peek());
     }
     if (value <= 0) {
-      throw new CompilerError("Array size must be positive.", lexemes.get());
+      throw new CompilerError("Array size must be positive.", lexemes.peek());
     }
     variable.arrayDimensions.push([0, value - 1]); // -1 because arrays are indexed from zero
 
-    if (!lexemes.get()) {
+    if (lexemes.atEnd()) {
       throw new CompilerError(
         'Array size specification must be followed by closing bracket "]".',
-        lexemes.get(-1),
+        lexemes.peek(-1),
       );
     }
-    if (lexemes.get()?.content !== "]") {
-      throw new CompilerError(
-        'Array size specification must be followed by closing bracket "]".',
-        lexemes.get(),
-      );
-    }
-    lexemes.next();
+    lexemes.expect(
+      "]",
+      'Array size specification must be followed by closing bracket "]".',
+    );
   }
 
   // N.B. no "array of void" sanity check here (unlike java/type.ts,

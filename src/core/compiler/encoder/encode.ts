@@ -1,4 +1,4 @@
-import { PCode, pcodeArgs } from "@/core/constants.ts";
+import { PCode, pcodeArgs, traits } from "@/core/constants.ts";
 import { getAllSubroutines } from "../parser/definitions/routine.ts";
 import type { Program } from "../parser/definitions/routines/program.ts";
 import type { Subroutine } from "../parser/definitions/routines/subroutine.ts";
@@ -20,8 +20,8 @@ export default (
       ? startCode.length + 2 // + 1 for jump line past subroutines
       : startCode.length + 1;
 
-  // also records each subroutine's start line, which the back-patch below needs
-  const subroutinesCode = subroutines(
+  // also reports each subroutine's start line, which the back-patch below needs
+  const { pcode: subroutinesCode, startLines } = subroutines(
     getAllSubroutines(program),
     subroutinesStartLine,
     options,
@@ -39,19 +39,20 @@ export default (
       ? startCode.concat(jumpLine).concat(subroutinesCode).concat(innerCode)
       : startCode.concat(innerCode);
 
-  backPatchSubroutineCalls(program, pcode);
+  backPatchSubroutineCalls(program, pcode, startLines);
 
   // safe here and not before: everything below appends lines at the end only,
   // and addHCLR splices within a line without ever adding one, so no line's
   // number changes from this point on
   resolveRelativeJumps(pcode);
 
-  if (program.language === "C" || program.language === "Java") {
-    // the first parser pass has already errored if there is no "main"
+  const { entryPoint } = traits[program.language];
+  if (entryPoint !== "top-level") {
+    // the first parser pass has already errored if there is no such routine
     const main = program.subroutines.find(
-      (x) => x.name === "main",
+      (x) => x.name === entryPoint,
     ) as Subroutine;
-    pcode.push([PCode.subr, main.startLine]);
+    pcode.push([PCode.subr, startLines.get(main) as number]);
   }
 
   addHCLR(pcode);
@@ -63,6 +64,7 @@ export default (
 const backPatchSubroutineCalls = (
   program: Program,
   pcode: number[][],
+  startLines: Map<Subroutine, number>,
 ): void => {
   for (const line of pcode) {
     for (let j = 0; j < line.length; j += 1) {
@@ -71,7 +73,7 @@ const backPatchSubroutineCalls = (
           (x) => x.index === line[j],
         );
         if (subroutine) {
-          line[j] = subroutine.startLine;
+          line[j] = startLines.get(subroutine) as number;
         }
       }
     }

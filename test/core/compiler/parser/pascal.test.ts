@@ -163,7 +163,7 @@ describe("parse: Pascal", () => {
         "program Test;\nbegin\n{ a comment }\nend.",
       );
       assertEquals(program.statements.length, 1);
-      assertEquals(program.statements[0]?.statementType, "passStatement");
+      assertEquals(program.statements[0]?.kind, "passStatement");
     });
 
     it("doesn't require a semicolon between a comment and the statement that follows it", () => {
@@ -176,7 +176,7 @@ describe("parse: Pascal", () => {
         "program Test;\nvar x: integer;\nbegin\n{ a comment }\nx := 1;\nend.",
       );
       assertEquals(
-        program.statements.map((s) => s.statementType),
+        program.statements.map((s) => s.kind),
         ["passStatement", "variableAssignment"],
       );
     });
@@ -590,11 +590,11 @@ describe("parse: Pascal", () => {
         "program Test;\nvar x: integer;\nbegin\nx := 0;\nrepeat\nx := x + 1;\nuntil x = 3;\nend.",
       );
       const repeatStatement = program.statements.find(
-        (s) => s.statementType === "repeatStatement",
+        (s) => s.kind === "repeatStatement",
       ) as RepeatStatement | undefined;
       assertExists(repeatStatement);
       assertEquals(repeatStatement.statements.length, 1);
-      assertEquals(repeatStatement.condition.expressionType, "compound");
+      assertEquals(repeatStatement.condition.kind, "compound");
     });
 
     it("throws if UNTIL is missing (unterminated REPEAT block)", () => {
@@ -887,7 +887,7 @@ describe("parse: Pascal", () => {
       );
       const sub = program.subroutines[0];
       const call = sub?.statements[0] as ProcedureCall;
-      assertEquals(call.statementType, "procedureCall");
+      assertEquals(call.kind, "procedureCall");
       assertEquals(call.command, sub);
     });
 
@@ -960,7 +960,7 @@ describe("parse: Pascal", () => {
         ["inner"],
       );
       assertEquals(
-        sub?.statements.map((s) => s.statementType),
+        sub?.statements.map((s) => s.kind),
         ["variableAssignment"],
       );
     });
@@ -973,7 +973,7 @@ describe("parse: Pascal", () => {
         "program Test;\nvar x: integer;\nbegin\nif true then x := 1;\nend.",
       );
       const ifStatement = program.statements.find(
-        (s) => s.statementType === "ifStatement",
+        (s) => s.kind === "ifStatement",
       ) as IfStatement | undefined;
       assertExists(ifStatement);
       assertEquals(ifStatement.elseStatements.length, 0);
@@ -985,7 +985,7 @@ describe("parse: Pascal", () => {
         "program Test;\nvar x: integer;\nbegin\nif true then begin\nx := 1;\nx := 2;\nend else begin\nx := 3;\nend;\nend.",
       );
       const ifStatement = program.statements.find(
-        (s) => s.statementType === "ifStatement",
+        (s) => s.kind === "ifStatement",
       ) as IfStatement | undefined;
       assertExists(ifStatement);
       assertEquals(ifStatement.ifStatements.length, 2);
@@ -1004,12 +1004,9 @@ describe("parse: Pascal", () => {
       );
       assertEquals(program.statements.length, 1);
       const ifStatement = program.statements[0] as IfStatement;
-      assertEquals(ifStatement.statementType, "ifStatement");
+      assertEquals(ifStatement.kind, "ifStatement");
       assertEquals(ifStatement.ifStatements.length, 1);
-      assertEquals(
-        ifStatement.ifStatements[0]?.statementType,
-        "variableAssignment",
-      );
+      assertEquals(ifStatement.ifStatements[0]?.kind, "variableAssignment");
     });
 
     it("doesn't let a comment between ELSE and the body swallow the body", () => {
@@ -1020,10 +1017,7 @@ describe("parse: Pascal", () => {
       assertEquals(program.statements.length, 1);
       const ifStatement = program.statements[0] as IfStatement;
       assertEquals(ifStatement.elseStatements.length, 1);
-      assertEquals(
-        ifStatement.elseStatements[0]?.statementType,
-        "variableAssignment",
-      );
+      assertEquals(ifStatement.elseStatements[0]?.kind, "variableAssignment");
     });
 
     it("throws if IF has no boolean expression (EOF)", () => {
@@ -1082,7 +1076,7 @@ describe("parse: Pascal", () => {
         "program Test;\nvar x: integer;\nbegin\nx := 0;\nwhile x < 3 do x := x + 1;\nend.",
       );
       const whileStatement = program.statements.find(
-        (s) => s.statementType === "whileStatement",
+        (s) => s.kind === "whileStatement",
       ) as WhileStatement | undefined;
       assertExists(whileStatement);
       assertEquals(whileStatement.statements.length, 1);
@@ -1094,7 +1088,7 @@ describe("parse: Pascal", () => {
         "program Test;\nvar x: integer;\nbegin\nx := 0;\nwhile x < 3 do begin\nx := x + 1;\nend;\nend.",
       );
       const whileStatement = program.statements.find(
-        (s) => s.statementType === "whileStatement",
+        (s) => s.kind === "whileStatement",
       ) as WhileStatement | undefined;
       assertExists(whileStatement);
       assertEquals(whileStatement.statements.length, 1);
@@ -1109,12 +1103,9 @@ describe("parse: Pascal", () => {
       );
       assertEquals(program.statements.length, 2);
       const whileStatement = program.statements[1] as WhileStatement;
-      assertEquals(whileStatement.statementType, "whileStatement");
+      assertEquals(whileStatement.kind, "whileStatement");
       assertEquals(whileStatement.statements.length, 1);
-      assertEquals(
-        whileStatement.statements[0]?.statementType,
-        "variableAssignment",
-      );
+      assertEquals(whileStatement.statements[0]?.kind, "variableAssignment");
     });
 
     it("throws if WHILE has no boolean expression (EOF)", () => {
@@ -1161,7 +1152,7 @@ describe("parse: Pascal", () => {
         "program Test;\nvar i: integer;\nbegin\nfor i := 1 to 3 do i := i;\nend.",
       );
       const forStatement = program.statements.find(
-        (s) => s.statementType === "forStatement",
+        (s) => s.kind === "forStatement",
       ) as ForStatement | undefined;
       assertExists(forStatement);
     });
@@ -1172,7 +1163,7 @@ describe("parse: Pascal", () => {
         "program Test;\nvar i: integer;\nbegin\nfor i := 3 downto 1 do i := i;\nend.",
       );
       const forStatement = program.statements.find(
-        (s) => s.statementType === "forStatement",
+        (s) => s.kind === "forStatement",
       ) as ForStatement | undefined;
       assertExists(forStatement);
     });
@@ -1183,7 +1174,7 @@ describe("parse: Pascal", () => {
         "program Test;\nvar i: integer;\nbegin\nfor i := 1 to 3 do begin\ni := i;\nend;\nend.",
       );
       const forStatement = program.statements.find(
-        (s) => s.statementType === "forStatement",
+        (s) => s.kind === "forStatement",
       ) as ForStatement | undefined;
       assertExists(forStatement);
     });
@@ -1197,12 +1188,9 @@ describe("parse: Pascal", () => {
       );
       assertEquals(program.statements.length, 1);
       const forStatement = program.statements[0] as ForStatement;
-      assertEquals(forStatement.statementType, "forStatement");
+      assertEquals(forStatement.kind, "forStatement");
       assertEquals(forStatement.statements.length, 1);
-      assertEquals(
-        forStatement.statements[0]?.statementType,
-        "variableAssignment",
-      );
+      assertEquals(forStatement.statements[0]?.kind, "variableAssignment");
     });
 
     it("throws if FOR has no variable at all (EOF)", () => {
@@ -1325,7 +1313,7 @@ describe("parse: Pascal", () => {
         "program Test;\nvar arr: array[1..3] of integer;\nbegin\narr[1] := 5;\nend.",
       );
       const assignment = program.statements.find(
-        (s) => s.statementType === "variableAssignment",
+        (s) => s.kind === "variableAssignment",
       ) as VariableAssignment | undefined;
       assertExists(assignment);
       assertEquals(assignment.indexes.length, 1);
@@ -1337,7 +1325,7 @@ describe("parse: Pascal", () => {
         "program Test;\nvar s: string;\nbegin\ns[1] := 'a';\nend.",
       );
       const assignment = program.statements.find(
-        (s) => s.statementType === "variableAssignment",
+        (s) => s.kind === "variableAssignment",
       ) as VariableAssignment | undefined;
       assertExists(assignment);
       assertEquals(assignment.indexes.length, 1);
@@ -1400,7 +1388,7 @@ describe("parse: Pascal", () => {
         "program Test;\nvar arr: array[1..3] of string;\nbegin\narr[1] := 'a';\nend.",
       );
       const assignment = program.statements.find(
-        (s) => s.statementType === "variableAssignment",
+        (s) => s.kind === "variableAssignment",
       ) as VariableAssignment | undefined;
       assertExists(assignment);
       assertEquals(assignment.indexes.length, 1);
@@ -1477,7 +1465,7 @@ describe("parse: Pascal", () => {
         "program Test;\nbegin\nhome;\nend.",
       );
       const call = program.statements.find(
-        (s) => s.statementType === "procedureCall",
+        (s) => s.kind === "procedureCall",
       ) as ProcedureCall | undefined;
       assertExists(call);
       assertEquals(call.arguments.length, 0);
@@ -1549,7 +1537,7 @@ describe("parse: Pascal", () => {
         "program Test;\nvar x: integer;\nbegin\nx := 1 { comment }\nend.",
       );
       assertEquals(program.statements.length, 1);
-      assertEquals(program.statements[0]?.statementType, "variableAssignment");
+      assertEquals(program.statements[0]?.kind, "variableAssignment");
     });
 
     it("walks back past a comment an earlier eosCheck already skipped (nested single-statement bodies)", () => {
@@ -1567,12 +1555,12 @@ describe("parse: Pascal", () => {
       );
       assertEquals(program.statements.length, 1);
       const forStatement = program.statements[0] as ForStatement;
-      assertEquals(forStatement.statementType, "forStatement");
+      assertEquals(forStatement.kind, "forStatement");
       assertEquals(forStatement.statements.length, 1);
       const ifStatement = forStatement.statements[0] as IfStatement;
-      assertEquals(ifStatement.statementType, "ifStatement");
+      assertEquals(ifStatement.kind, "ifStatement");
       assertEquals(ifStatement.ifStatements.length, 1);
-      assertEquals(ifStatement.ifStatements[0]?.statementType, "procedureCall");
+      assertEquals(ifStatement.ifStatements[0]?.kind, "procedureCall");
     });
 
     it("throws if a semicolon is missing between two statements", () => {

@@ -18,28 +18,30 @@ import {
 import type { Options } from "../options.ts";
 
 export default (program: Program, _options: Options): number[][] => {
+  const turtleStart = turtleAddress(program);
+  const turtleVariableCount = getTurtleVariables(program).length;
+  const memoryNeeded = getMemoryNeeded(program);
+
   const pcode = [
     // line 1: global memory
     [
       PCode.ldin,
-      turtleAddress(program),
+      turtleStart,
       PCode.dupl,
       PCode.dupl,
       PCode.ldin,
       0, // address of the turtle pointer
       PCode.sptr,
       PCode.ldin,
-      getTurtleVariables(program).length,
+      turtleVariableCount,
       PCode.swap,
       PCode.sptr,
       PCode.incr,
       PCode.ldin,
-      getMemoryNeeded(program) + getTurtleVariables(program).length,
+      memoryNeeded + turtleVariableCount,
       PCode.zptr,
       PCode.ldin,
-      turtleAddress(program) +
-        getMemoryNeeded(program) +
-        getTurtleVariables(program).length,
+      turtleStart + memoryNeeded + turtleVariableCount,
       PCode.stmt,
     ],
     // line 2: turtle and keybuffer setup

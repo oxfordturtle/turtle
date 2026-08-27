@@ -20,19 +20,19 @@ const parseSimpleStatement = (
   // check for command
   const foo = find.command(routine, lexeme.content);
   if (foo) {
-    lexemes.next();
+    lexemes.advance();
     return parseProcedureCall(lexeme, lexemes, routine, foo);
   }
 
   // check for variable
   const bar = find.variable(routine, lexeme.content);
   if (bar) {
-    lexemes.next();
+    lexemes.advance();
     return parseVariableAssignment(lexeme, lexemes, routine, bar);
   }
 
   // otherwise create the variable as a global
-  const program = routine.__ === "Program" ? routine : getProgram(routine);
+  const program = routine.kind === "Program" ? routine : getProgram(routine);
   const baz = variable(lexemes, program);
   program.variables.push(baz);
   return parseVariableAssignment(lexeme, lexemes, routine, baz);

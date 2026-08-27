@@ -1,12 +1,8 @@
 import type { IdentifierLexeme } from "../../../lexer/lexeme.ts";
-import {
-  type Expression,
-  type ExpressionCommon,
-  makeExpression,
-} from "../expression.ts";
+import type { Expression } from "../expression.ts";
 
-export interface NamedArgument extends ExpressionCommon {
-  readonly expressionType: "namedArgument";
+export interface NamedArgument {
+  readonly kind: "namedArgument";
   readonly lexeme: IdentifierLexeme;
   readonly expression: Expression;
 }
@@ -15,8 +11,7 @@ const makeNamedArgument = (
   lexeme: IdentifierLexeme,
   expression: Expression,
 ): NamedArgument => ({
-  ...makeExpression(),
-  expressionType: "namedArgument",
+  kind: "namedArgument",
   lexeme,
   expression,
 });

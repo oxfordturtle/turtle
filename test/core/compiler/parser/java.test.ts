@@ -136,7 +136,7 @@ describe("parse: Java", () => {
         "class Test {\n// a comment\nint x = 1;\n// another comment\nvoid main () {}\n// trailing comment\n}",
       );
       assertEquals(program.statements.length, 1);
-      assertEquals(program.statements[0]?.statementType, "variableAssignment");
+      assertEquals(program.statements[0]?.kind, "variableAssignment");
       assertEquals(
         program.variables.map((v) => v.name),
         ["x"],
@@ -175,13 +175,13 @@ describe("parse: Java", () => {
         "class Test {\nvoid main () {\nint x = 0;\ndo {\nx = x + 1;\n} while (x < 3);\n}\n}",
       );
       const repeatStatement = bodyStatements("Java", program).find(
-        (s) => s.statementType === "repeatStatement",
+        (s) => s.kind === "repeatStatement",
       ) as RepeatStatement | undefined;
       assertExists(repeatStatement);
       assertEquals(repeatStatement.statements.length, 1);
       // the condition is negated (do-while loops until the condition is
       // false, unlike a repeat-until which is expressed directly)
-      assertEquals(repeatStatement.condition.expressionType, "compound");
+      assertEquals(repeatStatement.condition.kind, "compound");
     });
 
     it("throws if 'do' is not followed by an opening bracket", () => {
@@ -279,10 +279,13 @@ describe("parse: Java", () => {
       );
       const mainSub = program.subroutines.find((s) => s.name === "main");
       const call = mainSub?.statements.find(
-        (s) => s.statementType === "procedureCall",
+        (s) => s.kind === "procedureCall",
       ) as ProcedureCall | undefined;
       assertExists(call);
-      assertEquals(call.command.__ === "Subroutine" && call.command.name, "go");
+      assertEquals(
+        call.command.kind === "Subroutine" && call.command.name,
+        "go",
+      );
     });
 
     it("parses a typed function with a return statement", () => {
@@ -293,7 +296,7 @@ describe("parse: Java", () => {
       const sub = program.subroutines.find((s) => s.name === "doubleIt");
       assertExists(sub);
       const returnStatement = sub.statements.find(
-        (s) => s.statementType === "returnStatement",
+        (s) => s.kind === "returnStatement",
       ) as ReturnStatement | undefined;
       assertExists(returnStatement);
     });
@@ -391,11 +394,10 @@ describe("parse: Java", () => {
         "class Test {\nvoid main () {\nchar c = 'a';\nint x = (int)c;\n}\n}",
       );
       const assignment = bodyStatements("Java", program).find(
-        (s) =>
-          s.statementType === "variableAssignment" && s.variable.name === "x",
+        (s) => s.kind === "variableAssignment" && s.variable.name === "x",
       ) as VariableAssignment | undefined;
       assertExists(assignment);
-      assertEquals(assignment.value.expressionType, "cast");
+      assertEquals(assignment.value.kind, "cast");
     });
 
     it("does not wrap the expression in a cast if the types already match", () => {
@@ -404,10 +406,10 @@ describe("parse: Java", () => {
         "class Test {\nvoid main () {\nint x = (int)5;\n}\n}",
       );
       const assignment = bodyStatements("Java", program).find(
-        (s) => s.statementType === "variableAssignment",
+        (s) => s.kind === "variableAssignment",
       ) as VariableAssignment | undefined;
       assertExists(assignment);
-      assertEquals(assignment.value.expressionType, "integer");
+      assertEquals(assignment.value.kind, "integer");
     });
 
     it("throws when casting an expression as void", () => {
@@ -542,7 +544,7 @@ describe("parse: Java", () => {
         wrapProgram("Java", "if (true) { x = 1;", "int x;"),
       );
       const ifStatement = bodyStatements("Java", program).find(
-        (s) => s.statementType === "ifStatement",
+        (s) => s.kind === "ifStatement",
       ) as IfStatement | undefined;
       assertExists(ifStatement);
     });
@@ -755,7 +757,7 @@ describe("parse: Java", () => {
         wrapProgram("Java", "for (int i = 0; i < 3; i = i + 1) {}"),
       );
       const forStatement = bodyStatements("Java", program).find(
-        (s) => s.statementType === "forStatement",
+        (s) => s.kind === "forStatement",
       ) as ForStatement | undefined;
       assertExists(forStatement);
       assertEquals(forStatement.initialisation.variable.name, "i");
@@ -816,12 +818,9 @@ describe("parse: Java", () => {
         wrapProgram("Java", "while (true) {\nbreak;\n}"),
       );
       const whileStatement = bodyStatements("Java", program)[0] as unknown as {
-        statements: { statementType: string }[];
+        statements: { kind: string }[];
       };
-      assertEquals(
-        whileStatement.statements[0]?.statementType,
-        "breakStatement",
-      );
+      assertEquals(whileStatement.statements[0]?.kind, "breakStatement");
     });
 
     it("parses 'continue' inside a for loop as a continueStatement", () => {
@@ -833,10 +832,7 @@ describe("parse: Java", () => {
         ),
       );
       const forStatement = bodyStatements("Java", program)[0] as ForStatement;
-      assertEquals(
-        forStatement.statements[0]?.statementType,
-        "continueStatement",
-      );
+      assertEquals(forStatement.statements[0]?.kind, "continueStatement");
     });
 
     it("parses 'break' inside a do-while loop (RepeatStatement)", () => {
@@ -848,10 +844,7 @@ describe("parse: Java", () => {
         "Java",
         program,
       )[0] as RepeatStatement;
-      assertEquals(
-        repeatStatement.statements[0]?.statementType,
-        "breakStatement",
-      );
+      assertEquals(repeatStatement.statements[0]?.kind, "breakStatement");
     });
 
     it("throws if 'break' occurs outside any loop", () => {
@@ -878,7 +871,7 @@ describe("parse: Java", () => {
         wrapProgram("Java", "arr[1] = 5;", "int[3] arr;"),
       );
       const assignment = bodyStatements("Java", program).find(
-        (s) => s.statementType === "variableAssignment",
+        (s) => s.kind === "variableAssignment",
       ) as VariableAssignment | undefined;
       assertExists(assignment);
       assertEquals(assignment.indexes.length, 1);
@@ -898,7 +891,7 @@ describe("parse: Java", () => {
         wrapProgram("Java", "s[0] = 'a';", "String s;"),
       );
       const assignment = bodyStatements("Java", program).find(
-        (s) => s.statementType === "variableAssignment",
+        (s) => s.kind === "variableAssignment",
       ) as VariableAssignment | undefined;
       assertExists(assignment);
       assertEquals(assignment.indexes.length, 1);
@@ -934,7 +927,7 @@ describe("parse: Java", () => {
         wrapProgram("Java", "strs[1][2] = 'a';", "String[3] strs;"),
       );
       const assignment = bodyStatements("Java", program).find(
-        (s) => s.statementType === "variableAssignment",
+        (s) => s.kind === "variableAssignment",
       ) as VariableAssignment | undefined;
       assertExists(assignment);
       assertEquals(assignment.indexes.length, 2);
@@ -1052,7 +1045,7 @@ describe("parse: Java", () => {
     it("parses a procedure call with the right number of arguments", () => {
       const program = parseProgram("Java", wrapProgram("Java", "forward(10);"));
       const call = bodyStatements("Java", program).find(
-        (s) => s.statementType === "procedureCall",
+        (s) => s.kind === "procedureCall",
       ) as ProcedureCall | undefined;
       assertExists(call);
       assertEquals(call.arguments.length, 1);
@@ -1112,7 +1105,7 @@ describe("parse: Java", () => {
         wrapProgram("Java", "// hello\nint x = 1;"),
       );
       const statements = bodyStatements("Java", program);
-      assertEquals(statements[0]?.statementType, "passStatement");
+      assertEquals(statements[0]?.kind, "passStatement");
     });
 
     it("parses a 'final' constant declared inside a method body", () => {

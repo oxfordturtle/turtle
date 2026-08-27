@@ -1,17 +1,15 @@
 import type { Input } from "@/core/constants.ts";
 import type { QueryCodeLexeme } from "../../../lexer/lexeme.ts";
-import { type ExpressionCommon, makeExpression } from "../expression.ts";
 
-export interface QueryValue extends ExpressionCommon {
-  readonly expressionType: "query";
+export interface QueryValue {
+  readonly kind: "query";
   readonly lexeme: QueryCodeLexeme;
   readonly type: "integer";
   readonly input: Input;
 }
 
 const makeQueryValue = (lexeme: QueryCodeLexeme, input: Input): QueryValue => ({
-  ...makeExpression(),
-  expressionType: "query",
+  kind: "query",
   lexeme,
   type: "integer",
   input,

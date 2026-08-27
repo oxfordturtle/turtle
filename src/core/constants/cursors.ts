@@ -1,12 +1,10 @@
 export interface Cursor {
-  readonly __: "Cursor";
   readonly index: number;
   readonly name: string;
   readonly css: string;
 }
 
 const cursor = (index: number, name: string, css: string): Cursor => ({
-  __: "Cursor",
   index,
   name,
   css,

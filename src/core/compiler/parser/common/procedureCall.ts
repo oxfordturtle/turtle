@@ -1,4 +1,4 @@
-import type { Command } from "@/core/constants.ts";
+import { type Command, traits } from "@/core/constants.ts";
 import type { IdentifierLexeme } from "../../lexer/lexeme.ts";
 import { CompilerError } from "../../tools/error.ts";
 import basicBody from "../basic/body.ts";
@@ -20,14 +20,9 @@ const parseProcedureCall = (
   routine: Routine,
   command: Command | Subroutine,
 ): ProcedureCall => {
-  if (
-    routine.language === "BASIC" ||
-    routine.language === "Pascal" ||
-    routine.language === "C" ||
-    routine.language === "Java"
-  ) {
+  if (traits[routine.language].statementCalls === "procedures-only") {
     const commandType =
-      command.__ === "Command" ? command.type : getSubroutineType(command);
+      command.kind === "Command" ? command.type : getSubroutineType(command);
     if (commandType === "function") {
       throw new CompilerError("{lex} is a function, not a procedure.", lexeme);
     }
@@ -36,16 +31,16 @@ const parseProcedureCall = (
   const procedureCall = makeProcedureCall(lexeme, command);
   parseArguments(lexeme, lexemes, routine, procedureCall);
   if (
-    procedureCall.command.__ === "Subroutine" &&
+    procedureCall.command.kind === "Subroutine" &&
     procedureCall.command !== routine
   ) {
     if (
       routine.language === "BASIC" &&
       procedureCall.command.statements.length === 0
     ) {
-      const previousLexemeIndex = lexemes.index;
+      const resumeFrom = lexemes.mark();
       basicBody(lexemes, procedureCall.command);
-      lexemes.index = previousLexemeIndex;
+      lexemes.seek(resumeFrom);
     }
   }
 

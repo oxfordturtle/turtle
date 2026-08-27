@@ -24,7 +24,7 @@ export default (
   variable: Variable,
 ): VariableAssignment | PassStatement => {
   const indexes: Expression[] = [];
-  if (lexemes.get()?.content === "[") {
+  if (lexemes.peek()?.content === "[") {
     // deno-coverage-ignore-start -- the isArray branch is unreachable: no
     // Python variable is ever an array - python/type.ts returns empty
     // arrayDimensions on every path (Python has no array declaration syntax;
@@ -34,60 +34,57 @@ export default (
     // because the never-run block's zero count is recorded on both of its
     // brace lines)
     if (isArray(variable)) {
-      lexemes.next();
-      while (lexemes.get() && lexemes.get()?.content !== "]") {
+      lexemes.advance();
+      while (!lexemes.atEnd() && lexemes.peek()?.content !== "]") {
         let exp = parseExpression(lexemes, routine);
         exp = typeCheck(routine.language, exp, variable);
         indexes.push(exp);
-        if (lexemes.get()?.content === "]" && lexemes.get(1)?.content === "[") {
-          lexemes.next();
-          lexemes.next();
+        if (
+          lexemes.peek()?.content === "]" &&
+          lexemes.peek(1)?.content === "["
+        ) {
+          lexemes.advance();
+          lexemes.advance();
         }
       }
-      if (!lexemes.get()) {
+      if (lexemes.atEnd()) {
         throw new CompilerError(
           'Closing bracket "]" needed after array indexes.',
-          lexemes.get(-1),
+          lexemes.peek(-1),
         );
       }
-      lexemes.next();
+      lexemes.advance();
     } else if (variable.type === "string") {
       // deno-coverage-ignore-stop
-      lexemes.next();
+      lexemes.advance();
       let exp = parseExpression(lexemes, routine);
       exp = typeCheck(routine.language, exp, "integer");
       indexes.push(exp);
-      if (!lexemes.get() || lexemes.get()?.content !== "]") {
-        throw new CompilerError(
-          'Closing bracket "]" missing after string variable index.',
-          exp.lexeme,
-        );
-      }
-      lexemes.next();
+      lexemes.expect(
+        "]",
+        'Closing bracket "]" missing after string variable index.',
+        exp.lexeme,
+      );
     } else if (variable.isList) {
-      lexemes.next();
+      lexemes.advance();
       let exp = parseExpression(lexemes, routine);
       exp = typeCheck(routine.language, exp, "integer");
       indexes.push(exp);
-      if (!lexemes.get() || lexemes.get()?.content !== "]") {
-        throw new CompilerError(
-          'Closing bracket "]" missing after list variable index.',
-          exp.lexeme,
-        );
-      }
-      lexemes.next();
-      if (variable.isListOfLists && lexemes.get()?.content === "[") {
-        lexemes.next();
+      lexemes.expect(
+        "]",
+        'Closing bracket "]" missing after list variable index.',
+        exp.lexeme,
+      );
+      if (variable.isListOfLists && lexemes.peek()?.content === "[") {
+        lexemes.advance();
         let exp2 = parseExpression(lexemes, routine);
         exp2 = typeCheck(routine.language, exp2, "integer");
         indexes.push(exp2);
-        if (!lexemes.get() || lexemes.get()?.content !== "]") {
-          throw new CompilerError(
-            'Closing bracket "]" missing after list variable index.',
-            exp2.lexeme,
-          );
-        }
-        lexemes.next();
+        lexemes.expect(
+          "]",
+          'Closing bracket "]" missing after list variable index.',
+          exp2.lexeme,
+        );
       }
     } else {
       throw new CompilerError(
@@ -113,29 +110,29 @@ export default (
   }
   // deno-coverage-ignore-stop
 
-  const assignmentLexeme = lexemes.get();
+  const assignmentLexeme = lexemes.peek();
   if (!assignmentLexeme) {
     throw new CompilerError(
       'Variable must be followed by assignment operator "=".',
-      lexemes.get(-1),
+      lexemes.peek(-1),
     );
   }
   if (assignmentLexeme.content === ":") {
     if (variable.turtle) {
       throw new CompilerError(
         "{lex} is the name of a predefined Turtle attribute, and cannot be given a type hit.",
-        lexemes.get(-1),
+        lexemes.peek(-1),
       );
     }
     throw new CompilerError(
       "Type of variable {lex} has already been given.",
-      lexemes.get(-1),
+      lexemes.peek(-1),
     );
   }
   if (assignmentLexeme.content === "[") {
     throw new CompilerError(
       "{lex} is not a string or list variable.",
-      lexemes.get(-1),
+      lexemes.peek(-1),
     );
   }
   if (
@@ -144,15 +141,15 @@ export default (
   ) {
     throw new CompilerError(
       'Variable must be followed by assignment operator "=".',
-      lexemes.get(),
+      lexemes.peek(),
     );
   }
-  lexemes.next();
+  lexemes.advance();
 
-  if (!lexemes.get()) {
+  if (lexemes.atEnd()) {
     throw new CompilerError(
       `Variable "${variable.name}" must be assigned a value.`,
-      lexemes.get(-1),
+      lexemes.peek(-1),
     );
   }
   let value = parseExpression(lexemes, routine);

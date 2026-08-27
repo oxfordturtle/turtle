@@ -18,42 +18,39 @@ const parseVariableAssignment = (
   variable: Variable,
 ): VariableAssignment => {
   const indexes: Expression[] = [];
-  if (lexemes.get()?.content === "[") {
+  if (lexemes.peek()?.content === "[") {
     if (isArray(variable)) {
-      lexemes.next();
-      while (lexemes.get() && lexemes.get()?.content !== "]") {
+      lexemes.advance();
+      while (!lexemes.atEnd() && lexemes.peek()?.content !== "]") {
         let exp = parseExpression(lexemes, routine);
         exp = typeCheck(routine.language, exp, "integer");
         indexes.push(exp);
-        if (lexemes.get()?.content === ",") {
-          lexemes.next();
-          if (lexemes.get()?.content === "]") {
+        if (lexemes.match(",")) {
+          if (lexemes.peek()?.content === "]") {
             throw new CompilerError(
               "Trailing comma at the end of array indexes.",
-              lexemes.get(-1),
+              lexemes.peek(-1),
             );
           }
         }
       }
-      if (!lexemes.get()) {
+      if (lexemes.atEnd()) {
         throw new CompilerError(
           'Closing bracket "]" needed after array indexes.',
-          lexemes.get(-1),
+          lexemes.peek(-1),
         );
       }
-      lexemes.next();
+      lexemes.advance();
     } else if (variable.type === "string") {
-      lexemes.next();
+      lexemes.advance();
       let exp = parseExpression(lexemes, routine);
       exp = typeCheck(routine.language, exp, "integer");
       indexes.push(exp);
-      if (!lexemes.get() || lexemes.get()?.content !== "]") {
-        throw new CompilerError(
-          'Closing bracket "]" missing after string variable index.',
-          exp.lexeme,
-        );
-      }
-      lexemes.next();
+      lexemes.expect(
+        "]",
+        'Closing bracket "]" missing after string variable index.',
+        exp.lexeme,
+      );
     } else {
       throw new CompilerError(
         "{lex} is not a string or array variable.",
@@ -75,7 +72,7 @@ const parseVariableAssignment = (
     }
   }
 
-  const assignmentLexeme = lexemes.get();
+  const assignmentLexeme = lexemes.peek();
   if (
     !assignmentLexeme ||
     assignmentLexeme.type !== "operator" ||
@@ -86,9 +83,9 @@ const parseVariableAssignment = (
       variableLexeme,
     );
   }
-  lexemes.next();
+  lexemes.advance();
 
-  if (!lexemes.get()) {
+  if (lexemes.atEnd()) {
     throw new CompilerError(
       `Variable "${variable.name}" must be assigned a value.`,
       assignmentLexeme,

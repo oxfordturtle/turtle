@@ -3,11 +3,11 @@ import makeVariable, { type Variable } from "../variable.ts";
 import makeRoutine, { type RoutineCommon } from "../routine.ts";
 
 export interface Program extends RoutineCommon {
-  readonly __: "Program";
+  readonly kind: "Program";
 }
 
 const makeProgram = (language: Language, name = "!"): Program => ({
-  __: "Program",
+  kind: "Program",
   ...makeRoutine(language, name),
 });
 

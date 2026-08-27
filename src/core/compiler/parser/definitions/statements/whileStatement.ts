@@ -1,14 +1,11 @@
 import type { KeywordLexeme } from "../../../lexer/lexeme.ts";
 import type { Constant } from "../constant.ts";
 import type { Expression } from "../expression.ts";
-import makeStatement, {
-  type Statement,
-  type StatementCommon,
-} from "../statement.ts";
+import type { Statement } from "../statement.ts";
 import type { Variable } from "../variable.ts";
 
-export interface WhileStatement extends StatementCommon {
-  readonly statementType: "whileStatement";
+export interface WhileStatement {
+  readonly kind: "whileStatement";
   readonly lexeme: KeywordLexeme;
   readonly condition: Expression;
   readonly statements: Statement[];
@@ -20,8 +17,7 @@ const makeWhileStatement = (
   lexeme: KeywordLexeme,
   condition: Expression,
 ): WhileStatement => ({
-  ...makeStatement(),
-  statementType: "whileStatement",
+  kind: "whileStatement",
   lexeme,
   condition,
   statements: [],

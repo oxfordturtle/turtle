@@ -2,7 +2,7 @@ import { CompilerError } from "../../tools/error.ts";
 import type { Lexemes } from "../definitions/lexemes.ts";
 import type { Routine } from "../definitions/routine.ts";
 import makeVariable, { type Variable } from "../definitions/variable.ts";
-import identifier from "./identifier.ts";
+import identifier from "../cFamily/identifier.ts";
 import type from "./type.ts";
 
 export default function variable(
@@ -17,7 +17,7 @@ export default function variable(
   if (variableType === null) {
     throw new CompilerError(
       'Variable cannot be void (expected "boolean", "number", or "string").',
-      lexemes.get(),
+      lexemes.peek(),
     );
   }
 

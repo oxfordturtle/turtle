@@ -5,7 +5,7 @@ import typeCheck from "../common/typeCheck.ts";
 import constant, { type Constant } from "../definitions/constant.ts";
 import type { Lexemes } from "../definitions/lexemes.ts";
 import type { Routine } from "../definitions/routine.ts";
-import identifier from "./identifier.ts";
+import identifier from "../cFamily/identifier.ts";
 import type from "./type.ts";
 
 export default (
@@ -19,26 +19,20 @@ export default (
   if (constantType === null) {
     throw new CompilerError(
       'Constant type cannot be void (expected "boolean", "number", or "string").',
-      lexemes.get(),
+      lexemes.peek(),
     );
   }
   if (arrayDimensions.length > 0) {
-    throw new CompilerError("Constant cannot be an array.", lexemes.get());
+    throw new CompilerError("Constant cannot be an array.", lexemes.peek());
   }
 
-  if (!lexemes.get()) {
+  if (lexemes.atEnd()) {
     throw new CompilerError(
       `Constant ${name} must be assigned a value.`,
-      lexemes.get(-1),
+      lexemes.peek(-1),
     );
   }
-  if (lexemes.get()?.content !== "=") {
-    throw new CompilerError(
-      `Constant ${name} must be assigned a value.`,
-      lexemes.get(),
-    );
-  }
-  lexemes.next();
+  lexemes.expect("=", `Constant ${name} must be assigned a value.`);
 
   const exp = parseExpression(lexemes, routine);
   typeCheck(routine.language, exp, constantType);

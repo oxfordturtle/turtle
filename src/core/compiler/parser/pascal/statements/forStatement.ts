@@ -7,7 +7,6 @@ import { token } from "../../../tokenizer/token.ts";
 import { CompilerError } from "../../../tools/error.ts";
 import parseExpression from "../../common/expression.ts";
 import * as find from "../../common/find.ts";
-import skipComments from "../../common/skipComments.ts";
 import typeCheck from "../../common/typeCheck.ts";
 import makeCompoundExpression from "../../definitions/expressions/compoundExpression.ts";
 import makeIntegerValue from "../../definitions/expressions/integerValue.ts";
@@ -29,7 +28,7 @@ const parseForStatement = (
   lexemes: Lexemes,
   routine: Program | Subroutine,
 ): ForStatement => {
-  const variableLexeme = lexemes.get();
+  const variableLexeme = lexemes.peek();
   if (!variableLexeme) {
     throw new CompilerError(
       '"FOR" must be followed by an integer variable.',
@@ -67,7 +66,7 @@ const parseForStatement = (
       variableLexeme,
     );
   }
-  lexemes.next();
+  lexemes.advance();
 
   const initialisation = parseVariableAssignment(
     variableLexeme,
@@ -76,7 +75,7 @@ const parseForStatement = (
     variable,
   );
 
-  const toLexeme = lexemes.get();
+  const toLexeme = lexemes.peek();
   const toOrDownTo = toLexeme?.content?.toLowerCase();
   if (!toLexeme || (toOrDownTo !== "to" && toOrDownTo !== "downto")) {
     throw new CompilerError(
@@ -100,9 +99,9 @@ const parseForStatement = (
   const changeOperator = toOrDownTo === "to" ? "plus" : "subt";
   const value = makeCompoundExpression(plusLexeme, left, right, changeOperator);
   const change = makeVariableAssignment(assignmentLexeme, variable, [], value);
-  lexemes.next();
+  lexemes.advance();
 
-  if (!lexemes.get()) {
+  if (lexemes.atEnd()) {
     throw new CompilerError(
       `"${toOrDownTo.toUpperCase()}" must be followed by an integer (or integer constant).`,
       toLexeme,
@@ -132,17 +131,17 @@ const parseForStatement = (
     change,
   );
 
-  const doLexeme = lexemes.get();
+  const doLexeme = lexemes.peek();
   if (!doLexeme) {
     throw new CompilerError(
       '"FOR" loop range must be followed by "DO".',
-      lexemes.get(-1),
+      lexemes.peek(-1),
     );
   }
-  lexemes.next();
+  lexemes.advance();
 
-  skipComments(lexemes);
-  const firstSubLexeme = lexemes.get();
+  lexemes.skipComments();
+  const firstSubLexeme = lexemes.peek();
   if (!firstSubLexeme) {
     throw new CompilerError(
       'No commands found after "FOR" loop initialisation.',
@@ -150,7 +149,7 @@ const parseForStatement = (
     );
   }
   if (firstSubLexeme.content?.toLowerCase() === "begin") {
-    lexemes.next();
+    lexemes.advance();
     forStatement.statements.push(...parseBlock(lexemes, routine, "begin"));
   } else {
     forStatement.statements.push(

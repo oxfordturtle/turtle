@@ -1,8 +1,8 @@
 import { type KeywordLexeme } from "../../../lexer/lexeme.ts";
 import { CompilerError } from "../../../tools/error.ts";
 import parseExpression from "../../common/expression.ts";
-import skipComments from "../../common/skipComments.ts";
 import typeCheck from "../../common/typeCheck.ts";
+import type { ParserContext } from "../../definitions/context.ts";
 import type { Lexemes } from "../../definitions/lexemes.ts";
 import { type Routine } from "../../definitions/routine.ts";
 import makeIfStatement, {
@@ -13,9 +13,10 @@ import parseBlock from "./block.ts";
 const parseIfStatement = (
   ifLexeme: KeywordLexeme,
   lexemes: Lexemes,
+  context: ParserContext,
   routine: Routine,
 ): IfStatement => {
-  if (!lexemes.get()) {
+  if (lexemes.atEnd()) {
     throw new CompilerError(
       `"${ifLexeme.content}" must be followed by a Boolean expression.`,
       ifLexeme,
@@ -24,124 +25,125 @@ const parseIfStatement = (
   let condition = parseExpression(lexemes, routine);
   condition = typeCheck(routine.language, condition, "boolean");
 
-  if (!lexemes.get()) {
+  if (lexemes.atEnd()) {
     throw new CompilerError(
       `"${ifLexeme.content} <expression>" must be followed by a colon.`,
       condition.lexeme,
     );
   }
-  lexemes.next();
+  lexemes.advance();
 
   // whileStatement.ts's equivalent check for why)
-  skipComments(lexemes);
-  if (!lexemes.get()) {
+  lexemes.skipComments();
+  if (lexemes.atEnd()) {
     throw new CompilerError(
       `No statements found after "${ifLexeme.content} <expression>:".`,
-      lexemes.get(-1),
+      lexemes.peek(-1),
     );
   }
-  if (lexemes.get()?.type !== "newline") {
+  if (lexemes.peek()?.type !== "newline") {
     throw new CompilerError(
       `Statements following "${ifLexeme.content} <expression>:" must be on a new line.`,
-      lexemes.get(),
+      lexemes.peek(),
     );
   }
-  lexemes.next();
+  lexemes.advance();
 
   const thisIfStatement = makeIfStatement(ifLexeme, condition);
 
-  if (!lexemes.get()) {
+  if (lexemes.atEnd()) {
     throw new CompilerError(
       `No statements found after "${ifLexeme.content} <expression>:".`,
-      lexemes.get(-1),
+      lexemes.peek(-1),
     );
   }
-  if (lexemes.get()?.type !== "indent") {
+  if (lexemes.peek()?.type !== "indent") {
     throw new CompilerError(
       `Statements following "${ifLexeme.content} <expression>:" must be indented.`,
-      lexemes.get(),
+      lexemes.peek(),
     );
   }
-  lexemes.next();
+  lexemes.advance();
 
-  if (!lexemes.get()) {
+  if (lexemes.atEnd()) {
     throw new CompilerError(
       `No statements found after "${ifLexeme.content} <expression>:".`,
-      lexemes.get(-1),
+      lexemes.peek(-1),
     );
   }
-  thisIfStatement.ifStatements.push(...parseBlock(lexemes, routine));
+  thisIfStatement.ifStatements.push(...parseBlock(lexemes, context, routine));
 
   // pass over any new lines and comments (a comment can appear between the
   // dedent that closes the if-block and a following "elif"/"else")
   while (
-    lexemes.get()?.type === "newline" ||
-    lexemes.get()?.type === "comment"
+    lexemes.peek()?.type === "newline" ||
+    lexemes.peek()?.type === "comment"
   ) {
-    lexemes.next();
+    lexemes.advance();
   }
 
-  const nextLexeme = lexemes.get();
+  const nextLexeme = lexemes.peek();
   if (nextLexeme) {
     if (nextLexeme.content === "elif") {
-      lexemes.next();
+      lexemes.advance();
       thisIfStatement.elseStatements.push(
-        parseIfStatement(nextLexeme as KeywordLexeme, lexemes, routine),
+        parseIfStatement(
+          nextLexeme as KeywordLexeme,
+          lexemes,
+          context,
+          routine,
+        ),
       );
     } else if (nextLexeme.content === "else") {
-      lexemes.next();
+      lexemes.advance();
 
-      if (!lexemes.get()) {
+      if (lexemes.atEnd()) {
         throw new CompilerError(
           '"else" must be followed by a colon.',
-          lexemes.get(-1),
+          lexemes.peek(-1),
         );
       }
-      if (lexemes.get()?.content !== ":") {
-        throw new CompilerError(
-          '"else" must be followed by a colon.',
-          lexemes.get(),
-        );
-      }
-      lexemes.next();
+      lexemes.expect(":", '"else" must be followed by a colon.');
 
       // whileStatement.ts's equivalent check for why)
-      skipComments(lexemes);
-      if (!lexemes.get()) {
+      lexemes.skipComments();
+      if (lexemes.atEnd()) {
         throw new CompilerError(
           'No statements found after "else:".',
-          lexemes.get(-1),
+          lexemes.peek(-1),
         );
       }
-      if (lexemes.get()?.type !== "newline") {
+      if (lexemes.peek()?.type !== "newline") {
         throw new CompilerError(
           'Statements following "else:" must be on a new line.',
-          lexemes.get(),
+          lexemes.peek(),
         );
       }
-      lexemes.next();
+      lexemes.advance();
 
-      if (!lexemes.get()) {
+      if (lexemes.atEnd()) {
         throw new CompilerError(
           'No statements found after "else:".',
-          lexemes.get(-1),
+          lexemes.peek(-1),
         );
       }
-      if (lexemes.get()?.type !== "indent") {
+      if (lexemes.peek()?.type !== "indent") {
         throw new CompilerError(
           'Statements following "else:" must be indented.',
-          lexemes.get(),
+          lexemes.peek(),
         );
       }
-      lexemes.next();
+      lexemes.advance();
 
-      if (!lexemes.get()) {
+      if (lexemes.atEnd()) {
         throw new CompilerError(
           'No statements found after "else:".',
-          lexemes.get(-1),
+          lexemes.peek(-1),
         );
       }
-      thisIfStatement.elseStatements.push(...parseBlock(lexemes, routine));
+      thisIfStatement.elseStatements.push(
+        ...parseBlock(lexemes, context, routine),
+      );
     }
   }
 

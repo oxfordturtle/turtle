@@ -3,6 +3,7 @@ import {
   colours,
   type Command,
   commands,
+  foldCase,
   type Input,
   inputs,
 } from "@/core/constants.ts";
@@ -19,29 +20,29 @@ export const constant = (
   routine: Routine,
   name: string,
 ): Constant | undefined => {
-  const searchName = routine.language === "Pascal" ? name.toLowerCase() : name;
+  const searchName = foldCase(routine.language, name);
   const match = routine.constants.find((x) => x.name === searchName);
   if (match) {
     return match;
   }
-  if (routine.__ === "Subroutine") {
+  if (routine.kind === "Subroutine") {
     return constant(routine.parent, name);
   }
 };
 
 export const colour = (routine: Routine, name: string): Colour | undefined => {
-  const tempName = routine.language === "Pascal" ? name.toLowerCase() : name;
+  const tempName = foldCase(routine.language, name);
   const searchName = tempName.replace(/gray$/, "grey").replace(/GRAY$/, "GREY"); // allow American spelling
   return colours.find((x) => x.names[routine.language] === searchName);
 };
 
 export const input = (routine: Routine, name: string): Input | undefined => {
-  const searchName = routine.language === "Pascal" ? name.toLowerCase() : name;
+  const searchName = foldCase(routine.language, name);
   return inputs.find((x) => x.name === searchName);
 };
 
 export const query = (routine: Routine, name: string): Input | undefined => {
-  const searchName = routine.language === "Pascal" ? name.toLowerCase() : name;
+  const searchName = foldCase(routine.language, name);
   return inputs
     .filter((input) => input.value < 0)
     .find((x) => x.name === searchName);
@@ -52,10 +53,10 @@ export const variable = (
   name: string,
   origin: Routine = routine,
 ): Variable | undefined => {
-  const searchName = routine.language === "Pascal" ? name.toLowerCase() : name;
+  const searchName = foldCase(routine.language, name);
 
   const turtleVariables =
-    routine.__ === "Program"
+    routine.kind === "Program"
       ? getTurtleVariables(routine)
       : getTurtleVariables(getProgram(routine));
   const turtleVariable = turtleVariables.find((x) => x.name === searchName);
@@ -63,7 +64,7 @@ export const variable = (
     return turtleVariable;
   }
 
-  if (routine.language === "Python" && routine.__ === "Subroutine") {
+  if (routine.language === "Python" && routine.kind === "Subroutine") {
     const isGlobal = routine.globals.indexOf(name) > -1;
     if (isGlobal) {
       return variable(getProgram(routine), name, origin);
@@ -71,7 +72,7 @@ export const variable = (
   }
 
   let match = routine.variables.find((x) => x.name === name);
-  if (match === undefined && routine.__ === "Subroutine") {
+  if (match === undefined && routine.kind === "Subroutine") {
     match = variable(routine.parent, name, origin);
   }
   if (match) {
@@ -98,16 +99,14 @@ export const assignmentTarget = (
   routine: Routine,
   name: string,
 ): Variable | undefined => {
-  // deno-coverage-ignore-start -- the Pascal arm is unreachable:
-  // assignmentTarget exists for Python's binding rules (see the doc comment
-  // above) and is only called from python/statement.ts and
-  // python/statements/forStatement.ts; the lower-casing is kept for symmetry
-  // with variable() above
-  const searchName = routine.language === "Pascal" ? name.toLowerCase() : name;
-  // deno-coverage-ignore-stop
+  // foldCase is a no-op here in practice: assignmentTarget exists for
+  // Python's binding rules (see the doc comment above) and is only called from
+  // python/statement.ts and python/statements/forStatement.ts. It is kept for
+  // symmetry with variable() above.
+  const searchName = foldCase(routine.language, name);
 
   const turtleVariables =
-    routine.__ === "Program"
+    routine.kind === "Program"
       ? getTurtleVariables(routine)
       : getTurtleVariables(getProgram(routine));
   const turtleVariable = turtleVariables.find((x) => x.name === searchName);
@@ -115,7 +114,7 @@ export const assignmentTarget = (
     return turtleVariable;
   }
 
-  if (routine.language === "Python" && routine.__ === "Subroutine") {
+  if (routine.language === "Python" && routine.kind === "Subroutine") {
     if (routine.globals.indexOf(name) > -1) {
       return variable(getProgram(routine), name);
     }
@@ -128,12 +127,12 @@ export const assignmentTarget = (
 };
 
 export const isDuplicate = (routine: Routine, name: string): boolean => {
-  const searchName = routine.language === "Pascal" ? name.toLowerCase() : name;
+  const searchName = foldCase(routine.language, name);
   if (routine.constants.some((x) => x.name === searchName)) return true;
   // no check against `routine.globals`, unlike `nonlocals` below:
   // python/subroutine.ts's hoisting pass has already created the Program-level
   // variable, so the `variables` check below catches it first
-  if (routine.language === "Python" && routine.__ === "Subroutine") {
+  if (routine.language === "Python" && routine.kind === "Subroutine") {
     if (routine.nonlocals.some((x) => x === searchName)) return true;
   }
   if (routine.variables.some((x) => x.name === searchName)) return true;
@@ -145,12 +144,12 @@ export const subroutine = (
   routine: Routine,
   name: string,
 ): Subroutine | undefined => {
-  const searchName = routine.language === "Pascal" ? name.toLowerCase() : name;
+  const searchName = foldCase(routine.language, name);
   const match = routine.subroutines.find((x) => x.name === searchName);
   if (match) {
     return match;
   }
-  if (routine.__ === "Subroutine") {
+  if (routine.kind === "Subroutine") {
     // only needed for Pascal, where a recursive self-reference occurs before
     // the subroutine has been added to its parent
     if (routine.name === searchName) {
@@ -166,7 +165,7 @@ export const nativeCommand = (
   // whether the method's receiver is a list
   receiverIsList?: boolean,
 ): Command | undefined => {
-  const searchName = routine.language === "Pascal" ? name.toLowerCase() : name;
+  const searchName = foldCase(routine.language, name);
   const candidates = commands.filter(
     (x) => x.names[routine.language] === searchName,
   );

@@ -5,7 +5,7 @@ import type { Variable } from "../variable.ts";
 import type { Program } from "./program.ts";
 
 export interface Subroutine extends RoutineCommon {
-  readonly __: "Subroutine";
+  readonly kind: "Subroutine";
   readonly lexeme: KeywordLexeme | TypeLexeme; // the routine's initial (defining) lexeme
   readonly parent: Program | Subroutine;
   readonly level: -1; // needed for the usage data table
@@ -14,7 +14,6 @@ export interface Subroutine extends RoutineCommon {
   globals: string[]; // for Python
   nonlocals: string[]; // for Python
   indent: number; // for Python
-  startLine: number; // first line in PCode (fixed later by the encoder module)
 }
 
 const makeSubroutine = (
@@ -22,7 +21,7 @@ const makeSubroutine = (
   parent: Program | Subroutine,
   name = "",
 ): Subroutine => ({
-  __: "Subroutine",
+  kind: "Subroutine",
   ...makeRoutine(parent.language, name),
   lexeme,
   parent,
@@ -32,7 +31,6 @@ const makeSubroutine = (
   globals: [],
   nonlocals: [],
   indent: 0,
-  startLine: 0,
 });
 
 export default makeSubroutine;
@@ -41,7 +39,7 @@ export const getParameters = (subroutine: Subroutine): Variable[] =>
   subroutine.variables.filter((x) => x.isParameter);
 
 export const getProgram = (subroutine: Subroutine): Program =>
-  subroutine.parent.__ === "Program"
+  subroutine.parent.kind === "Program"
     ? subroutine.parent
     : getProgram(subroutine.parent);
 

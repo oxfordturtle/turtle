@@ -1,4 +1,9 @@
-import type { Category, Expression, Language } from "@/core/constants.ts";
+import {
+  type Category,
+  type Expression,
+  foldCase,
+  type Language,
+} from "@/core/constants.ts";
 import type { Lexeme } from "../lexer/lexeme.ts";
 import usageExpression, { type UsageExpression } from "./usageExpression.ts";
 
@@ -38,20 +43,19 @@ const isUsed = (
   expression: Expression,
 ) => {
   const name =
-    expression.__ === "Command" ? expression.names[language] : expression.name;
+    expression.kind === "Command"
+      ? expression.names[language]
+      : expression.name;
 
   if (!name) {
     return false;
   }
 
-  const uses =
-    language === "Pascal"
-      ? lexemes.filter(
-          (lexeme) => lexeme.content?.toLowerCase() === name.toLowerCase(),
-        )
-      : lexemes.filter((lexeme) => lexeme.content === name);
+  const searchName = foldCase(language, name);
 
-  return uses.length > 0;
+  return lexemes.some(
+    (lexeme) => foldCase(language, lexeme.content) === searchName,
+  );
 };
 
 export default usageCategory;

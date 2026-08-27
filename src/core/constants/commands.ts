@@ -3,7 +3,7 @@ import type { Language } from "./languages.ts";
 import { PCode } from "./pcodes.ts";
 
 export interface Command {
-  readonly __: "Command";
+  readonly kind: "Command";
   readonly id: string;
   readonly names: Readonly<Record<Language, string | null>>;
   readonly code: (turtleAddress: number) => number[];
@@ -73,7 +73,7 @@ const command = (
         };
 
   return {
-    __: "Command",
+    kind: "Command",
     id,
     names,
     code,
@@ -87,7 +87,7 @@ const command = (
 };
 
 export interface Parameter {
-  readonly __: "Parameter";
+  readonly kind: "Parameter";
   readonly name: string;
   readonly type: Type;
   readonly isReferenceParameter: boolean;
@@ -104,7 +104,7 @@ const p = (
   isReferenceParameter = false,
   length = 1,
 ): Parameter => ({
-  __: "Parameter",
+  kind: "Parameter",
   name,
   type,
   isReferenceParameter,
@@ -113,7 +113,7 @@ const p = (
 
 // a parameter that must itself be a list (a method's receiver, or ".extend"'s argument)
 const pList = (name: string): Parameter => ({
-  __: "Parameter",
+  kind: "Parameter",
   name,
   type: "boolint", // placeholder only - never read for a list parameter, see typeCheckArgument
   isReferenceParameter: false,
@@ -123,7 +123,7 @@ const pList = (name: string): Parameter => ({
 
 // a parameter whose expected scalar type is the receiver list's own element kind (e.g. ".append"'s value)
 const pElement = (name: string): Parameter => ({
-  __: "Parameter",
+  kind: "Parameter",
   name,
   type: "boolint", // placeholder only - never read directly, see typeCheckArgument
   isReferenceParameter: false,

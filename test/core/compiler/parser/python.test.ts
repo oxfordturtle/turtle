@@ -36,7 +36,7 @@ describe("parse: Python", () => {
 
     it("ignores a comment as a pass statement", () => {
       const program = parseProgram("Python", "# hello\nx = 1");
-      assertEquals(program.statements[0]?.statementType, "passStatement");
+      assertEquals(program.statements[0]?.kind, "passStatement");
     });
 
     it("tolerates a trailing comment on the same line as a statement", () => {
@@ -46,7 +46,7 @@ describe("parse: Python", () => {
       // match either, so it threw instead of being skipped.
       const program = parseProgram("Python", "x = 1  # a comment\ny = 2");
       assertEquals(
-        program.statements.map((s) => s.statementType),
+        program.statements.map((s) => s.kind),
         ["variableAssignment", "variableAssignment"],
       );
     });
@@ -58,7 +58,7 @@ describe("parse: Python", () => {
 
     it("parses PASS as a pass statement", () => {
       const program = parseProgram("Python", "pass");
-      assertEquals(program.statements[0]?.statementType, "passStatement");
+      assertEquals(program.statements[0]?.kind, "passStatement");
     });
 
     it("throws if a statement is indented with no preceding block opener", () => {
@@ -150,12 +150,12 @@ describe("parse: Python", () => {
         "x = 1\nif x == 1:\n    y = 1\nelif x == 2:\n    y = 2\nelse:\n    y = 3",
       );
       const ifStatement = program.statements.find(
-        (s) => s.statementType === "ifStatement",
+        (s) => s.kind === "ifStatement",
       ) as IfStatement;
       assertExists(ifStatement);
       assertEquals(ifStatement.elseStatements.length, 1);
       const elif = ifStatement.elseStatements[0] as IfStatement;
-      assertEquals(elif.statementType, "ifStatement");
+      assertEquals(elif.kind, "ifStatement");
       assertEquals(elif.elseStatements.length, 1);
     });
 
@@ -168,7 +168,7 @@ describe("parse: Python", () => {
       const outer = program.statements[1] as IfStatement;
       assertEquals(outer.ifStatements.length, 2);
       const inner = outer.ifStatements[0] as IfStatement;
-      assertEquals(inner.statementType, "ifStatement");
+      assertEquals(inner.kind, "ifStatement");
     });
 
     it("tolerates a trailing comment right after the 'if' colon", () => {
@@ -182,7 +182,7 @@ describe("parse: Python", () => {
         "x = 1\nif x == 1: # comment\n    y = 1",
       );
       const ifStatement = program.statements.find(
-        (s) => s.statementType === "ifStatement",
+        (s) => s.kind === "ifStatement",
       ) as IfStatement;
       assertExists(ifStatement);
       assertEquals(ifStatement.ifStatements.length, 1);
@@ -194,7 +194,7 @@ describe("parse: Python", () => {
         "x = 1\nif x == 1:\n    y = 1\nelse: # comment\n    y = 2",
       );
       const ifStatement = program.statements.find(
-        (s) => s.statementType === "ifStatement",
+        (s) => s.kind === "ifStatement",
       ) as IfStatement;
       assertExists(ifStatement);
       assertEquals(ifStatement.elseStatements.length, 1);
@@ -291,10 +291,7 @@ describe("parse: Python", () => {
       const ifStatement = program.statements[0] as IfStatement;
       assertEquals(ifStatement.ifStatements.length, 1);
       assertEquals(ifStatement.elseStatements.length, 1);
-      assertEquals(
-        ifStatement.elseStatements[0]?.statementType,
-        "variableAssignment",
-      );
+      assertEquals(ifStatement.elseStatements[0]?.kind, "variableAssignment");
     });
 
     it("tolerates a full-line comment between an if-block and its 'elif'", () => {
@@ -305,7 +302,7 @@ describe("parse: Python", () => {
       const ifStatement = program.statements[1] as IfStatement;
       assertEquals(ifStatement.elseStatements.length, 1);
       const elif = ifStatement.elseStatements[0] as IfStatement;
-      assertEquals(elif.statementType, "ifStatement");
+      assertEquals(elif.kind, "ifStatement");
       assertEquals(elif.ifStatements.length, 1);
     });
 
@@ -396,7 +393,7 @@ describe("parse: Python", () => {
         "x = 0\nwhile x < 3:\n    x = x + 1",
       );
       const whileStatement = program.statements.find(
-        (s) => s.statementType === "whileStatement",
+        (s) => s.kind === "whileStatement",
       ) as WhileStatement;
       assertExists(whileStatement);
       assertEquals(whileStatement.statements.length, 1);
@@ -410,7 +407,7 @@ describe("parse: Python", () => {
         "x = 0\nwhile x < 3: # comment\n    x = x + 1",
       );
       const whileStatement = program.statements.find(
-        (s) => s.statementType === "whileStatement",
+        (s) => s.kind === "whileStatement",
       ) as WhileStatement;
       assertExists(whileStatement);
       assertEquals(whileStatement.statements.length, 1);
@@ -487,8 +484,8 @@ describe("parse: Python", () => {
     it("parses a 1-argument range (implicit 0 start, step 1)", () => {
       const program = parseProgram("Python", "for i in range(3):\n    pass");
       const forStatement = program.statements[0] as ForStatement;
-      assertEquals(forStatement.statementType, "forStatement");
-      assertEquals(forStatement.initialisation.value.expressionType, "integer");
+      assertEquals(forStatement.kind, "forStatement");
+      assertEquals(forStatement.initialisation.value.kind, "integer");
     });
 
     it("parses a 2-argument range (explicit start and stop)", () => {
@@ -624,7 +621,7 @@ describe("parse: Python", () => {
         "for i in range(3): # comment\n    pass",
       );
       const forStatement = program.statements[0] as ForStatement;
-      assertEquals(forStatement.statementType, "forStatement");
+      assertEquals(forStatement.kind, "forStatement");
     });
 
     it("throws if 'for <variable> in range(...)' is not followed by a colon", () => {
@@ -774,14 +771,11 @@ describe("parse: Python", () => {
         "mylist = [1, 2, 3]\nfor element in mylist:\n    pass",
       );
       const forStatement = program.statements[1] as ForStatement;
-      assertEquals(forStatement.statementType, "forStatement");
+      assertEquals(forStatement.kind, "forStatement");
       // the synthesized "element = mylist[!indexN]" statement comes first,
       // before the user's own "pass"
-      assertEquals(
-        forStatement.statements[0]?.statementType,
-        "variableAssignment",
-      );
-      assertEquals(forStatement.statements[1]?.statementType, "passStatement");
+      assertEquals(forStatement.statements[0]?.kind, "variableAssignment");
+      assertEquals(forStatement.statements[1]?.kind, "passStatement");
     });
 
     it("pins a hint-less loop variable's type from the list's element kind", () => {
@@ -846,12 +840,9 @@ describe("parse: Python", () => {
         's = "abc"\nfor c in s:\n    pass',
       );
       const forStatement = program.statements[1] as ForStatement;
-      assertEquals(forStatement.statementType, "forStatement");
-      assertEquals(
-        forStatement.statements[0]?.statementType,
-        "variableAssignment",
-      );
-      assertEquals(forStatement.statements[1]?.statementType, "passStatement");
+      assertEquals(forStatement.kind, "forStatement");
+      assertEquals(forStatement.statements[0]?.kind, "variableAssignment");
+      assertEquals(forStatement.statements[1]?.kind, "passStatement");
     });
 
     it("pins a hint-less loop variable's type to 'string'", () => {
@@ -901,28 +892,19 @@ describe("parse: Python", () => {
     it("parses 'break' inside a while loop as a breakStatement", () => {
       const program = parseProgram("Python", "while True:\n    break");
       const whileStatement = program.statements[0] as WhileStatement;
-      assertEquals(
-        whileStatement.statements[0]?.statementType,
-        "breakStatement",
-      );
+      assertEquals(whileStatement.statements[0]?.kind, "breakStatement");
     });
 
     it("parses 'continue' inside a while loop as a continueStatement", () => {
       const program = parseProgram("Python", "while True:\n    continue");
       const whileStatement = program.statements[0] as WhileStatement;
-      assertEquals(
-        whileStatement.statements[0]?.statementType,
-        "continueStatement",
-      );
+      assertEquals(whileStatement.statements[0]?.kind, "continueStatement");
     });
 
     it("parses 'break' inside a for loop", () => {
       const program = parseProgram("Python", "for i in range(3):\n    break");
       const forStatement = program.statements[0] as ForStatement;
-      assertEquals(
-        forStatement.statements.at(-1)?.statementType,
-        "breakStatement",
-      );
+      assertEquals(forStatement.statements.at(-1)?.kind, "breakStatement");
     });
 
     it("parses 'continue' inside a for loop", () => {
@@ -931,10 +913,7 @@ describe("parse: Python", () => {
         "for i in range(3):\n    continue",
       );
       const forStatement = program.statements[0] as ForStatement;
-      assertEquals(
-        forStatement.statements.at(-1)?.statementType,
-        "continueStatement",
-      );
+      assertEquals(forStatement.statements.at(-1)?.kind, "continueStatement");
     });
 
     it("parses 'break' inside an 'if' nested inside a loop", () => {
@@ -944,10 +923,7 @@ describe("parse: Python", () => {
       );
       const whileStatement = program.statements[0] as WhileStatement;
       const ifStatement = whileStatement.statements[0] as IfStatement;
-      assertEquals(
-        ifStatement.ifStatements[0]?.statementType,
-        "breakStatement",
-      );
+      assertEquals(ifStatement.ifStatements[0]?.kind, "breakStatement");
     });
 
     it("throws if 'break' occurs outside any loop", () => {
@@ -997,10 +973,7 @@ describe("parse: Python", () => {
       );
       const sub = program.subroutines[0];
       const whileStatement = sub?.statements[0] as WhileStatement;
-      assertEquals(
-        whileStatement.statements[0]?.statementType,
-        "breakStatement",
-      );
+      assertEquals(whileStatement.statements[0]?.kind, "breakStatement");
     });
 
     it("'break'/'continue' still require statement separation, like 'pass'", () => {
@@ -1022,7 +995,7 @@ describe("parse: Python", () => {
       assertEquals(sub?.name, "double");
       assert(sub?.variables.some((v) => v.isParameter && v.name === "n"));
       const returnStatement = sub?.statements.find(
-        (s) => s.statementType === "returnStatement",
+        (s) => s.kind === "returnStatement",
       ) as ReturnStatement;
       assertExists(returnStatement);
     });
@@ -1428,7 +1401,7 @@ describe("parse: Python", () => {
     it("declares a variable with an explicit type hint", () => {
       const program = parseProgram("Python", "x: int = 5");
       const assignment = program.statements.find(
-        (s) => s.statementType === "variableAssignment",
+        (s) => s.kind === "variableAssignment",
       ) as VariableAssignment;
       assertExists(assignment);
       assertEquals(assignment.variable.type, "integer");
@@ -1540,10 +1513,10 @@ describe("parse: Python", () => {
     it("parses list multiplication ('[x]*n') as a compound expression", () => {
       const program = parseProgram("Python", "x = [0]*8");
       const assignment = program.statements.find(
-        (s) => s.statementType === "variableAssignment",
+        (s) => s.kind === "variableAssignment",
       ) as VariableAssignment;
       assertExists(assignment);
-      assertEquals(assignment.value.expressionType, "compound");
+      assertEquals(assignment.value.kind, "compound");
       const variable = program.variables.find((v) => v.name === "x");
       assert(variable?.isList);
       assertEquals(variable?.listElementKind, "integer");
@@ -1557,7 +1530,7 @@ describe("parse: Python", () => {
     it("parses string repetition ('s*n') as a compound expression, not a type error", () => {
       const program = parseProgram("Python", 's = "ab"\nt = s*3');
       const assignment = program.statements[1] as VariableAssignment;
-      assertEquals(assignment.value.expressionType, "compound");
+      assertEquals(assignment.value.kind, "compound");
       const variable = program.variables.find((v) => v.name === "t");
       assertEquals(variable?.type, "string");
     });
@@ -1565,7 +1538,7 @@ describe("parse: Python", () => {
     it("parses reversed string repetition ('n*s') as a compound expression too", () => {
       const program = parseProgram("Python", 's = "ab"\nt = 3*s');
       const assignment = program.statements[1] as VariableAssignment;
-      assertEquals(assignment.value.expressionType, "compound");
+      assertEquals(assignment.value.kind, "compound");
       const variable = program.variables.find((v) => v.name === "t");
       assertEquals(variable?.type, "string");
     });
@@ -1613,10 +1586,10 @@ describe("parse: Python", () => {
     it("parses a list index read", () => {
       const program = parseProgram("Python", "x = [1, 2, 3]\ny = x[0]");
       const assignment = program.statements.find(
-        (s, i) => s.statementType === "variableAssignment" && i === 1,
+        (s, i) => s.kind === "variableAssignment" && i === 1,
       ) as VariableAssignment;
       assertExists(assignment);
-      assertEquals(assignment.value.expressionType, "variable");
+      assertEquals(assignment.value.kind, "variable");
     });
 
     it("parses a list index write", () => {
@@ -1700,7 +1673,7 @@ describe("parse: Python", () => {
         );
         const assignment = program.statements[1] as VariableAssignment;
         assertEquals(assignment.indexes.length, 2);
-        assertEquals(assignment.value.expressionType, "integer");
+        assertEquals(assignment.value.kind, "integer");
         const variable = program.variables.find((v) => v.name === "a");
         assert(variable?.isListOfLists);
         assertEquals(variable?.listElementKind, "integer");
@@ -1765,7 +1738,7 @@ describe("parse: Python", () => {
         );
         const assignment = program.statements[1] as VariableAssignment;
         assertEquals(assignment.indexes.length, 1);
-        assertEquals(assignment.value.expressionType, "listLiteral");
+        assertEquals(assignment.value.kind, "listLiteral");
       });
 
       it("throws assigning a scalar where a whole sublist is expected", () => {
@@ -1866,11 +1839,11 @@ describe("parse: Python", () => {
     it("parses a character-index assignment into a string variable", () => {
       const program = parseProgram("Python", 's: str = "hello"\ns[0] = "a"');
       const assignment = program.statements.find(
-        (s) => s.statementType === "variableAssignment" && s.indexes.length > 0,
+        (s) => s.kind === "variableAssignment" && s.indexes.length > 0,
       ) as VariableAssignment;
       assertExists(assignment);
       assertEquals(assignment.indexes.length, 1);
-      assertEquals(assignment.indexes[0]?.expressionType, "integer");
+      assertEquals(assignment.indexes[0]?.kind, "integer");
     });
 
     it("throws a type error when the character index is a string, not an integer", () => {
@@ -1907,8 +1880,8 @@ describe("parse: Python", () => {
     it("parses a string slice, storing both bounds on .slice rather than .indexes", () => {
       const program = parseProgram("Python", 's = "hello world"\nt = s[1:5]');
       const assignment = program.statements[1] as VariableAssignment;
-      assertEquals(assignment.value.expressionType, "variable");
-      if (assignment.value.expressionType === "variable") {
+      assertEquals(assignment.value.kind, "variable");
+      if (assignment.value.kind === "variable") {
         assertExists(assignment.value.slice);
         assertEquals(assignment.value.indexes.length, 0);
       }
@@ -1920,8 +1893,8 @@ describe("parse: Python", () => {
       // - see VariableValue.stringIndex's own comment
       const program = parseProgram("Python", "p = ['abc']\nc = p[0][1]");
       const assignment = program.statements[1] as VariableAssignment;
-      assertEquals(assignment.value.expressionType, "variable");
-      if (assignment.value.expressionType === "variable") {
+      assertEquals(assignment.value.kind, "variable");
+      if (assignment.value.kind === "variable") {
         assertEquals(assignment.value.indexes.length, 1);
         assertExists(assignment.value.stringIndex);
         assertEquals(assignment.value.slice, null);
@@ -1931,8 +1904,8 @@ describe("parse: Python", () => {
     it("keeps a list element's slice off .indexes too", () => {
       const program = parseProgram("Python", "p = ['abc']\nc = p[0][1:2]");
       const assignment = program.statements[1] as VariableAssignment;
-      assertEquals(assignment.value.expressionType, "variable");
-      if (assignment.value.expressionType === "variable") {
+      assertEquals(assignment.value.kind, "variable");
+      if (assignment.value.kind === "variable") {
         assertEquals(assignment.value.indexes.length, 1);
         assertEquals(assignment.value.stringIndex, null);
         assertExists(assignment.value.slice);
@@ -2140,7 +2113,7 @@ describe("parse: Python", () => {
     it("parses a procedure call with arguments", () => {
       const program = parseProgram("Python", "forward(10)");
       const call = program.statements.find(
-        (s) => s.statementType === "procedureCall",
+        (s) => s.kind === "procedureCall",
       ) as ProcedureCall;
       assertExists(call);
       assertEquals(call.arguments.length, 1);
@@ -2153,7 +2126,7 @@ describe("parse: Python", () => {
       // as a standalone statement is permitted
       const program = parseProgram("Python", 'input("name")');
       const call = program.statements.find(
-        (s) => s.statementType === "procedureCall",
+        (s) => s.kind === "procedureCall",
       ) as ProcedureCall;
       assertExists(call);
     });
@@ -2165,7 +2138,7 @@ describe("parse: Python", () => {
         "mylist = [1, 2, 3]\nmylist.append(64)",
       );
       const call = program.statements.find(
-        (s) => s.statementType === "procedureCall",
+        (s) => s.kind === "procedureCall",
       ) as ProcedureCall;
       assertExists(call);
       assertEquals(call.arguments.length, 2); // receiver + value
@@ -2195,8 +2168,8 @@ describe("parse: Python", () => {
       const listAssignment = listProgram.statements[1] as VariableAssignment;
       const listCall = listAssignment.value;
       assert(
-        listCall.expressionType === "function" &&
-          listCall.command.__ === "Command" &&
+        listCall.kind === "function" &&
+          listCall.command.kind === "Command" &&
           listCall.command.forList,
       );
 
@@ -2208,8 +2181,8 @@ describe("parse: Python", () => {
         .statements[1] as VariableAssignment;
       const stringCall = stringAssignment.value;
       assertFalse(
-        stringCall.expressionType === "function" &&
-          stringCall.command.__ === "Command" &&
+        stringCall.kind === "function" &&
+          stringCall.command.kind === "Command" &&
           !!stringCall.command.forList,
       );
     });
@@ -2252,7 +2225,7 @@ describe("parse: Python", () => {
     it("no regression: existing string dot-methods still parse (e.g. .strip)", () => {
       const program = parseProgram("Python", 's = "  hi  "\ny = s.strip()');
       const assignment = program.statements[1] as VariableAssignment;
-      assertEquals(assignment.value.expressionType, "function");
+      assertEquals(assignment.value.kind, "function");
     });
   });
 
@@ -2260,14 +2233,14 @@ describe("parse: Python", () => {
     it("parses input() with no arguments (defaults to an empty prompt)", () => {
       const program = parseProgram("Python", "x = input()");
       const assignment = program.statements[0] as VariableAssignment;
-      assertEquals(assignment.value.expressionType, "function");
+      assertEquals(assignment.value.kind, "function");
     });
 
     it("parses input() with a single string prompt argument", () => {
       const program = parseProgram("Python", 'x = input("name: ")');
       const assignment = program.statements[0] as VariableAssignment;
-      assertEquals(assignment.value.expressionType, "function");
-      if (assignment.value.expressionType === "function") {
+      assertEquals(assignment.value.kind, "function");
+      if (assignment.value.kind === "function") {
         assertEquals(assignment.value.arguments.length, 1);
       }
     });
@@ -2275,7 +2248,7 @@ describe("parse: Python", () => {
     it("parses print() with no arguments", () => {
       const program = parseProgram("Python", "print()");
       const call = program.statements[0] as ProcedureCall;
-      assertEquals(call.statementType, "procedureCall");
+      assertEquals(call.kind, "procedureCall");
       assertEquals(call.arguments.length, 1); // defaults to an empty string
     });
 
@@ -2290,8 +2263,8 @@ describe("parse: Python", () => {
       const call = program.statements[0] as ProcedureCall;
       assertEquals(call.arguments.length, 2);
       const namedArg = call.arguments[1];
-      assertEquals(namedArg?.expressionType, "namedArgument");
-      if (namedArg?.expressionType === "namedArgument") {
+      assertEquals(namedArg?.kind, "namedArgument");
+      if (namedArg?.kind === "namedArgument") {
         assertEquals(namedArg.lexeme.content, "end");
       }
     });
@@ -2313,8 +2286,7 @@ describe("parse: Python", () => {
       const variable = program.variables.find((v) => v.name === "x");
       assertExists(variable);
       const assignment = program.statements.find(
-        (s) =>
-          s.statementType === "variableAssignment" && s.variable.name === "y",
+        (s) => s.kind === "variableAssignment" && s.variable.name === "y",
       ) as VariableAssignment;
       assertExists(assignment);
     });

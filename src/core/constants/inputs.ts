@@ -1,11 +1,9 @@
 export interface Input {
-  readonly __: "Input";
   readonly name: string;
   readonly value: number;
 }
 
 const input = (name: string, value: number): Input => ({
-  __: "Input",
   name,
   value,
 });

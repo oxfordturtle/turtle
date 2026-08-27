@@ -9,13 +9,13 @@ import { CompilerError } from "../../../tools/error.ts";
 import evaluate from "../../common/evaluate.ts";
 import parseExpression from "../../common/expression.ts";
 import * as find from "../../common/find.ts";
-import skipComments from "../../common/skipComments.ts";
 import typeCheck from "../../common/typeCheck.ts";
 import {
   type Expression,
   getListElementKind,
   isListExpression,
 } from "../../definitions/expression.ts";
+import type { ParserContext } from "../../definitions/context.ts";
 import makeCompoundExpression from "../../definitions/expressions/compoundExpression.ts";
 import makeFunctionCall from "../../definitions/expressions/functionCall.ts";
 import makeIntegerValue from "../../definitions/expressions/integerValue.ts";
@@ -39,52 +39,47 @@ let listIterationCounter = 0;
 export default (
   forLexeme: KeywordLexeme,
   lexemes: Lexemes,
+  context: ParserContext,
   routine: Routine,
 ): ForStatement => {
   // whether this turns out to be a "range(...)" loop or a list-iteration
   // loop, determined below)
-  const variableLexeme = lexemes.get();
+  const variableLexeme = lexemes.peek();
   if (!variableLexeme) {
     throw new CompilerError(
       '"for" must be followed by an integer variable.',
-      lexemes.get(-1),
+      lexemes.peek(-1),
     );
   }
   if (variableLexeme.type !== "identifier") {
     throw new CompilerError(
       "{lex} is not a valid variable name.",
-      lexemes.get(),
+      lexemes.peek(),
     );
   }
   // always a binding target, never a mere read - see find.assignmentTarget
   let variable = find.assignmentTarget(
     routine,
-    lexemes.get()?.content as string,
+    lexemes.peek()?.content as string,
   );
   if (!variable) {
-    variable = makeVariable(lexemes.get()?.content as string, routine);
+    variable = makeVariable(lexemes.peek()?.content as string, routine);
     routine.variables.push(variable);
   }
-  lexemes.next();
+  lexemes.advance();
 
-  if (!lexemes.get()) {
+  if (lexemes.atEnd()) {
     throw new CompilerError(
       '"for <variable>" must be followed by "in".',
-      lexemes.get(-1),
+      lexemes.peek(-1),
     );
   }
-  if (lexemes.get()?.content !== "in") {
-    throw new CompilerError(
-      '"for <variable>" must be followed by "in".',
-      lexemes.get(),
-    );
-  }
-  lexemes.next();
+  lexemes.expect("in", '"for <variable>" must be followed by "in".');
 
-  if (!lexemes.get()) {
+  if (lexemes.atEnd()) {
     throw new CompilerError(
       '"for <variable> in" must be followed by a range specification or a list.',
-      lexemes.get(-1),
+      lexemes.peek(-1),
     );
   }
 
@@ -108,7 +103,7 @@ export default (
   const lessLexeme = operatorLexeme(lessToken, "Python");
   const moreLexeme = operatorLexeme(moreToken, "Python");
 
-  if (lexemes.get()?.content === "range") {
+  if (lexemes.peek()?.content === "range") {
     // "for <variable> in range(...)" - the loop variable must be an integer
     if (!variable.typeIsCertain) {
       variable.type = "integer";
@@ -120,51 +115,44 @@ export default (
         variableLexeme,
       );
     }
-    lexemes.next();
+    lexemes.advance();
 
-    if (!lexemes.get()) {
+    if (lexemes.atEnd()) {
       throw new CompilerError(
         '"range" must be followed by an opening bracket.',
-        lexemes.get(-1),
+        lexemes.peek(-1),
       );
     }
-    if (lexemes.get()?.content !== "(") {
-      throw new CompilerError(
-        '"range" must be followed by an opening bracket.',
-        lexemes.get(),
-      );
-    }
-    lexemes.next();
+    lexemes.expect("(", '"range" must be followed by an opening bracket.');
 
-    if (!lexemes.get()) {
+    if (lexemes.atEnd()) {
       throw new CompilerError(
         'Missing first argument to the "range" function.',
-        lexemes.get(-1),
+        lexemes.peek(-1),
       );
     }
     const providedValues: [Expression, Expression?, Expression?] = [
       typeCheck(routine.language, parseExpression(lexemes, routine), "integer"),
     ];
 
-    if (!lexemes.get()) {
+    if (lexemes.atEnd()) {
       throw new CompilerError(
         "Argument must be followed by a comma.",
-        lexemes.get(-1),
+        lexemes.peek(-1),
       );
     }
-    if (lexemes.get()?.content !== ")" && lexemes.get()?.content !== ",") {
+    if (lexemes.peek()?.content !== ")" && lexemes.peek()?.content !== ",") {
       throw new CompilerError(
         "Argument must be followed by a comma or a closing bracket.",
-        lexemes.get(),
+        lexemes.peek(),
       );
     }
 
-    if (lexemes.get()?.content === ",") {
-      lexemes.next();
-      if (!lexemes.get()) {
+    if (lexemes.match(",")) {
+      if (lexemes.atEnd()) {
         throw new CompilerError(
           'Too few arguments for "range" function.',
-          lexemes.get(-1),
+          lexemes.peek(-1),
         );
       }
       providedValues.push(
@@ -176,25 +164,24 @@ export default (
       );
     }
 
-    if (!lexemes.get()) {
+    if (lexemes.atEnd()) {
       throw new CompilerError(
         "Argument must be followed by a comma.",
-        lexemes.get(-1),
+        lexemes.peek(-1),
       );
     }
-    if (lexemes.get()?.content !== ")" && lexemes.get()?.content !== ",") {
+    if (lexemes.peek()?.content !== ")" && lexemes.peek()?.content !== ",") {
       throw new CompilerError(
         "Argument must be followed by a comma or a closing bracket.",
-        lexemes.get(),
+        lexemes.peek(),
       );
     }
 
-    if (lexemes.get()?.content === ",") {
-      lexemes.next();
-      if (!lexemes.get()) {
+    if (lexemes.match(",")) {
+      if (lexemes.atEnd()) {
         throw new CompilerError(
           'Too few arguments for "range" function.',
-          lexemes.get(-1),
+          lexemes.peek(-1),
         );
       }
       providedValues.push(
@@ -285,25 +272,22 @@ export default (
       }
     }
 
-    if (!lexemes.get()) {
+    if (lexemes.atEnd()) {
       throw new CompilerError(
         'Closing bracket needed after "range" function arguments.',
-        lexemes.get(-1),
+        lexemes.peek(-1),
       );
     }
-    if (lexemes.get()?.content === ",") {
+    if (lexemes.peek()?.content === ",") {
       throw new CompilerError(
         'Too many arguments for "range" function.',
-        lexemes.get(),
+        lexemes.peek(),
       );
     }
-    if (lexemes.get()?.content !== ")") {
-      throw new CompilerError(
-        'Closing bracket needed after "range" function arguments.',
-        lexemes.get(),
-      );
-    }
-    lexemes.next();
+    lexemes.expect(
+      ")",
+      'Closing bracket needed after "range" function arguments.',
+    );
   } else {
     // Iterating a list or a string desugars into an index-based loop over a
     // hidden "!indexN", plus a synthesized "<variable> = <subject>[!indexN]"
@@ -311,7 +295,7 @@ export default (
     // type is pinned.
     const listExpression = parseExpression(lexemes, routine);
     const isPlainVariableRef =
-      listExpression.expressionType === "variable" &&
+      listExpression.kind === "variable" &&
       listExpression.indexes.length === 0 &&
       listExpression.slice === null;
     const isStringVariable =
@@ -407,35 +391,29 @@ export default (
     );
   }
 
-  if (!lexemes.get()) {
+  if (lexemes.atEnd()) {
     throw new CompilerError(
       '"for <variable> in ...:" must be followed by a colon.',
-      lexemes.get(-1),
+      lexemes.peek(-1),
     );
   }
-  if (lexemes.get()?.content !== ":") {
-    throw new CompilerError(
-      '"for <variable> in ...:" must be followed by a colon.',
-      lexemes.get(),
-    );
-  }
-  lexemes.next();
+  lexemes.expect(":", '"for <variable> in ...:" must be followed by a colon.');
 
   // whileStatement.ts's equivalent check for why)
-  skipComments(lexemes);
-  if (!lexemes.get()) {
+  lexemes.skipComments();
+  if (lexemes.atEnd()) {
     throw new CompilerError(
       'No statements found after "for <variable> in ...:".',
-      lexemes.get(-1),
+      lexemes.peek(-1),
     );
   }
-  if (lexemes.get()?.type !== "newline") {
+  if (lexemes.peek()?.type !== "newline") {
     throw new CompilerError(
       'Statements following "for <variable> in ...:" must be on a new line.',
-      lexemes.get(),
+      lexemes.peek(),
     );
   }
-  lexemes.next();
+  lexemes.advance();
 
   const forStatement = makeForStatement(
     forLexeme,
@@ -447,29 +425,29 @@ export default (
     forStatement.statements.push(prependedStatement);
   }
 
-  if (!lexemes.get()) {
+  if (lexemes.atEnd()) {
     throw new CompilerError(
       'No statements found after "for <variable> in ...:".',
-      lexemes.get(-1),
+      lexemes.peek(-1),
     );
   }
-  if (lexemes.get()?.type !== "indent") {
+  if (lexemes.peek()?.type !== "indent") {
     throw new CompilerError(
       'Statements following "for <variable> in ...:" must be indented.',
-      lexemes.get(),
+      lexemes.peek(),
     );
   }
-  lexemes.next();
+  lexemes.advance();
 
-  if (!lexemes.get()) {
+  if (lexemes.atEnd()) {
     throw new CompilerError(
       'No statements found after "for <variable> in ...:',
-      lexemes.get(-1),
+      lexemes.peek(-1),
     );
   }
-  routine.loopDepth += 1;
-  forStatement.statements.push(...parseBlock(lexemes, routine));
-  routine.loopDepth -= 1;
+  forStatement.statements.push(
+    ...context.inLoop(routine, () => parseBlock(lexemes, context, routine)),
+  );
 
   return forStatement;
 };

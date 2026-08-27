@@ -1,28 +1,33 @@
 import type { Lexeme } from "../../lexer/lexeme.ts";
 import { CompilerError } from "../../tools/error.ts";
+import type { ParserContext } from "../definitions/context.ts";
 import type { Lexemes } from "../definitions/lexemes.ts";
 import makeProgram, { type Program } from "../definitions/routines/program.ts";
 import type { Subroutine } from "../definitions/routines/subroutine.ts";
 import statement from "./statement.ts";
 import subroutine from "./subroutine.ts";
 
-export default (lexemes: Lexemes): Program => {
+export default (lexemes: Lexemes, context: ParserContext): Program => {
   const program = makeProgram("Python");
-  program.end = lexemes.lexemes.length;
+  lexemes.setBody(program, 0, lexemes.length);
 
-  parseBody(lexemes, program);
+  parseBody(lexemes, context, program);
 
   checkForUncertainTypes(program);
 
   return program;
 };
 
-const parseBody = (lexemes: Lexemes, routine: Program | Subroutine): void => {
+const parseBody = (
+  lexemes: Lexemes,
+  context: ParserContext,
+  routine: Program | Subroutine,
+): void => {
   let indents = 0;
-  lexemes.index = routine.start;
-  while (lexemes.index < routine.end) {
-    const lexeme = lexemes.get() as Lexeme;
-    lexemes.next();
+  lexemes.seekBody(routine);
+  while (lexemes.inBody(routine)) {
+    const lexeme = lexemes.peek() as Lexeme;
+    lexemes.advance();
     switch (lexeme.type) {
       case "indent":
         indents += 1;
@@ -42,14 +47,14 @@ const parseBody = (lexemes: Lexemes, routine: Program | Subroutine): void => {
     }
   }
 
-  lexemes.index = routine.start;
-  while (lexemes.index < routine.end) {
+  lexemes.seekBody(routine);
+  while (lexemes.inBody(routine)) {
     routine.statements.push(
-      statement(lexemes.get() as Lexeme, lexemes, routine),
+      statement(lexemes.peek() as Lexeme, lexemes, context, routine),
     );
   }
   for (const sub of routine.subroutines) {
-    parseBody(lexemes, sub);
+    parseBody(lexemes, context, sub);
   }
 };
 

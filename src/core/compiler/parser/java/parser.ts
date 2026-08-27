@@ -1,34 +1,39 @@
+import { traits } from "@/core/constants.ts";
 import type { Lexeme } from "../../lexer/lexeme.ts";
 import { CompilerError } from "../../tools/error.ts";
+import type { ParserContext } from "../definitions/context.ts";
 import type { Lexemes } from "../definitions/lexemes.ts";
 import { getAllSubroutines } from "../definitions/routine.ts";
 import type { Program } from "../definitions/routines/program.ts";
 import constant from "./constant.ts";
-import identifier from "./identifier.ts";
+import identifier from "../cFamily/identifier.ts";
 import program from "./program.ts";
 import parseStatement from "./statement.ts";
-import eosCheck from "./statements/eosCheck.ts";
+import eosCheck from "../cFamily/statements/eosCheck.ts";
 import parseSimpleStatement from "./statements/simpleStatement.ts";
 import subroutine from "./subroutine.ts";
 import type from "./type.ts";
 
-export default function java(lexemes: Lexemes): Program {
+export default function java(
+  lexemes: Lexemes,
+  context: ParserContext,
+): Program {
   const prog = program(lexemes);
 
-  lexemes.index = prog.start;
-  while (lexemes.index < prog.end) {
-    const lexeme = lexemes.get() as Lexeme;
-    const lexemeIndex = lexemes.index;
+  lexemes.seekBody(prog);
+  while (lexemes.inBody(prog)) {
+    const lexeme = lexemes.peek() as Lexeme;
+    const declarationStart = lexemes.mark();
 
     switch (lexeme.type) {
       case "comment":
-        lexemes.next();
+        lexemes.advance();
         break;
 
       // constant definitions
       case "keyword":
         if (lexeme.subtype === "final") {
-          lexemes.next();
+          lexemes.advance();
           prog.constants.push(constant(lexemes, prog));
           eosCheck(lexemes);
         } else {
@@ -44,12 +49,12 @@ export default function java(lexemes: Lexemes): Program {
         type(lexemes, prog);
         identifier(lexemes, prog);
 
-        if (lexemes.get()?.content === "(") {
-          lexemes.index = lexemeIndex; // go back to the start
+        if (lexemes.peek()?.content === "(") {
+          lexemes.seek(declarationStart); // go back to the start
           prog.subroutines.push(subroutine(lexeme, lexemes, prog));
         } // otherwise its a variable declaration/assignment
         else {
-          lexemes.index = lexemeIndex; // go back to the start
+          lexemes.seek(declarationStart); // go back to the start
           prog.statements.push(parseSimpleStatement(lexeme, lexemes, prog));
           eosCheck(lexemes);
         }
@@ -64,15 +69,16 @@ export default function java(lexemes: Lexemes): Program {
   }
 
   for (const subroutine of getAllSubroutines(prog)) {
-    lexemes.index = subroutine.start;
-    while (lexemes.index < subroutine.end) {
+    lexemes.seekBody(subroutine);
+    while (lexemes.inBody(subroutine)) {
       subroutine.statements.push(
-        parseStatement(lexemes.get() as Lexeme, lexemes, subroutine),
+        parseStatement(lexemes.peek() as Lexeme, lexemes, context, subroutine),
       );
     }
   }
 
-  if (!prog.subroutines.some((x) => x.name === "main")) {
+  const { entryPoint } = traits[prog.language];
+  if (!prog.subroutines.some((x) => x.name === entryPoint)) {
     throw new CompilerError('Program does not contain any "main" method.');
   }
 

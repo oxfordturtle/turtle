@@ -12,7 +12,7 @@ import { variables } from "./variable.ts";
 export default function pascal(lexemes: Lexemes): Program {
   const program = makeProgram("Pascal");
 
-  const programLexeme = lexemes.get();
+  const programLexeme = lexemes.peek();
   if (
     !programLexeme ||
     programLexeme.type !== "keyword" ||
@@ -20,18 +20,18 @@ export default function pascal(lexemes: Lexemes): Program {
   ) {
     throw new CompilerError(
       'Program must begin with keyword "PROGRAM".',
-      lexemes.get(),
+      lexemes.peek(),
     );
   }
-  lexemes.next();
+  lexemes.advance();
 
   program.name = identifier(lexemes, program);
 
   parseSemicolon(lexemes, true, "program declaration");
 
   let begun = false;
-  while (lexemes.get() && lexemes.get()?.content.toLowerCase() !== "end") {
-    const lexeme = lexemes.get() as Lexeme;
+  while (!lexemes.atEnd() && lexemes.peek()?.content.toLowerCase() !== "end") {
+    const lexeme = lexemes.peek() as Lexeme;
     switch (lexeme.type) {
       // comments can appear between declarations (e.g. in a VAR block), not
       // just inside a statement body - parseStatement (called only once
@@ -39,7 +39,7 @@ export default function pascal(lexemes: Lexemes): Program {
       // covers the PROGRAM/CONST/VAR/procedure/function declaration section
       // above "begin", which needs the same skip
       case "comment":
-        lexemes.next();
+        lexemes.advance();
         break;
 
       case "keyword":
@@ -49,33 +49,33 @@ export default function pascal(lexemes: Lexemes): Program {
             if (program.variables.length > 0) {
               throw new CompilerError(
                 "Constant definitions must be placed above any variable declarations.",
-                lexemes.get(),
+                lexemes.peek(),
               );
             }
             if (program.subroutines.length > 0) {
               throw new CompilerError(
                 "Constant definitions must be placed above any subroutine definitions.",
-                lexemes.get(),
+                lexemes.peek(),
               );
             }
-            lexemes.next();
+            lexemes.advance();
             const constantsSoFar = program.constants.length;
             // a comment may separate one constant definition from the next
             // (e.g. documenting what each constant is for, right after its
             // semicolon) - mirrors the same skip in variables() below
-            while (lexemes.get()?.type === "comment") {
-              lexemes.next();
+            while (lexemes.peek()?.type === "comment") {
+              lexemes.advance();
             }
-            while (lexemes.get()?.type === "identifier") {
+            while (lexemes.peek()?.type === "identifier") {
               program.constants.push(constant(lexemes, program));
-              while (lexemes.get()?.type === "comment") {
-                lexemes.next();
+              while (lexemes.peek()?.type === "comment") {
+                lexemes.advance();
               }
             }
             if (program.constants.length === constantsSoFar) {
               throw new CompilerError(
                 '"CONST" must be followed by an identifier.',
-                lexemes.get(-1),
+                lexemes.peek(-1),
               );
             }
             break;
@@ -85,28 +85,28 @@ export default function pascal(lexemes: Lexemes): Program {
             if (program.subroutines.length > 0) {
               throw new CompilerError(
                 "Variable declarations must be placed above any subroutine definitions.",
-                lexemes.get(),
+                lexemes.peek(),
               );
             }
-            lexemes.next();
+            lexemes.advance();
             program.variables.push(...variables(lexemes, program));
             break;
 
           case "procedure": // fallthrough
           case "function":
-            lexemes.next();
+            lexemes.advance();
             program.subroutines.push(subroutine(lexeme, lexemes, program));
             break;
 
           // start of program statements
           case "begin":
             begun = true;
-            lexemes.next();
+            lexemes.advance();
             while (
-              lexemes.get() &&
-              lexemes.get()?.content?.toLowerCase() !== "end"
+              lexemes.peek() &&
+              lexemes.peek()?.content?.toLowerCase() !== "end"
             ) {
-              const lexeme = lexemes.get() as Lexeme;
+              const lexeme = lexemes.peek() as Lexeme;
               program.statements.push(parseStatement(lexeme, lexemes, program));
             }
             break;
@@ -115,7 +115,7 @@ export default function pascal(lexemes: Lexemes): Program {
             if (!begun) {
               throw new CompilerError(
                 'Keyword "begin" missing for main program.',
-                lexemes.get(),
+                lexemes.peek(),
               );
               // deno-coverage-ignore-start -- everything from here to the
               // stop marker is unreachable: begun only becomes true in the
@@ -127,7 +127,7 @@ export default function pascal(lexemes: Lexemes): Program {
             }
             throw new CompilerError(
               "{lex} makes no sense here.",
-              lexemes.get(),
+              lexemes.peek(),
             );
           // deno-coverage-ignore-stop
         }
@@ -137,7 +137,7 @@ export default function pascal(lexemes: Lexemes): Program {
         if (!begun) {
           throw new CompilerError(
             'Keyword "begin" missing for main program.',
-            lexemes.get(),
+            lexemes.peek(),
           );
           // deno-coverage-ignore-start -- everything from here to the stop
           // marker is unreachable: begun only becomes true in the "begin"
@@ -147,7 +147,7 @@ export default function pascal(lexemes: Lexemes): Program {
           // true (the marker sits inside the if because the never-taken
           // else-branch is recorded on its closing brace)
         }
-        throw new CompilerError("{lex} makes no sense here.", lexemes.get());
+        throw new CompilerError("{lex} makes no sense here.", lexemes.peek());
       // deno-coverage-ignore-stop
     }
   }
@@ -155,26 +155,26 @@ export default function pascal(lexemes: Lexemes): Program {
   if (!begun) {
     throw new CompilerError(
       'Keyword "begin" missing for main program.',
-      lexemes.get(-1),
+      lexemes.peek(-1),
     );
   }
-  if (!lexemes.get()) {
+  if (lexemes.atEnd()) {
     throw new CompilerError(
       'Keyword "end" missing after main program.',
-      lexemes.get(-1),
+      lexemes.peek(-1),
     );
   }
-  lexemes.next();
-  if (!lexemes.get() || lexemes.get()?.content !== ".") {
+  lexemes.advance();
+  if (lexemes.peek()?.content !== ".") {
     throw new CompilerError(
       'Full stop missing after program "end".',
-      lexemes.get(-1),
+      lexemes.peek(-1),
     );
   }
-  if (lexemes.get(1)) {
+  if (lexemes.peek(1)) {
     throw new CompilerError(
       'No text can appear after program "end".',
-      lexemes.get(1),
+      lexemes.peek(1),
     );
   }
 

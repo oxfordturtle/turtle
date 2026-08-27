@@ -9,30 +9,29 @@ import type { Routine } from "../definitions/routine.ts";
 type TypeInformation = [boolean, Type, number, [number, number][], boolean];
 
 const type = (lexemes: Lexemes, routine: Routine): TypeInformation => {
-  const lexeme = lexemes.get();
+  const lexeme = lexemes.peek();
   let stringLength = 64;
 
   if (!lexeme) {
-    throw new CompilerError("Expecting type specification.", lexemes.get(-1));
+    throw new CompilerError("Expecting type specification.", lexemes.peek(-1));
   }
   switch (lexeme.content) {
     case "bool":
-      lexemes.next();
+      lexemes.advance();
       return [false, "boolean", stringLength, [], false];
 
     case "int":
-      lexemes.next();
+      lexemes.advance();
       return [false, "integer", stringLength, [], false];
 
     case "str":
-      lexemes.next();
-      if (lexemes.get()?.content === "[") {
-        lexemes.next();
-        const integer = lexemes.get();
+      lexemes.advance();
+      if (lexemes.match("[")) {
+        const integer = lexemes.peek();
         if (!integer) {
           throw new CompilerError(
             "Expected string size specification.",
-            lexemes.get(-1),
+            lexemes.peek(-1),
           );
         }
         if (integer.type !== "literal" || integer.subtype !== "integer") {
@@ -45,20 +44,17 @@ const type = (lexemes: Lexemes, routine: Routine): TypeInformation => {
           );
         }
         stringLength = integer.value;
-        lexemes.next();
-        if (!lexemes.get()) {
+        lexemes.advance();
+        if (lexemes.atEnd()) {
           throw new CompilerError(
             'Closing bracket "]" missing after string size specification.',
-            lexemes.get(-1),
+            lexemes.peek(-1),
           );
         }
-        if (lexemes.get()?.content !== "]") {
-          throw new CompilerError(
-            'Closing bracket "]" missing after string size specification.',
-            lexemes.get(),
-          );
-        }
-        lexemes.next();
+        lexemes.expect(
+          "]",
+          'Closing bracket "]" missing after string size specification.',
+        );
       }
       return [false, "string", stringLength, [], false];
 
@@ -69,7 +65,7 @@ const type = (lexemes: Lexemes, routine: Routine): TypeInformation => {
       );
 
     case "Final":
-      lexemes.next();
+      lexemes.advance();
       return [true, "boolint", stringLength, [], false];
 
     case "list":
@@ -81,48 +77,45 @@ const type = (lexemes: Lexemes, routine: Routine): TypeInformation => {
     // "List[T]" - a growable list of element type T. There is no fixed-length
     // "List[T, N]" form: lists reallocate as they grow.
     case "List": {
-      lexemes.next();
+      lexemes.advance();
 
-      if (!lexemes.get()) {
+      if (lexemes.atEnd()) {
         throw new CompilerError(
           '"List" must be followed by a type in square brackets.',
           lexeme,
         );
       }
-      if (lexemes.get()?.content !== "[") {
-        throw new CompilerError(
-          '"List" must be followed by a type in square brackets.',
-          lexemes.get(),
-        );
-      }
-      lexemes.next();
+      lexemes.expect(
+        "[",
+        '"List" must be followed by a type in square brackets.',
+      );
 
       const elementType = type(lexemes, routine);
 
       if (elementType[0]) {
-        throw new CompilerError("List type cannot be constant.", lexemes.get());
+        throw new CompilerError(
+          "List type cannot be constant.",
+          lexemes.peek(),
+        );
       }
 
-      if (lexemes.get()?.content === ",") {
+      if (lexemes.peek()?.content === ",") {
         throw new CompilerError(
           'Lists no longer have a fixed size - write "List[T]" without a length.',
-          lexemes.get(),
+          lexemes.peek(),
         );
       }
 
-      if (!lexemes.get()) {
+      if (lexemes.atEnd()) {
         throw new CompilerError(
           '"List" must be followed by closing square brackets.',
-          lexemes.get(-1),
+          lexemes.peek(-1),
         );
       }
-      if (lexemes.get()?.content !== "]") {
-        throw new CompilerError(
-          '"List" must be followed by closing square brackets.',
-          lexemes.get(),
-        );
-      }
-      lexemes.next();
+      lexemes.expect(
+        "]",
+        '"List" must be followed by closing square brackets.',
+      );
 
       return [false, elementType[1], elementType[2], [], true];
     }
@@ -130,7 +123,7 @@ const type = (lexemes: Lexemes, routine: Routine): TypeInformation => {
     default:
       throw new CompilerError(
         '{lex} is not a valid type specification (expected "bool", "int", or "str")',
-        lexemes.get(),
+        lexemes.peek(),
       );
   }
 };

@@ -1,22 +1,27 @@
 import { CompilerError } from "../../tools/error.ts";
+import * as find from "../common/find.ts";
 import type { Lexemes } from "../definitions/lexemes.ts";
 import type { Routine } from "../definitions/routine.ts";
-import * as find from "../common/find.ts";
 
-export default function identifier(lexemes: Lexemes, routine: Routine): string {
-  const identifier = lexemes.get();
+/**
+ * `duplicateCheck` is TypeScript's: it hoists its declarations on a first
+ * pass, so the second pass sees each of them again and must not object to the
+ * name it has already recorded. C and Java are single-pass here and leave it
+ * alone.
+ */
+export default function identifier(
+  lexemes: Lexemes,
+  routine: Routine,
+  duplicateCheck = true,
+): string {
+  const identifier = lexemes.peek();
 
-  // deno-coverage-ignore-start -- unreachable: identifier() is only ever
-  // called right after type() has succeeded, whose last consumed lexeme (a
-  // type keyword, ")", or "]") can never be the program's final lexeme --
-  // program.ts guarantees that's "}" -- so the stream cannot be dry here
   if (!identifier) {
     throw new CompilerError(
       "{lex} must be followed by an identifier.",
-      lexemes.get(-1),
+      lexemes.peek(-1),
     );
   }
-  // deno-coverage-ignore-stop
 
   if (identifier.type !== "identifier") {
     throw new CompilerError("{lex} is not a valid identifier.", identifier);
@@ -29,14 +34,14 @@ export default function identifier(lexemes: Lexemes, routine: Routine): string {
     );
   }
 
-  if (find.isDuplicate(routine, identifier.value)) {
+  if (duplicateCheck && find.isDuplicate(routine, identifier.value)) {
     throw new CompilerError(
       "{lex} is already defined in the current scope.",
       identifier,
     );
   }
 
-  lexemes.next();
+  lexemes.advance();
 
   return identifier.value;
 }

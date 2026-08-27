@@ -3,7 +3,7 @@ import type { Statement } from "../parser/definitions/statement.ts";
 import expression from "./expression.ts";
 
 export default (stmt: Statement, language: Language): string => {
-  switch (stmt.statementType) {
+  switch (stmt.kind) {
     case "variableAssignment":
       return `${stmt.variable.name} ${stmt.lexeme.content} ${expression(
         stmt.value,
@@ -12,7 +12,7 @@ export default (stmt: Statement, language: Language): string => {
 
     case "procedureCall": {
       const name =
-        stmt.command.__ === "Command"
+        stmt.command.kind === "Command"
           ? (stmt.command.names[language] as string)
           : stmt.command.name;
       if (

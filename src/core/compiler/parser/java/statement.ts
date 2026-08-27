@@ -1,29 +1,32 @@
 import { type Lexeme } from "../../lexer/lexeme.ts";
 import { CompilerError } from "../../tools/error.ts";
+import type { CFamilyDialect } from "../cFamily/dialect.ts";
+import parseDoStatement from "../cFamily/statements/doStatement.ts";
+import eosCheck from "../cFamily/statements/eosCheck.ts";
+import parseIfStatement from "../cFamily/statements/ifStatement.ts";
+import parseReturnStatement from "../cFamily/statements/returnStatement.ts";
+import parseWhileStatement from "../cFamily/statements/whileStatement.ts";
+import type { ParserContext } from "../definitions/context.ts";
 import type { Lexemes } from "../definitions/lexemes.ts";
 import { type Subroutine } from "../definitions/routines/subroutine.ts";
 import { type Statement } from "../definitions/statement.ts";
 import makeBreakStatement from "../definitions/statements/breakStatement.ts";
 import makeContinueStatement from "../definitions/statements/continueStatement.ts";
 import makePassStatement from "../definitions/statements/passStatement.ts";
-import parseDoStatement from "./statements/doStatement.ts";
-import eosCheck from "./statements/eosCheck.ts";
 import parseForStatement from "./statements/forStatement.ts";
-import parseIfStatement from "./statements/ifStatement.ts";
-import parseReturnStatement from "./statements/returnStatement.ts";
 import parseSimpleStatement from "./statements/simpleStatement.ts";
-import parseWhileStatement from "./statements/whileStatement.ts";
 
 const parseStatement = (
   lexeme: Lexeme,
   lexemes: Lexemes,
+  context: ParserContext,
   routine: Subroutine,
 ): Statement => {
   let statement: Statement;
 
   switch (lexeme.type) {
     case "comment":
-      lexemes.next();
+      lexemes.advance();
       statement = makePassStatement();
       break;
 
@@ -42,13 +45,19 @@ const parseStatement = (
           break;
 
         case "return":
-          lexemes.next();
-          statement = parseReturnStatement(lexeme, lexemes, routine);
+          lexemes.advance();
+          statement = parseReturnStatement(lexeme, lexemes, routine, dialect);
           break;
 
         case "if":
-          lexemes.next();
-          statement = parseIfStatement(lexeme, lexemes, routine);
+          lexemes.advance();
+          statement = parseIfStatement(
+            lexeme,
+            lexemes,
+            context,
+            routine,
+            dialect,
+          );
           break;
 
         case "else":
@@ -58,40 +67,58 @@ const parseStatement = (
           );
 
         case "for":
-          lexemes.next();
-          statement = parseForStatement(lexeme, lexemes, routine);
+          lexemes.advance();
+          statement = parseForStatement(
+            lexeme,
+            lexemes,
+            context,
+            routine,
+            dialect,
+          );
           break;
 
         case "do":
-          lexemes.next();
-          statement = parseDoStatement(lexeme, lexemes, routine);
+          lexemes.advance();
+          statement = parseDoStatement(
+            lexeme,
+            lexemes,
+            context,
+            routine,
+            dialect,
+          );
           break;
 
         case "while":
-          lexemes.next();
-          statement = parseWhileStatement(lexeme, lexemes, routine);
+          lexemes.advance();
+          statement = parseWhileStatement(
+            lexeme,
+            lexemes,
+            context,
+            routine,
+            dialect,
+          );
           break;
 
         case "break":
-          if (routine.loopDepth === 0) {
+          if (!context.insideLoop(routine)) {
             throw new CompilerError(
               "'break' is only allowed inside a loop.",
               lexeme,
             );
           }
-          lexemes.next();
+          lexemes.advance();
           eosCheck(lexemes);
           statement = makeBreakStatement();
           break;
 
         case "continue":
-          if (routine.loopDepth === 0) {
+          if (!context.insideLoop(routine)) {
             throw new CompilerError(
               "'continue' is only allowed inside a loop.",
               lexeme,
             );
           }
-          lexemes.next();
+          lexemes.advance();
           eosCheck(lexemes);
           statement = makeContinueStatement();
           break;
@@ -107,5 +134,8 @@ const parseStatement = (
 
   return statement;
 };
+
+/** what the shared C-family statement parsers need to know about Java */
+const dialect: CFamilyDialect<Subroutine> = { eosCheck, parseStatement };
 
 export default parseStatement;

@@ -2,10 +2,9 @@ import type { Command } from "@/core/constants.ts";
 import type { IdentifierLexeme } from "../../../lexer/lexeme.ts";
 import type { Expression } from "../expression.ts";
 import type { Subroutine } from "../routines/subroutine.ts";
-import makeStatement, { type StatementCommon } from "../statement.ts";
 
-export interface ProcedureCall extends StatementCommon {
-  readonly statementType: "procedureCall";
+export interface ProcedureCall {
+  readonly kind: "procedureCall";
   readonly lexeme: IdentifierLexeme;
   readonly command: Subroutine | Command;
   readonly arguments: Expression[];
@@ -16,8 +15,7 @@ const makeProcedureCall = (
   command: Subroutine | Command,
 ): ProcedureCall =>
   ({
-    ...makeStatement(),
-    statementType: "procedureCall",
+    kind: "procedureCall",
     lexeme,
     command,
     arguments: [] as Expression[],

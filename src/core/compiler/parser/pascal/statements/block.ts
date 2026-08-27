@@ -14,19 +14,19 @@ const parseBlock = (
   const statements: Statement[] = [];
   let end = false;
 
-  if (!lexemes.get()) {
+  if (lexemes.atEnd()) {
     throw new CompilerError(
       `No commands found after "${start.toUpperCase()}".`,
-      lexemes.get(-1),
+      lexemes.peek(-1),
     );
   }
 
-  while (!end && lexemes.get()) {
-    const lexeme = lexemes.get() as Lexeme;
+  while (!end && lexemes.peek()) {
+    const lexeme = lexemes.peek() as Lexeme;
     end = blockEndCheck(start, lexeme);
     if (end) {
       // move past the end lexeme
-      lexemes.next();
+      lexemes.advance();
     } else {
       // compile the statement
       statements.push(parseStatement(lexeme, lexemes, routine));
@@ -38,12 +38,12 @@ const parseBlock = (
     if (start === "begin") {
       throw new CompilerError(
         '"BEGIN" does not have any matching "END".',
-        lexemes.get(-1),
+        lexemes.peek(-1),
       );
     }
     throw new CompilerError(
       '"REPEAT" does not have any matching "UNTIL".',
-      lexemes.get(-1),
+      lexemes.peek(-1),
     );
   }
 

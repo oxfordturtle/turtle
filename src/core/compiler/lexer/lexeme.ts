@@ -1,4 +1,4 @@
-import { type Language, trueValue } from "@/core/constants.ts";
+import { foldCase, type Language, trueValue } from "@/core/constants.ts";
 import type { Token } from "../tokenizer/token.ts";
 import type { Delimiter, Keyword, Operator, Type } from "./types.ts";
 
@@ -20,7 +20,6 @@ export type Lexeme =
   | IdentifierLexeme;
 
 interface LexemeCommon {
-  readonly __: "Lexeme";
   readonly line: number;
   readonly character: number;
   readonly content: string;
@@ -31,7 +30,6 @@ const lexeme = (
   character: number,
   content: string,
 ): LexemeCommon => ({
-  __: "Lexeme",
   line,
   character,
   content,
@@ -324,10 +322,7 @@ export const inputCodeLexeme = (
 ): InputCodeLexeme => ({
   ...lexeme(token.line, token.character, token.content),
   type: "input",
-  value:
-    language === "Pascal"
-      ? token.content.slice(1).toLowerCase()
-      : token.content.slice(1),
+  value: foldCase(language, token.content.slice(1)),
 });
 
 export interface QueryCodeLexeme extends LexemeCommon {
@@ -341,10 +336,7 @@ export const queryCodeLexeme = (
 ): QueryCodeLexeme => ({
   ...lexeme(token.line, token.character, token.content),
   type: "query",
-  value:
-    language === "Pascal"
-      ? token.content.slice(1).toLowerCase()
-      : token.content.slice(1),
+  value: foldCase(language, token.content.slice(1)),
 });
 
 export interface IdentifierLexeme extends LexemeCommon {
@@ -360,5 +352,5 @@ export const identifierLexeme = (
   ...lexeme(token.line, token.character, token.content),
   type: "identifier",
   subtype: token.type === "turtle" ? "turtle" : "identifier",
-  value: language === "Pascal" ? token.content.toLowerCase() : token.content,
+  value: foldCase(language, token.content),
 });

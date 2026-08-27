@@ -3,8 +3,10 @@ import type { Lexemes } from "../definitions/lexemes.ts";
 import makeProgram, { type Program } from "../definitions/routines/program.ts";
 
 export default function program(lexemes: Lexemes): Program {
-  const [keyword, identifier, openingBracket] = lexemes.lexemes.slice(0, 3);
-  const closingBracket = lexemes.lexemes[lexemes.lexemes.length - 1];
+  const keyword = lexemes.at(0);
+  const identifier = lexemes.at(1);
+  const openingBracket = lexemes.at(2);
+  const closingBracket = lexemes.at(lexemes.length - 1);
 
   // "class" check
   if (!keyword) {
@@ -62,20 +64,23 @@ export default function program(lexemes: Lexemes): Program {
   if (!closingBracket) {
     throw new CompilerError(
       'Program must end with a closing bracket "}".',
-      lexemes.lexemes[lexemes.lexemes.length - 1],
+      lexemes.at(lexemes.length - 1),
     );
   }
   // deno-coverage-ignore-stop
   if (closingBracket.content !== "}") {
     throw new CompilerError(
       'Program must end with a closing bracket "}".',
-      lexemes.lexemes[lexemes.lexemes.length],
+      // TODO: one past the last lexeme is always undefined, so this error
+      // reaches the user without a line or character. It should be
+      // `closingBracket`. Left as it is here to keep the refactor behavioural
+      // a no-op.
+      lexemes.at(lexemes.length),
     );
   }
 
   const prog = makeProgram("Java", identifier.content as string);
-  prog.start = 3;
-  prog.end = lexemes.lexemes.length - 1;
+  lexemes.setBody(prog, 3, lexemes.length - 1);
 
   return prog;
 }

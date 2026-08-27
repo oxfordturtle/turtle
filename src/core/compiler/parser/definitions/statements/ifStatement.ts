@@ -1,14 +1,11 @@
 import type { KeywordLexeme } from "../../../lexer/lexeme.ts";
 import type { Constant } from "../constant.ts";
 import type { Expression } from "../expression.ts";
-import makeStatement, {
-  type Statement,
-  type StatementCommon,
-} from "../statement.ts";
+import type { Statement } from "../statement.ts";
 import type { Variable } from "../variable.ts";
 
-export interface IfStatement extends StatementCommon {
-  readonly statementType: "ifStatement";
+export interface IfStatement {
+  readonly kind: "ifStatement";
   readonly lexeme: KeywordLexeme;
   readonly condition: Expression;
   readonly ifStatements: Statement[];
@@ -21,8 +18,7 @@ const makeIfStatement = (
   lexeme: KeywordLexeme,
   condition: Expression,
 ): IfStatement => ({
-  ...makeStatement(),
-  statementType: "ifStatement",
+  kind: "ifStatement",
   lexeme,
   condition,
   ifStatements: [],

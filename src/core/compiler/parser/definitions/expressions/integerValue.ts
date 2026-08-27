@@ -3,10 +3,9 @@ import type {
   CharacterLexeme,
   IntegerLexeme,
 } from "../../../lexer/lexeme.ts";
-import { type ExpressionCommon, makeExpression } from "../expression.ts";
 
-export interface IntegerValue extends ExpressionCommon {
-  readonly expressionType: "integer";
+export interface IntegerValue {
+  readonly kind: "integer";
   readonly lexeme: BooleanLexeme | CharacterLexeme | IntegerLexeme;
   readonly type: "boolean" | "character" | "integer";
   readonly value: number;
@@ -15,8 +14,7 @@ export interface IntegerValue extends ExpressionCommon {
 const makeIntegerValue = (
   lexeme: BooleanLexeme | CharacterLexeme | IntegerLexeme,
 ): IntegerValue => ({
-  ...makeExpression(),
-  expressionType: "integer",
+  kind: "integer",
   lexeme,
   type: lexeme.subtype,
   value: lexeme.value,

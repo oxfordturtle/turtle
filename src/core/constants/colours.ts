@@ -1,5 +1,4 @@
 export interface Colour {
-  readonly __: "Colour";
   readonly index: number;
   readonly names: {
     readonly BASIC: string;
@@ -20,7 +19,6 @@ const colour = (
   value: number,
   dark: boolean,
 ): Colour => ({
-  __: "Colour",
   index,
   names: {
     BASIC: name.toUpperCase(),

@@ -70,8 +70,25 @@ passing silently. See `TODO.md` §3.2.
   language's syntax needs that no other shares.
 - `parser/common/` — the machinery they share: expressions, factors, arguments,
   type checking, name resolution.
+- `parser/cFamily/` — what C, Java and TypeScript share on top of that: the
+  brace-and-semicolon statement parsers (`block`, `if`, `while`, `do`,
+  `return`), which the three used to hold near-identical copies of. Each
+  language passes a `CFamilyDialect` (see `cFamily/dialect.ts`) saying how it
+  ends a statement and which statement parser a block is a sequence of; the
+  type parameter on the dialect is what distinguishes TypeScript, which allows
+  statements at the top level, from C and Java, which do not.
 - `parser/definitions/` — the AST node types themselves, plus the per-language
   operator precedence ladders.
+
+`parser/definitions/lexemes.ts` holds the cursor every parser is handed. Its
+index is private, so the only way through the stream is its own API: `peek`,
+`advance`, `atEnd`, `match` and the two match-or-throw methods, `expect` (which
+blames whatever was found) and `expectAfter` (which blames the lexeme the
+expected content was meant to follow, and so still has something to point at
+when the stream has run dry). BASIC, Java, Python and TypeScript are two-pass —
+they scan once for the subroutine boundaries, recording each routine's `start`
+and `end`, then rewind and parse the bodies — so the cursor also offers named
+random access: `mark`, `seek`, `before`, `at` and `indexOf`.
 
 Precedence lives in `parser/definitions/operators.ts` as a table of rungs,
 loosest first, which `common/expression.ts` walks. The tightest-binding prefixes
@@ -104,6 +121,17 @@ start a new pcode line. This trips up short-circuit `and`/`or`
 
 `encoder/encode.ts` finishes the job: back-patch subroutine calls, resolve
 relative jumps, append `HCLR` to every line that made a heap string, `HALT`.
+
+### Performance
+
+`deno task bench` compiles the whole `assets/examples/` corpus and reports where
+the time goes: per stage, per keystroke (`tokenize` then `highlight`, which is
+what the editor re-runs on every edit), and — the part worth reading first — a
+**scaling check**, the same work at 1x/2x/4x/8x the input as ms-per-unit. A flat
+column is linear; a rising one is quadratic, and says so long before the
+absolute numbers look alarming. Absolute timings are machine-dependent and are
+not gated; `deno task bench --check` gates the scaling ratio, which is not.
+See `tools/benchmark.ts`.
 
 ## `core/` — the machine
 

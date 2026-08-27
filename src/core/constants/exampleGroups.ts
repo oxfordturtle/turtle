@@ -1,7 +1,6 @@
 import { examples } from "./examples.ts";
 
 export interface ExampleGroup {
-  readonly __: "ExampleGroup";
   readonly index: number;
   readonly id: ExampleGroupId;
   readonly title: string;
@@ -26,7 +25,6 @@ const exampleGroup = (
   id: ExampleGroupId,
   title: string,
 ): ExampleGroup => ({
-  __: "ExampleGroup",
   index,
   id,
   title,

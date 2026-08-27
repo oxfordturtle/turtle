@@ -28,22 +28,22 @@ const parseSimpleStatement = (
       switch (lexeme.subtype) {
         // "const" means constant definition
         case "const":
-          lexemes.next();
+          lexemes.advance();
           constant(lexemes, routine, false);
           return makePassStatement();
 
         // "var" means a variable declaration
         case "var": {
-          lexemes.next();
+          lexemes.advance();
           // on the second pass, we know the next lexeme is an identifier, and that it
           // names a variable that has been defined
-          const variableLexeme = lexemes.get() as IdentifierLexeme;
+          const variableLexeme = lexemes.peek() as IdentifierLexeme;
           const foo = find.variable(
             routine,
             variableLexeme.content,
           ) as Variable;
           variable(lexemes, routine, false);
-          if (lexemes.get()?.content === "=") {
+          if (lexemes.peek()?.content === "=") {
             return parseVariableAssignment(
               variableLexeme,
               lexemes,
@@ -74,14 +74,14 @@ const parseSimpleStatement = (
           lexeme,
         );
       } else if (bar) {
-        lexemes.next();
+        lexemes.advance();
         return parseVariableAssignment(lexeme, lexemes, routine, bar);
       } else if (baz) {
-        lexemes.next();
+        lexemes.advance();
         const statement = parseProcedureCall(lexeme, lexemes, routine, baz);
         return statement;
       } else {
-        throw new CompilerError("{lex} is not defined.", lexemes.get());
+        throw new CompilerError("{lex} is not defined.", lexemes.peek());
       }
     }
   }

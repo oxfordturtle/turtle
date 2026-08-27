@@ -8,7 +8,7 @@ export default (
   startLine: number,
   options: Options,
 ): number[][] => {
-  const program = routine.__ === "Subroutine" ? getProgram(routine) : routine;
+  const program = routine.kind === "Subroutine" ? getProgram(routine) : routine;
   const pcode: number[][] = [];
   for (const stmt of routine.statements) {
     pcode.push(...statement(stmt, program, startLine + pcode.length, options));

@@ -4,10 +4,9 @@ import { type Expression, getType } from "../expression.ts";
 import makeCompoundExpression from "../expressions/compoundExpression.ts";
 import makeVariableValue from "../expressions/variableValue.ts";
 import type { Variable } from "../variable.ts";
-import makeStatement, { type StatementCommon } from "../statement.ts";
 
-export interface VariableAssignment extends StatementCommon {
-  readonly statementType: "variableAssignment";
+export interface VariableAssignment {
+  readonly kind: "variableAssignment";
   readonly lexeme: OperatorLexeme;
   readonly variable: Variable;
   readonly indexes: Expression[];
@@ -27,8 +26,7 @@ const makeVariableAssignment = (
   value: Expression,
 ): VariableAssignment => {
   const common = {
-    ...makeStatement(),
-    statementType: "variableAssignment" as const,
+    kind: "variableAssignment" as const,
     lexeme,
     variable,
     indexes,
@@ -50,7 +48,7 @@ const makeVariableAssignment = (
   // target's type is consulted, because the caller has already type-checked
   // `value` against it. (No "character" case: only Python has "+="/"-=" - see
   // tokenizer/tokenize.ts's operator patterns - and Python has no character
-  // type, see ../expression.ts's languagesWithCharacterType.)
+  // type, see constants/languages.ts's traits.characterType.)
   const isString = getType(currentValue) === "string";
   if (isString && lexeme.content === "-=") {
     throw new CompilerError(

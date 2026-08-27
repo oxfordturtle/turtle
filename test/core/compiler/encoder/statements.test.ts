@@ -5,8 +5,8 @@ import { compileAndEncode, countOf, includesCode } from "./lib/helpers.ts";
 import { runPcode } from "../../machine/lib/helpers.ts";
 
 /**
- * Covers `src/core/compiler/encoder/statement.ts` (the statementType
- * dispatcher) and everything under `src/core/compiler/encoder/statements/`.
+ * Covers `src/core/compiler/encoder/statement.ts` (the `kind` dispatcher) and
+ * everything under `src/core/compiler/encoder/statements/`.
  * `forStatement.ts` is already fully covered by
  * `test/core/compiler/encode.test.ts` and isn't specifically targeted here
  * (though the break/continue tests below reach it incidentally).
@@ -238,9 +238,9 @@ describe("encoder: lists.ts (Python list methods in statement position)", () => 
   // Genuinely unreachable, marked with deno-coverage-ignore in lists.ts:
   //
   // - Both "the receiver isn't a plain variable, so bail out and return
-  //   null" guards (listProcedureCallCode's `receiver.expressionType !==
-  //   "variable"` and listFunctionCallCode's equivalent ternary + `if
-  //   (!variable)`). A dot-method call can only be parsed in two places -
+  //   null" guards (listProcedureCallCode's `receiver.kind !== "variable"`
+  //   and listFunctionCallCode's equivalent ternary + `if (!variable)`). A
+  //   dot-method call can only be parsed in two places -
   //   python/statement.ts (statement position) and parser/common/factor.ts
   //   (expression position) - and both require an identifier that resolves
   //   to a variable *first*, then build the receiver with

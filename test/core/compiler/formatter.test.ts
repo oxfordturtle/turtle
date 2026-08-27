@@ -31,7 +31,7 @@ import { LANGUAGES } from "./lib/languages.ts";
 /** All the variable-assignment values in a parsed program, in order. */
 const assignedValues = (language: Language, code: string): Expression[] =>
   bodyStatements(language, parseProgram(language, code))
-    .filter((s) => s.statementType === "variableAssignment")
+    .filter((s) => s.kind === "variableAssignment")
     .map((s) => s.value);
 
 /** The last variable-assignment value in a parsed program - the expression under test. */
@@ -48,9 +48,9 @@ const lastAssignedValue = (language: Language, code: string): Expression => {
 const formatChecked = (
   language: Language,
   exp: Expression,
-  expressionType: Expression["expressionType"],
+  kind: Expression["kind"],
 ): string => {
-  assertEquals(exp.expressionType, expressionType);
+  assertEquals(exp.kind, kind);
   return formatExpression(exp, language);
 };
 
@@ -210,8 +210,8 @@ describe("compiler: formatter (unfinished stub, TODO.md §2.2)", () => {
       it("renders a Python cast invisibly too", () => {
         // print(5) implicitly stringifies its argument via a synthesized cast
         const statement = firstStatement("Python", "print(5)");
-        assertEquals(statement.statementType, "procedureCall");
-        if (statement.statementType !== "procedureCall") return;
+        assertEquals(statement.kind, "procedureCall");
+        if (statement.kind !== "procedureCall") return;
         const exp = statement.arguments[0]!;
         assertEquals(formatChecked("Python", exp, "cast"), "5");
       });
@@ -292,8 +292,8 @@ describe("compiler: formatter (unfinished stub, TODO.md §2.2)", () => {
         );
         const main = program.subroutines.find((r) => r.name === "main");
         const statement = main?.statements[0];
-        assertEquals(statement?.statementType, "variableAssignment");
-        if (statement?.statementType !== "variableAssignment") return;
+        assertEquals(statement?.kind, "variableAssignment");
+        if (statement?.kind !== "variableAssignment") return;
         assertEquals(formatChecked("C", statement.value, "function"), "f()");
       });
     });
@@ -341,8 +341,8 @@ describe("compiler: formatter (unfinished stub, TODO.md §2.2)", () => {
       it('[known limitation] renders a named argument as "TODO"', () => {
         // should render name and value, e.g. "sep=''"
         const statement = firstStatement("Python", "print('a', sep='')");
-        assertEquals(statement.statementType, "procedureCall");
-        if (statement.statementType !== "procedureCall") return;
+        assertEquals(statement.kind, "procedureCall");
+        if (statement.kind !== "procedureCall") return;
         const exp = statement.arguments[1]!;
         assertEquals(formatChecked("Python", exp, "namedArgument"), "TODO");
         // and the containing call currently renders with the placeholder
@@ -407,7 +407,7 @@ describe("compiler: formatter (unfinished stub, TODO.md §2.2)", () => {
       it("renders a user-defined procedure call with its arguments", () => {
         const program = parseProgram("Python", "def f(x):\n    print(x)\nf(1)");
         const statement = program.statements.find(
-          (s) => s.statementType === "procedureCall",
+          (s) => s.kind === "procedureCall",
         );
         assertEquals(statement === undefined, false);
         assertEquals(formatStatement(statement as Statement, "Python"), "f(1)");
@@ -421,7 +421,7 @@ describe("compiler: formatter (unfinished stub, TODO.md §2.2)", () => {
           "def f(x):\n    return x + 1\ny = f(1)",
         );
         const statement = program.subroutines[0]?.statements.find(
-          (s) => s.statementType === "returnStatement",
+          (s) => s.kind === "returnStatement",
         );
         assertEquals(statement === undefined, false);
         assertEquals(
@@ -449,13 +449,13 @@ describe("compiler: formatter (unfinished stub, TODO.md §2.2)", () => {
       // syntax, bodies included - is noted per test, and implementing an arm
       // must update its pin
 
-      /** Asserts the statement parsed as `statementType` and formats to "TODO". */
+      /** Asserts the statement parsed as `kind` and formats to "TODO". */
       const assertTodo = (
         statement: Statement,
-        statementType: Statement["statementType"],
+        kind: Statement["kind"],
         language: Language = "Python",
       ): void => {
-        assertEquals(statement.statementType, statementType);
+        assertEquals(statement.kind, kind);
         assertEquals(formatStatement(statement, language), "TODO");
       };
 
@@ -501,8 +501,8 @@ describe("compiler: formatter (unfinished stub, TODO.md §2.2)", () => {
       it('[known limitation] renders a pass statement as "TODO"', () => {
         // should be "pass"
         const outer = firstStatement("Python", "if 1 == 1:\n    pass");
-        assertEquals(outer.statementType, "ifStatement");
-        if (outer.statementType !== "ifStatement") return;
+        assertEquals(outer.kind, "ifStatement");
+        if (outer.kind !== "ifStatement") return;
         assertTodo(outer.ifStatements[0]!, "passStatement");
       });
 
@@ -515,14 +515,14 @@ describe("compiler: formatter (unfinished stub, TODO.md §2.2)", () => {
             "x = 0\nwhile x < 3:\n    x = x + 1\n    if x == 1:\n        continue\n    if x == 2:\n        break",
           ),
         )[1];
-        assertEquals(loop?.statementType, "whileStatement");
-        if (loop?.statementType !== "whileStatement") return;
+        assertEquals(loop?.kind, "whileStatement");
+        if (loop?.kind !== "whileStatement") return;
         const [ifContinue, ifBreak] = [loop.statements[1], loop.statements[2]];
-        assertEquals(ifContinue?.statementType, "ifStatement");
-        assertEquals(ifBreak?.statementType, "ifStatement");
+        assertEquals(ifContinue?.kind, "ifStatement");
+        assertEquals(ifBreak?.kind, "ifStatement");
         if (
-          ifContinue?.statementType !== "ifStatement" ||
-          ifBreak?.statementType !== "ifStatement"
+          ifContinue?.kind !== "ifStatement" ||
+          ifBreak?.kind !== "ifStatement"
         ) {
           return;
         }

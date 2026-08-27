@@ -12,123 +12,99 @@ export default function type(
   routine: Program | Subroutine,
   isParameter: boolean,
 ): [Type, number, [number, number][]] {
-  if (!lexemes.get()) {
+  if (lexemes.atEnd()) {
     throw new CompilerError(
       'Expected type specification (": <type>").',
-      lexemes.get(-1),
+      lexemes.peek(-1),
     );
   }
-  if (lexemes.get()?.content !== ":") {
-    throw new CompilerError(
-      'Expected type specification (": <type>").',
-      lexemes.get(),
-    );
-  }
-  lexemes.next();
+  lexemes.expect(":", 'Expected type specification (": <type>").');
 
   const arrayDimensions: [number, number][] = [];
-  if (lexemes.get()?.content === "array") {
+  if (lexemes.peek()?.content === "array") {
     if (isParameter) {
-      while (lexemes.get()?.content === "array") {
+      while (lexemes.peek()?.content === "array") {
         // give dummy array dimensions
         arrayDimensions.push([0, 0]);
-        lexemes.next();
-        if (!lexemes.get() || lexemes.get()?.content !== "of") {
-          throw new CompilerError(
-            'Keyword "array" must be followed by "of".',
-            lexemes.get(-1),
-          );
-        }
-        lexemes.next();
+        lexemes.advance();
+        lexemes.expectAfter("of", 'Keyword "array" must be followed by "of".');
       }
     } else {
-      lexemes.next();
-      if (!lexemes.get() || lexemes.get()?.content !== "[") {
-        throw new CompilerError(
-          'Keyword "array" must be followed by array dimensions.',
-          lexemes.get(-1),
-        );
-      }
-      lexemes.next();
-      while (lexemes.get() && lexemes.get()?.content !== "]") {
+      lexemes.advance();
+      lexemes.expectAfter(
+        "[",
+        'Keyword "array" must be followed by array dimensions.',
+      );
+      while (!lexemes.atEnd() && lexemes.peek()?.content !== "]") {
         const startExp = parseExpression(lexemes, routine);
         typeCheck(routine.language, startExp, "integer");
         const start = evaluate(startExp, "Pascal", "array") as number;
-        if (!lexemes.get() || lexemes.get()?.content !== "..") {
-          throw new CompilerError(
-            'Array start index must be followed by ".." then the end index.',
-            lexemes.get(-1),
-          );
-        }
-        lexemes.next();
+        lexemes.expectAfter(
+          "..",
+          'Array start index must be followed by ".." then the end index.',
+        );
         const endExp = parseExpression(lexemes, routine);
         typeCheck(routine.language, endExp, "integer");
         const end = evaluate(endExp, "Pascal", "array") as number;
         // push the dimensions and move on
         arrayDimensions.push([start, end]);
-        if (lexemes.get()?.content === ",") {
-          lexemes.next();
-        } else if (lexemes.get()?.content !== "]") {
+        if (!lexemes.match(",") && lexemes.peek()?.content !== "]") {
           throw new CompilerError(
             "Comma missing between array dimensions.",
-            lexemes.get(-1),
+            lexemes.peek(-1),
           );
         }
       }
       // check we came out of the previous loop for the right reason
-      if (!lexemes.get()) {
+      if (lexemes.atEnd()) {
         throw new CompilerError(
           'Closing bracket "]" missing after array dimensions specification.',
-          lexemes.get(-1),
+          lexemes.peek(-1),
         );
       }
-      lexemes.next(); // move past the closing bracket
-      if (!lexemes.get() || lexemes.get()?.content?.toLowerCase() !== "of") {
+      lexemes.advance(); // move past the closing bracket
+      if (lexemes.peek()?.content?.toLowerCase() !== "of") {
         throw new CompilerError(
           '"array[...]" must be followed by "of".',
-          lexemes.get(-1),
+          lexemes.peek(-1),
         );
       }
-      lexemes.next();
+      lexemes.advance();
     }
   }
 
-  const typeLexeme = lexemes.get();
+  const typeLexeme = lexemes.peek();
   if (!typeLexeme) {
     throw new CompilerError(
       'Expected type definition ("array", "boolean", "char", "integer", or "string").',
-      lexemes.get(-1),
+      lexemes.peek(-1),
     );
   }
   if (typeLexeme.type !== "type") {
     throw new CompilerError(
       '{lex} is not a valid type definition (expected "array", "boolean", "char", "integer", or "string").',
-      lexemes.get(),
+      lexemes.peek(),
     );
   }
   const type = typeLexeme.subtype as Type;
-  lexemes.next();
+  lexemes.advance();
 
   let stringLength = 64;
   if (type === "string") {
-    if (lexemes.get()?.content === "[") {
-      lexemes.next();
+    if (lexemes.match("[")) {
       const stringLengthExp = parseExpression(lexemes, routine);
       typeCheck(routine.language, stringLengthExp, "integer");
       stringLength = evaluate(stringLengthExp, "Pascal", "string") as number;
-      if (!lexemes.get()) {
+      if (lexemes.atEnd()) {
         throw new CompilerError(
           'Closing bracket "]" missing after string size specification.',
-          lexemes.get(-1),
+          lexemes.peek(-1),
         );
       }
-      if (lexemes.get()?.content !== "]") {
-        throw new CompilerError(
-          'Closing bracket "]" missing after string size specification.',
-          lexemes.get(),
-        );
-      }
-      lexemes.next();
+      lexemes.expect(
+        "]",
+        'Closing bracket "]" missing after string size specification.',
+      );
     }
   }
 

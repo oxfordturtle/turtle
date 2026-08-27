@@ -1,3 +1,4 @@
+import { traits } from "@/core/constants.ts";
 import type { Type } from "../../lexer/types.ts";
 import type { CastExpression } from "./expressions/castExpression.ts";
 import type { ColourValue } from "./expressions/colourValue.ts";
@@ -28,19 +29,10 @@ export type Expression =
   | CastExpression
   | ListLiteral;
 
-export interface ExpressionCommon {
-  readonly __: "expression";
-}
-
-export const makeExpression = (): ExpressionCommon => ({
-  __: "expression",
-});
-
 export const getType = (expression: Expression): Type => {
-  const languagesWithCharacterType = ["C", "Java", "Pascal"];
-  switch (expression.expressionType) {
+  switch (expression.kind) {
     case "constant":
-      if (languagesWithCharacterType.includes(expression.constant.language)) {
+      if (traits[expression.constant.language].characterType) {
         return expression.constant.type === "string" &&
           expression.indexes.length > 0
           ? "character"
@@ -64,9 +56,7 @@ export const getType = (expression: Expression): Type => {
             : expression.variable.listElementKind) ?? "boolint"
         );
       }
-      return languagesWithCharacterType.includes(
-        expression.variable.routine.language,
-      )
+      return traits[expression.variable.routine.language].characterType
         ? expression.variable.type === "string" &&
           expression.indexes.length > expression.variable.arrayDimensions.length
           ? "character"
@@ -94,10 +84,10 @@ export const getType = (expression: Expression): Type => {
 
 /** True even when the element kind isn't yet known. For a list of lists, "wins[i]" is still a list; only "wins[i][j]" is a scalar. */
 export const isListExpression = (expression: Expression): boolean => {
-  if (expression.expressionType === "listLiteral") {
+  if (expression.kind === "listLiteral") {
     return true;
   }
-  if (expression.expressionType === "variable") {
+  if (expression.kind === "variable") {
     if (!expression.variable.isList) {
       return false;
     }
@@ -118,7 +108,7 @@ export const isListExpression = (expression: Expression): boolean => {
 export const getListElementKind = (
   expression: Expression,
 ): "integer" | "string" | undefined => {
-  switch (expression.expressionType) {
+  switch (expression.kind) {
     case "listLiteral":
       return expression.listElementKind;
     case "variable": {

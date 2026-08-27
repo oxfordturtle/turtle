@@ -1,12 +1,9 @@
-import makeStatement, { type StatementCommon } from "../statement.ts";
-
-export interface ContinueStatement extends StatementCommon {
-  readonly statementType: "continueStatement";
+export interface ContinueStatement {
+  readonly kind: "continueStatement";
 }
 
 const makeContinueStatement = (): ContinueStatement => ({
-  ...makeStatement(),
-  statementType: "continueStatement",
+  kind: "continueStatement",
 });
 
 export default makeContinueStatement;

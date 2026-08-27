@@ -45,7 +45,7 @@ describe("parse: BASIC", () => {
     it("ignores a comment as a pass statement", () => {
       const program = parseProgram("BASIC", "REM hello\nEND");
       assertEquals(program.statements.length, 1);
-      assertEquals(program.statements[0]?.statementType, "passStatement");
+      assertEquals(program.statements[0]?.kind, "passStatement");
     });
 
     it("throws on anything but a subroutine definition after END", () => {
@@ -61,8 +61,8 @@ describe("parse: BASIC", () => {
       // line break, so the comment doesn't need a separator before it
       const program = parseProgram("BASIC", "x% = 1 REM why not\ny% = 2\nEND");
       assertEquals(program.statements.length, 2);
-      assertEquals(program.statements[0]?.statementType, "variableAssignment");
-      assertEquals(program.statements[1]?.statementType, "variableAssignment");
+      assertEquals(program.statements[0]?.kind, "variableAssignment");
+      assertEquals(program.statements[1]?.kind, "variableAssignment");
     });
 
     it("throws when a statement begins with a literal value", () => {
@@ -135,7 +135,7 @@ describe("parse: BASIC", () => {
       );
       const sub = program.subroutines[0];
       const returnStatement = sub?.statements.find(
-        (s) => s.statementType === "returnStatement",
+        (s) => s.kind === "returnStatement",
       ) as ReturnStatement | undefined;
       assertExists(returnStatement);
     });
@@ -192,7 +192,7 @@ describe("parse: BASIC", () => {
       );
       const sub = program.subroutines[0];
       assertEquals(
-        sub?.statements.map((s) => s.statementType),
+        sub?.statements.map((s) => s.kind),
         ["variableAssignment", "returnStatement"],
       );
     });
@@ -439,7 +439,7 @@ describe("parse: BASIC", () => {
     it("parses a one-line IF...THEN with no ELSE", () => {
       const program = parseProgram("BASIC", "IF TRUE THEN x% = 1\nEND");
       const ifStatement = program.statements.find(
-        (s) => s.statementType === "ifStatement",
+        (s) => s.kind === "ifStatement",
       ) as IfStatement | undefined;
       assertExists(ifStatement);
       assertEquals(ifStatement.elseStatements.length, 0);
@@ -451,7 +451,7 @@ describe("parse: BASIC", () => {
         "IF TRUE THEN\nx% = 1\ny% = 2\nENDIF\nEND",
       );
       const ifStatement = program.statements.find(
-        (s) => s.statementType === "ifStatement",
+        (s) => s.kind === "ifStatement",
       ) as IfStatement | undefined;
       assertExists(ifStatement);
       assertEquals(ifStatement.ifStatements.length, 2);
@@ -463,7 +463,7 @@ describe("parse: BASIC", () => {
         "IF TRUE THEN\nx% = 1\nELSE\nx% = 2\nENDIF\nEND",
       );
       const ifStatement = program.statements.find(
-        (s) => s.statementType === "ifStatement",
+        (s) => s.kind === "ifStatement",
       ) as IfStatement | undefined;
       assertExists(ifStatement);
       assertEquals(ifStatement.elseStatements.length, 1);
@@ -481,12 +481,9 @@ describe("parse: BASIC", () => {
       );
       assertEquals(program.statements.length, 1);
       const ifStatement = program.statements[0] as IfStatement;
-      assertEquals(ifStatement.statementType, "ifStatement");
+      assertEquals(ifStatement.kind, "ifStatement");
       assertEquals(ifStatement.ifStatements.length, 1);
-      assertEquals(
-        ifStatement.ifStatements[0]?.statementType,
-        "variableAssignment",
-      );
+      assertEquals(ifStatement.ifStatements[0]?.kind, "variableAssignment");
     });
 
     it("doesn't let a comment between ELSE and the body swallow the body", () => {
@@ -497,10 +494,7 @@ describe("parse: BASIC", () => {
       assertEquals(program.statements.length, 1);
       const ifStatement = program.statements[0] as IfStatement;
       assertEquals(ifStatement.elseStatements.length, 1);
-      assertEquals(
-        ifStatement.elseStatements[0]?.statementType,
-        "variableAssignment",
-      );
+      assertEquals(ifStatement.elseStatements[0]?.kind, "variableAssignment");
     });
 
     it("throws if IF is not followed by THEN", () => {
@@ -545,17 +539,17 @@ describe("parse: BASIC", () => {
     it("counts up to the final value when there is no STEP", () => {
       const program = parseProgram("BASIC", "FOR i% = 1 TO 10\nNEXT\nEND");
       const forStatement = program.statements[0] as ForStatement;
-      assertEquals(forStatement.statementType, "forStatement");
-      assertEquals(forStatement.condition.expressionType, "compound");
-      if (forStatement.condition.expressionType === "compound") {
+      assertEquals(forStatement.kind, "forStatement");
+      assertEquals(forStatement.condition.kind, "compound");
+      if (forStatement.condition.kind === "compound") {
         assertEquals(forStatement.condition.operator, "lseq");
       }
       // the implicit step change is "i% = i% + 1"
-      assertEquals(forStatement.change.value.expressionType, "compound");
-      if (forStatement.change.value.expressionType === "compound") {
+      assertEquals(forStatement.change.value.kind, "compound");
+      if (forStatement.change.value.kind === "compound") {
         assertEquals(forStatement.change.value.operator, "plus");
-        assertEquals(forStatement.change.value.right.expressionType, "integer");
-        if (forStatement.change.value.right.expressionType === "integer") {
+        assertEquals(forStatement.change.value.right.kind, "integer");
+        if (forStatement.change.value.right.kind === "integer") {
           assertEquals(forStatement.change.value.right.value, 1);
         }
       }
@@ -567,12 +561,12 @@ describe("parse: BASIC", () => {
         "FOR i% = 10 TO 1 STEP -1\nNEXT\nEND",
       );
       const forStatement = program.statements.find(
-        (s) => s.statementType === "forStatement",
+        (s) => s.kind === "forStatement",
       ) as ForStatement | undefined;
       assertExists(forStatement);
       // a negative step flips the loop condition from "<=" to ">="
-      assertEquals(forStatement.condition.expressionType, "compound");
-      if (forStatement.condition.expressionType === "compound") {
+      assertEquals(forStatement.condition.kind, "compound");
+      if (forStatement.condition.kind === "compound") {
         assertEquals(forStatement.condition.operator, "mreq");
       }
     });
@@ -583,17 +577,17 @@ describe("parse: BASIC", () => {
         "FOR i% = 1 TO 10 STEP 2\nNEXT\nEND",
       );
       const forStatement = program.statements[0] as ForStatement;
-      assertEquals(forStatement.statementType, "forStatement");
+      assertEquals(forStatement.kind, "forStatement");
       // a positive step keeps the "<=" condition, but the step change is
       // the given value rather than the default 1
-      assertEquals(forStatement.condition.expressionType, "compound");
-      if (forStatement.condition.expressionType === "compound") {
+      assertEquals(forStatement.condition.kind, "compound");
+      if (forStatement.condition.kind === "compound") {
         assertEquals(forStatement.condition.operator, "lseq");
       }
-      assertEquals(forStatement.change.value.expressionType, "compound");
-      if (forStatement.change.value.expressionType === "compound") {
-        assertEquals(forStatement.change.value.right.expressionType, "integer");
-        if (forStatement.change.value.right.expressionType === "integer") {
+      assertEquals(forStatement.change.value.kind, "compound");
+      if (forStatement.change.value.kind === "compound") {
+        assertEquals(forStatement.change.value.right.kind, "integer");
+        if (forStatement.change.value.right.kind === "integer") {
           assertEquals(forStatement.change.value.right.value, 2);
         }
       }
@@ -629,14 +623,11 @@ describe("parse: BASIC", () => {
         "FOR i% = 1 TO 3 REM comment\ni% = i%\nNEXT\nEND",
       );
       const forStatement = program.statements.find(
-        (s) => s.statementType === "forStatement",
+        (s) => s.kind === "forStatement",
       ) as ForStatement | undefined;
       assertExists(forStatement);
       assertEquals(forStatement.statements.length, 1);
-      assertEquals(
-        forStatement.statements[0]?.statementType,
-        "variableAssignment",
-      );
+      assertEquals(forStatement.statements[0]?.kind, "variableAssignment");
     });
 
     it("throws if the STEP value is zero", () => {
@@ -695,14 +686,11 @@ describe("parse: BASIC", () => {
         "FOR i% = 1 TO 3 x% = 1\nNEXT\nEND",
       );
       const forStatement = program.statements.find(
-        (s) => s.statementType === "forStatement",
+        (s) => s.kind === "forStatement",
       ) as ForStatement | undefined;
       assertExists(forStatement);
       assertEquals(forStatement.statements.length, 1);
-      assertEquals(
-        forStatement.statements[0]?.statementType,
-        "variableAssignment",
-      );
+      assertEquals(forStatement.statements[0]?.kind, "variableAssignment");
     });
 
     it("supports a whole FOR loop on one line, colon-separated", () => {
@@ -711,7 +699,7 @@ describe("parse: BASIC", () => {
         "FOR i% = 1 TO 3 x% = 1 : y% = 2 : NEXT\nEND",
       );
       const forStatement = program.statements.find(
-        (s) => s.statementType === "forStatement",
+        (s) => s.kind === "forStatement",
       ) as ForStatement | undefined;
       assertExists(forStatement);
       assertEquals(forStatement.statements.length, 2);
@@ -733,7 +721,7 @@ describe("parse: BASIC", () => {
         "x% = 0\nREPEAT\nx% = x% + 1\nUNTIL x% = 3\nEND",
       );
       const repeatStatement = program.statements.find(
-        (s) => s.statementType === "repeatStatement",
+        (s) => s.kind === "repeatStatement",
       ) as RepeatStatement | undefined;
       assertExists(repeatStatement);
     });
@@ -747,14 +735,11 @@ describe("parse: BASIC", () => {
         "WHILE TRUE REM comment\nx% = 1\nENDWHILE\nEND",
       );
       const whileStatement = program.statements.find(
-        (s) => s.statementType === "whileStatement",
+        (s) => s.kind === "whileStatement",
       ) as WhileStatement | undefined;
       assertExists(whileStatement);
       assertEquals(whileStatement.statements.length, 1);
-      assertEquals(
-        whileStatement.statements[0]?.statementType,
-        "variableAssignment",
-      );
+      assertEquals(whileStatement.statements[0]?.kind, "variableAssignment");
     });
 
     it("doesn't let a comment between REPEAT and the body swallow the body", () => {
@@ -763,14 +748,11 @@ describe("parse: BASIC", () => {
         "REPEAT REM comment\nx% = x% + 1\nUNTIL x% = 3\nEND",
       );
       const repeatStatement = program.statements.find(
-        (s) => s.statementType === "repeatStatement",
+        (s) => s.kind === "repeatStatement",
       ) as RepeatStatement | undefined;
       assertExists(repeatStatement);
       assertEquals(repeatStatement.statements.length, 1);
-      assertEquals(
-        repeatStatement.statements[0]?.statementType,
-        "variableAssignment",
-      );
+      assertEquals(repeatStatement.statements[0]?.kind, "variableAssignment");
     });
 
     it("throws on UNTIL with no matching REPEAT (inside a differently-typed block)", () => {
@@ -811,14 +793,11 @@ describe("parse: BASIC", () => {
         "WHILE FALSE x% = 1\nENDWHILE\nEND",
       );
       const whileStatement = program.statements.find(
-        (s) => s.statementType === "whileStatement",
+        (s) => s.kind === "whileStatement",
       ) as WhileStatement | undefined;
       assertExists(whileStatement);
       assertEquals(whileStatement.statements.length, 1);
-      assertEquals(
-        whileStatement.statements[0]?.statementType,
-        "variableAssignment",
-      );
+      assertEquals(whileStatement.statements[0]?.kind, "variableAssignment");
     });
 
     it("throws on a same-line WHILE body with no ENDWHILE", () => {
@@ -832,14 +811,11 @@ describe("parse: BASIC", () => {
     it("supports a loop body starting on the same line as the REPEAT", () => {
       const program = parseProgram("BASIC", "REPEAT x% = 1\nUNTIL TRUE\nEND");
       const repeatStatement = program.statements.find(
-        (s) => s.statementType === "repeatStatement",
+        (s) => s.kind === "repeatStatement",
       ) as RepeatStatement | undefined;
       assertExists(repeatStatement);
       assertEquals(repeatStatement.statements.length, 1);
-      assertEquals(
-        repeatStatement.statements[0]?.statementType,
-        "variableAssignment",
-      );
+      assertEquals(repeatStatement.statements[0]?.kind, "variableAssignment");
     });
 
     it("throws on a same-line REPEAT body with no UNTIL", () => {
@@ -855,7 +831,7 @@ describe("parse: BASIC", () => {
     it("parses array element assignment with indexes", () => {
       const program = parseProgram("BASIC", "DIM arr%(10)\narr%(1) = 5\nEND");
       const assignment = program.statements.find(
-        (s) => s.statementType === "variableAssignment",
+        (s) => s.kind === "variableAssignment",
       ) as VariableAssignment | undefined;
       assertExists(assignment);
       assertEquals(assignment.indexes.length, 1);
@@ -873,7 +849,7 @@ describe("parse: BASIC", () => {
       // the extra index picks a character within the string element
       const program = parseProgram("BASIC", 'DIM s$(3)\ns$(1,2) = "a"\nEND');
       const assignment = program.statements.find(
-        (s) => s.statementType === "variableAssignment",
+        (s) => s.kind === "variableAssignment",
       ) as VariableAssignment | undefined;
       assertExists(assignment);
       assertEquals(assignment.indexes.length, 2);
@@ -956,7 +932,7 @@ describe("parse: BASIC", () => {
     it("parses a zero-parameter command with no brackets", () => {
       const program = parseProgram("BASIC", "HOME\nEND");
       const call = program.statements.find(
-        (s) => s.statementType === "procedureCall",
+        (s) => s.kind === "procedureCall",
       ) as ProcedureCall | undefined;
       assertExists(call);
       assertEquals(call.arguments.length, 0);

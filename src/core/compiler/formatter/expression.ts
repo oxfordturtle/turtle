@@ -3,7 +3,7 @@ import type { Language } from "@/core/constants.ts";
 import type from "./type.ts";
 
 const expression = (exp: Expression, language: Language): string => {
-  switch (exp.expressionType) {
+  switch (exp.kind) {
     case "colour":
     case "constant":
     case "input":
@@ -37,7 +37,7 @@ const expression = (exp: Expression, language: Language): string => {
 
     case "function": {
       const name =
-        exp.command.__ === "Command"
+        exp.command.kind === "Command"
           ? (exp.command.names[language] as string)
           : exp.command.name;
       if (

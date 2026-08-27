@@ -2,7 +2,7 @@ import type { Language } from "@/core/constants.ts";
 import type { Type } from "../../lexer/types.ts";
 
 export interface Constant {
-  readonly __: "constant";
+  readonly kind: "constant";
   readonly name: string;
   readonly language: Language;
   readonly value: number | string;
@@ -14,7 +14,7 @@ const makeConstant = (
   name: string,
   value: number | string,
 ): Constant => ({
-  __: "constant",
+  kind: "constant",
   name,
   language,
   value,

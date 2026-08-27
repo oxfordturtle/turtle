@@ -28,62 +28,62 @@ export default (
   }
 
   // parameters are permissible here
-  if (lexemes.get()?.content === "(") {
-    lexemes.next();
+  if (lexemes.match("(")) {
     subroutine.variables.push(...parameters(lexemes, subroutine));
   }
 
-  if (!lexemes.get()) {
+  if (lexemes.atEnd()) {
     throw new CompilerError(
       "No statements found after subroutine declaration.",
-      lexemes.get(-1),
+      lexemes.peek(-1),
     );
   }
   parseNewLine(lexemes);
 
-  subroutine.start = lexemes.index;
+  const bodyStart = lexemes.mark();
 
   // move past all inner lexemes
   let finished = false;
   if (getSubroutineType(subroutine) === "procedure") {
     // procedure
-    while (lexemes.get() && !finished) {
-      finished = lexemes.get()?.content === "ENDPROC";
-      lexemes.next();
+    while (!lexemes.atEnd() && !finished) {
+      finished = lexemes.peek()?.content === "ENDPROC";
+      lexemes.advance();
     }
   } else {
     // function
-    while (lexemes.get() && !finished) {
+    while (!lexemes.atEnd() && !finished) {
       if (
-        lexemes.get()?.content === "=" &&
-        lexemes.get(-1)?.type === "newline"
+        lexemes.peek()?.content === "=" &&
+        lexemes.peek(-1)?.type === "newline"
       ) {
         finished = true;
-        while (lexemes.get() && lexemes.get()?.type !== "newline") {
-          lexemes.next(); // move past everything up to the next line break
+        while (!lexemes.atEnd() && lexemes.peek()?.type !== "newline") {
+          lexemes.advance(); // move past everything up to the next line break
         }
       } else {
-        lexemes.next();
+        lexemes.advance();
       }
     }
   }
 
-  subroutine.end =
+  const bodyEnd =
     getSubroutineType(subroutine) === "procedure"
-      ? lexemes.index - 2
-      : lexemes.index;
+      ? lexemes.mark() - 2
+      : lexemes.mark();
+  lexemes.setBody(subroutine, bodyStart, bodyEnd);
 
   // check for subroutine end
   if (!finished) {
     if (getSubroutineType(subroutine) === "procedure") {
       throw new CompilerError(
         `Procedure "${subroutine.name}" does not have an end (expected "ENDPROC").`,
-        lexemes.lexemes[subroutine.start],
+        lexemes.at(bodyStart),
       );
     }
     throw new CompilerError(
       `Function "${subroutine.name}" does not have an end (expected "=<expression>").`,
-      lexemes.lexemes[subroutine.end],
+      lexemes.at(bodyEnd),
     );
   }
 
@@ -95,45 +95,40 @@ export default (
 
 function parameters(lexemes: Lexemes, subroutine: Subroutine): Variable[] {
   const parameters: Variable[] = [];
-  while (lexemes.get()?.content !== ")") {
+  while (lexemes.peek()?.content !== ")") {
     let isReferenceParameter = false;
-    if (lexemes.get()?.content === "RETURN") {
+    if (lexemes.peek()?.content === "RETURN") {
       isReferenceParameter = true;
-      lexemes.next();
+      lexemes.advance();
     }
     const parameter = variable(lexemes, subroutine);
     parameter.isParameter = true;
     parameter.isReferenceParameter = isReferenceParameter;
     // brackets here "()" means array parameter
-    if (lexemes.get()?.content === "(") {
+    if (lexemes.peek()?.content === "(") {
       parameter.arrayDimensions.push([0, 0]); // give dummy array dimensions
-      lexemes.next();
-      if (!lexemes.get() || lexemes.get()?.content !== ")") {
-        throw new CompilerError(
-          "Closing bracket missing after array parameter specification.",
-          lexemes.get(-1),
-        );
-      }
-      lexemes.next();
+      lexemes.advance();
+      lexemes.expectAfter(
+        ")",
+        "Closing bracket missing after array parameter specification.",
+      );
     }
     parameters.push(parameter);
-    if (lexemes.get()?.content === ",") {
-      lexemes.next();
-    }
+    lexemes.match(",");
   }
 
   // deno-coverage-ignore-start -- unreachable: the loop above only exits when
   // the current lexeme is ")" (a dry stream re-enters the loop, where the
   // identifier check inside variable() throws first), so the current lexeme
   // is always ")" here
-  if (lexemes.get()?.content !== ")") {
+  if (lexemes.peek()?.content !== ")") {
     throw new CompilerError(
       "Closing bracket missing after method parameters.",
-      lexemes.get(-1),
+      lexemes.peek(-1),
     );
   }
   // deno-coverage-ignore-stop
-  lexemes.next();
+  lexemes.advance();
 
   return parameters;
 }

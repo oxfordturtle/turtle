@@ -9,29 +9,28 @@ export default function basic(lexemes: Lexemes): Program {
   const program = makeProgram("BASIC");
 
   // find the (first) "END" lexeme
-  const endLexemeIndex = lexemes.lexemes.findIndex((x) => x.content === "END");
-  if (endLexemeIndex < 0) {
+  const endMark = lexemes.indexOf("END");
+  if (endMark < 0) {
     throw new CompilerError('Program must end with keyword "END".');
   }
-  program.end = endLexemeIndex;
+  lexemes.setBody(program, 0, endMark);
 
   // first (semi) pass: loop through any lexemes after "END" and hoist subroutine definitions
-  lexemes.index = endLexemeIndex + 1;
-  while (lexemes.get()) {
+  lexemes.seek(endMark + 1);
+  while (!lexemes.atEnd()) {
     if (
-      lexemes.get()?.type === "newline" ||
-      lexemes.get()?.type === "comment"
+      lexemes.peek()?.type === "newline" ||
+      lexemes.peek()?.type === "comment"
     ) {
-      lexemes.next();
-    } else if (lexemes.get()?.content === "DEF") {
-      lexemes.next();
+      lexemes.advance();
+    } else if (lexemes.match("DEF")) {
       program.subroutines.push(
-        subroutine(lexemes.get(-1) as KeywordLexeme, lexemes, program),
+        subroutine(lexemes.peek(-1) as KeywordLexeme, lexemes, program),
       );
     } else {
       throw new CompilerError(
         'Only subroutine definitions are permissible after program "END".',
-        lexemes.get(),
+        lexemes.peek(),
       );
     }
   }

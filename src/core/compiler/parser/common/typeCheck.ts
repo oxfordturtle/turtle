@@ -1,4 +1,4 @@
-import type { Language, Parameter } from "@/core/constants.ts";
+import { type Language, type Parameter, traits } from "@/core/constants.ts";
 import type { Type } from "../../lexer/types.ts";
 import { CompilerError } from "../../tools/error.ts";
 import {
@@ -24,20 +24,20 @@ const typeCheck = (
   // typeIsCertain, unresolved until something later determines it.
   if (
     typeof expected !== "string" &&
-    expected.__ === "Variable" &&
+    expected.kind === "Variable" &&
     !expected.typeIsCertain
   ) {
     if (foundIsList) {
       expected.isList = true;
       // isListOfLists/innerListElementKind must propagate too, or the sublists
       // are mistaken for plain integers
-      if (found.expressionType === "listLiteral" && found.isListOfLists) {
+      if (found.kind === "listLiteral" && found.isListOfLists) {
         expected.isListOfLists = true;
         expected.listElementKind = "integer";
         expected.innerListElementKind = found.innerListElementKind;
         expected.typeIsCertain = found.innerListElementKind !== undefined;
       } else if (
-        found.expressionType === "variable" &&
+        found.kind === "variable" &&
         found.variable.isListOfLists &&
         found.indexes.length === 0
       ) {
@@ -74,7 +74,7 @@ const typeCheck = (
   // are lists of the same element kind, or it's an error
   const expectedIsList =
     typeof expected !== "string" &&
-    expected.__ === "Variable" &&
+    expected.kind === "Variable" &&
     expected.isList;
   if (foundIsList || expectedIsList) {
     if (foundIsList && expectedIsList) {
@@ -102,7 +102,7 @@ const typeCheck = (
 
   // no equivalent branch for a "function" found type: parseFunctionCall has
   // already flipped the called subroutine's typeIsCertain to true
-  if (found.expressionType === "variable" && !found.variable.typeIsCertain) {
+  if (found.kind === "variable" && !found.variable.typeIsCertain) {
     found.variable.type = expectedType;
     found.variable.typeIsCertain = true;
     return found;
@@ -150,17 +150,18 @@ const typeCheck = (
     return found;
   }
 
-  // if INTEGER is found and BOOLEAN is expected, that's fine in Python and TypeScript
+  // if INTEGER is found and BOOLEAN is expected, that's fine in the languages
+  // where a boolean is just an integer
   if (
-    (language === "Python" || language === "TypeScript") &&
+    traits[language].booleanIsInteger &&
     expectedType === "boolean" &&
     foundType === "integer"
   ) {
     return found;
   }
 
-  // and the reverse, but Python only: real Python's bool is an int subtype,
-  // where TypeScript has no such coercion
+  // and the reverse, but Python only, so not traits.booleanIsInteger: real
+  // Python's bool is an int subtype, where TypeScript has no such coercion
   if (
     language === "Python" &&
     expectedType === "integer" &&
