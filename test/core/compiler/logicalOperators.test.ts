@@ -23,6 +23,12 @@ import { LANGUAGES } from "./lib/languages.ts";
  * - **short-circuiting**: in those same four languages the right
  *   operand is not evaluated when the left already decides the answer.
  *
+ * The *bitwise* "&"/"|"/"^" are covered here too, since their precedence is
+ * only meaningful next to the logical operators they are so easily confused
+ * with. They have three rungs of their own, looser than all of the arithmetic;
+ * Python puts that trio tighter than the comparisons and the C family puts it
+ * looser, and both placements are asserted below.
+ *
  * Behavioural, through the whole pipeline (compile, encode, run), rather
  * than pcode assertions - the point of both changes is what a program
  * *does*, and asserting the emitted jumps would pin one encoding of
@@ -198,31 +204,88 @@ describe("compiler: logical operator precedence", () => {
     }
   });
 
-  describe("the bitwise operators stay where they were", () => {
-    // [known limitation] only the *logical* operators moved. The bitwise
-    // "&"/"|"/"^" keep the
-    // multiplicative and additive slots they have always had here, which
-    // is nobody's real rule: real Python and real C both bind "*" tighter
-    // than "&", so "3 & 2 * 3" is "3 & (2 * 3)" = 2 for them, while here
-    // "&" and "*" share a level and go left to right, giving
-    // "(3 & 2) * 3" = 6. The two languages disagree with each other about
-    // where "&" belongs relative to the comparisons as well, and no
-    // example program depends on either rule - so this is pinned as it
-    // stands rather than changed, and pinned in both directions so it
-    // can't drift by accident.
+  describe("the bitwise operators have rungs of their own", () => {
+    // "|", "^" and "&" used to share the additive and multiplicative rungs,
+    // which was nobody's real rule. They now have three rungs of their own,
+    // in that order, looser than all of the arithmetic - as they are in both
+    // real Python and the real C family. Where those two disagree is only in
+    // where the trio sits relative to the comparisons, and each now follows
+    // its own languages: see the two describes below this one.
     const printInteger: Partial<Record<Language, (expr: string) => string>> = {
       Python: (expr) => `print(str(${expr}))`,
       C: (expr) => `void main () {\nprint(itoa(${expr}));\n}`,
+      Java: (expr) =>
+        `class Test {\nvoid main () {\nprint(toString(${expr}));\n}\n}`,
+      TypeScript: (expr) => `print(toString(${expr}));`,
     };
 
-    for (const language of ["Python", "C"] as Language[]) {
-      it(`keeps & at multiplicative precedence in ${language}`, () => {
-        const program = (printInteger[language] as (e: string) => string)(
-          "3 & 2 * 3",
-        );
-        assertEquals(runProgram(language, program), "6");
+    /** Evaluates an integer expression in `language`, as a decimal string. */
+    const value = (language: LogicalLanguage, expr: string): string =>
+      runProgram(language, printInteger[language]!(expr));
+
+    for (const language of LOGICAL_LANGUAGES) {
+      it(`binds "*" tighter than "&" in ${language}`, () => {
+        // the old parse, with "&" and "*" sharing a rung and going left to
+        // right, was "(3 & 2) * 3" = 6
+        assertEquals(value(language, "3 & 2 * 3"), "2");
+      });
+
+      it(`binds "+" tighter than "&" in ${language}`, () => {
+        // was "4 + (3 & 1)" = 5
+        assertEquals(value(language, "4 + 3 & 1"), "1");
+      });
+
+      it(`binds "^" tighter than "|" in ${language}`, () => {
+        // was "(1 | 2) ^ 3" = 0, the two sharing the additive rung
+        assertEquals(value(language, "1 | 2 ^ 3"), "1");
+      });
+
+      it(`binds "&" tighter than "|" in ${language}`, () => {
+        // the one ordering the old table already had right, so this holds
+        // the trio's internal order down at both ends: "6 & (3 | 8)" = 2
+        assertEquals(value(language, "6 & 3 | 8"), "10");
       });
     }
+  });
+
+  describe("Python binds the bitwise operators tighter than the comparisons", () => {
+    // real Python's order, so "x & 1 == 1" means "(x & 1) == 1"
+    it('parses "5 & 1 == 1" as "(5 & 1) == 1"', () => {
+      assertEquals(answer("Python", "5 & 1 == 1"), "yes");
+      assertEquals(rootOperator("Python", "5 & 1 == 1"), "eqal");
+    });
+
+    it("the other direction, so it can't pass on a coincidence", () => {
+      // "(5 & 2) == 1" is "0 == 1", false; the C reading, "5 & (2 == 1)",
+      // would be "5 & 0" = 0, which Python also counts as false - hence the
+      // root-operator assertion above rather than an answer alone
+      assertEquals(answer("Python", "5 & 2 == 1"), "no");
+    });
+  });
+
+  describe("C, Java and TypeScript bind them looser than the comparisons", () => {
+    // real C's order, so "x & 1 == 1" means "x & (1 == 1)" - the classic
+    // gotcha, faithfully reproduced. Turtle catches it where C and JavaScript
+    // don't: "integer & boolean" is a type error, as it is in real Java and
+    // real TypeScript, so the mis-parse can't silently evaluate to zero.
+    const mixed: Record<"C" | "Java" | "TypeScript", string> = {
+      C: "void main () {\nint x = 5;\nprint(itoa(x & 1 == 1));\n}",
+      Java: "class Test {\nvoid main () {\nint x = 5;\nprint(toString(x & 1 == 1));\n}\n}",
+      TypeScript: "var x: number = 5;\nprint(toString(x & 1 == 1));",
+    };
+
+    for (const language of ["C", "Java", "TypeScript"] as const) {
+      it(`rejects "x & 1 == 1" as a type error in ${language}`, () => {
+        assertCompilerError(language, mixed[language], "Type error");
+      });
+    }
+
+    it("accepts it once bracketed, and then means the obvious thing", () => {
+      for (const language of ["C", "Java", "TypeScript"] as const) {
+        assertEquals(answer(language, "(5 & 1) == 1"), "yes");
+        assertEquals(answer(language, "(5 & 2) == 1"), "no");
+      }
+    });
   });
 
   describe('Python\'s "not" binds looser than comparisons', () => {
@@ -308,14 +371,6 @@ describe("compiler: logical operator precedence", () => {
   });
 
   describe("BASIC keeps Pascal's precedence", () => {
-    // [known limitation] BASIC's AND/OR/EOR are documented (see
-    // src/pages/documentation/help/BASIC/operators.ts) as bitwise-and-
-    // boolean operators between integers, exactly as in BBC BASIC, and
-    // that same page tells students "complex expressions require
-    // brackets". Moving them would be moving the *bitwise* operators. So
-    // unbracketed "a% = b% AND c% = d%" still parses as
-    // "a% = (b% AND c%) = d%" and still answers "no" - deliberately, and pinned
-    // here so the decision has to be revisited rather than stumbled into.
     it("parses an unbracketed AND of comparisons the Pascal way", () => {
       assertEquals(answer("BASIC", "a%=b% AND c%=d%"), "no");
       assertEquals(rootOperator("BASIC", "a%=b% AND c%=d%"), "eqal");
@@ -653,11 +708,6 @@ describe("compiler: logical operator short-circuiting", () => {
   });
 
   describe("Pascal and BASIC stay eager", () => {
-    // [known limitation] deliberate, and pinned rather than left to drift:
-    // standard Pascal doesn't guarantee short-circuit evaluation (Delphi
-    // selects it with the $B switch, and Turtle's Pascal is modelled on
-    // Delphi), and BASIC's AND/OR are the bitwise operators, which can't
-    // short-circuit at all - both bits of an integer AND are needed.
     it("Pascal evaluates the right operand of an already-true or", () => {
       const output = runProgram(
         "Pascal",

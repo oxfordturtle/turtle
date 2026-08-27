@@ -17,11 +17,11 @@ void main () {
         int dn = 0;
         for (int i = -1; i <= 1; i = i + 1) {
           for (int j = -1; j <= 1; j = j + 1) {
-            dn = dn + pixcol((x + i + width) % width, (y + j + height) % height) & 1;
+            dn = dn + (pixcol((x + i + width) % width, (y + j + height) % height) & 1);
           }
         }
-        if (((pixcol(x, y) & 1 == 0) && ((dn < 5) || (dn > 6)))
-            || ((pixcol(x, y) & 1 == 1) & (dn == 6))) {
+        if ((((pixcol(x, y) & 1) == 0) && ((dn < 5) || (dn > 6)))
+            || (((pixcol(x, y) & 1) == 1) & (dn == 6))) {
           pixset(x, y, pixcol(x, y) ^ 2);
         }
       }

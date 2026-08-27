@@ -14,7 +14,7 @@ void utility (int x, int y) {
       }
     }
   }
-  pixset(x, y, utot * 0x100 + pixcol(x, y) & 0xF);
+  pixset(x, y, utot * 0x100 + (pixcol(x, y) & 0xF));
 }
 
 void pickbest (int x, int y) {
