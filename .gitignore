@@ -4,5 +4,6 @@
 /assets/build/*.js
 /assets/build/webfonts/
 /coverage/
+/plans/
 /scratch/
 .DS_Store
