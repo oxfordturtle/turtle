@@ -1,3 +1,4 @@
+import { foldCase } from "@/core/constants.ts";
 import type { Type } from "../../lexer/types.ts";
 import type { Routine } from "./routine.ts";
 import type { Subroutine } from "./routines/subroutine.ts";
@@ -31,7 +32,7 @@ export interface Variable {
 
 const makeVariable = (name: string, routine: Routine): Variable => ({
   kind: "Variable",
-  name: routine.language === "Pascal" ? name.toLowerCase() : name,
+  name: foldCase(routine.language, name),
   routine,
   isGlobal: routine.kind === "Program",
   isParameter: false,

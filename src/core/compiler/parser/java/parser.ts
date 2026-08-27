@@ -1,3 +1,4 @@
+import { traits } from "@/core/constants.ts";
 import type { Lexeme } from "../../lexer/lexeme.ts";
 import { CompilerError } from "../../tools/error.ts";
 import type { ParserContext } from "../definitions/context.ts";
@@ -76,7 +77,8 @@ export default function java(
     }
   }
 
-  if (!prog.subroutines.some((x) => x.name === "main")) {
+  const { entryPoint } = traits[prog.language];
+  if (!prog.subroutines.some((x) => x.name === entryPoint)) {
     throw new CompilerError('Program does not contain any "main" method.');
   }
 

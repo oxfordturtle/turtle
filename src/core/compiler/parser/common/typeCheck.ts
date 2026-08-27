@@ -1,4 +1,4 @@
-import type { Language, Parameter } from "@/core/constants.ts";
+import { type Language, type Parameter, traits } from "@/core/constants.ts";
 import type { Type } from "../../lexer/types.ts";
 import { CompilerError } from "../../tools/error.ts";
 import {
@@ -150,17 +150,18 @@ const typeCheck = (
     return found;
   }
 
-  // if INTEGER is found and BOOLEAN is expected, that's fine in Python and TypeScript
+  // if INTEGER is found and BOOLEAN is expected, that's fine in the languages
+  // where a boolean is just an integer
   if (
-    (language === "Python" || language === "TypeScript") &&
+    traits[language].booleanIsInteger &&
     expectedType === "boolean" &&
     foundType === "integer"
   ) {
     return found;
   }
 
-  // and the reverse, but Python only: real Python's bool is an int subtype,
-  // where TypeScript has no such coercion
+  // and the reverse, but Python only, so not traits.booleanIsInteger: real
+  // Python's bool is an int subtype, where TypeScript has no such coercion
   if (
     language === "Python" &&
     expectedType === "integer" &&

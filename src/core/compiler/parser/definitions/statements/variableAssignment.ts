@@ -48,7 +48,7 @@ const makeVariableAssignment = (
   // target's type is consulted, because the caller has already type-checked
   // `value` against it. (No "character" case: only Python has "+="/"-=" - see
   // tokenizer/tokenize.ts's operator patterns - and Python has no character
-  // type, see ../expression.ts's languagesWithCharacterType.)
+  // type, see constants/languages.ts's traits.characterType.)
   const isString = getType(currentValue) === "string";
   if (isString && lexeme.content === "-=") {
     throw new CompilerError(

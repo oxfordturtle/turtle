@@ -1,4 +1,4 @@
-import type { Command } from "@/core/constants.ts";
+import { type Command, traits } from "@/core/constants.ts";
 import type { IdentifierLexeme } from "../../lexer/lexeme.ts";
 import { CompilerError } from "../../tools/error.ts";
 import basicBody from "../basic/body.ts";
@@ -20,12 +20,7 @@ const parseProcedureCall = (
   routine: Routine,
   command: Command | Subroutine,
 ): ProcedureCall => {
-  if (
-    routine.language === "BASIC" ||
-    routine.language === "Pascal" ||
-    routine.language === "C" ||
-    routine.language === "Java"
-  ) {
+  if (traits[routine.language].statementCalls === "procedures-only") {
     const commandType =
       command.kind === "Command" ? command.type : getSubroutineType(command);
     if (commandType === "function") {

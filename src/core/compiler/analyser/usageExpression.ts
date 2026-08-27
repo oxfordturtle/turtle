@@ -1,4 +1,4 @@
-import type { Expression, Language } from "@/core/constants.ts";
+import { type Expression, foldCase, type Language } from "@/core/constants.ts";
 import type { Lexeme } from "../lexer/lexeme.ts";
 
 export interface UsageExpression {
@@ -18,16 +18,14 @@ const usageExpression = (
       ? expression.names[language]!
       : expression.name;
 
-  const uses =
-    language === "Pascal"
-      ? lexemes.filter(
-          (lexeme) => lexeme.content?.toLowerCase() === name.toLowerCase(),
-        )
-      : lexemes.filter((lexeme) => lexeme.content === name);
+  const searchName = foldCase(language, name);
+  const uses = lexemes.filter(
+    (lexeme) => foldCase(language, lexeme.content) === searchName,
+  );
   uses.sort((a, b) => a.line - b.line);
 
   return {
-    name: language === "Pascal" ? name.toLowerCase() : name,
+    name: searchName,
     level: expression.level + 1,
     count: uses.length,
     lines: uses.reduce((x, y) => `${x} ${y.line.toString(10)}`, "").trim(),

@@ -1,4 +1,4 @@
-import { PCode } from "@/core/constants.ts";
+import { PCode, traits } from "@/core/constants.ts";
 import type { Expression } from "../../parser/definitions/expression.ts";
 import makeVariableValue, {
   type VariableValue,
@@ -65,8 +65,7 @@ const stringCharacter = (
 ): number[][] => {
   const pcode: number[][] = [];
   pcode.push(...expression(index, program, options));
-  if (program.language === "Pascal") {
-    // Pascal string indexes start from 1 instead of 0
+  if (traits[program.language].stringIndexBase === 1) {
     merge(pcode, [[PCode.decr]]);
   }
   merge(pcode, expression(base, program, options));
@@ -120,8 +119,7 @@ export default (
         merge(pcode, [[PCode.ldin, dimensions[0], PCode.subt]]);
       } else if (dimensions === undefined) {
         // the final index is to a character within an array of strings
-        if (program.language === "Pascal") {
-          // Pascal string indexes start from 1 instead of 0
+        if (traits[program.language].stringIndexBase === 1) {
           merge(pcode, [[PCode.decr]]);
         }
       }

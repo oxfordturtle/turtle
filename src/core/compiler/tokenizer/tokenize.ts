@@ -1,9 +1,11 @@
 import {
   colours,
   commands,
+  foldCase,
   inputs,
   keywords,
   type Language,
+  traits,
 } from "@/core/constants.ts";
 import { type Token, token, type TokenType } from "./token.ts";
 
@@ -319,7 +321,10 @@ const keywordRule = (language: Language): Rule => {
   const names = keywords[language].map((keyword) => keyword.name).join("|");
   return {
     type: "keyword",
-    regex: new RegExp(`(?:${names})\\b`, language === "Pascal" ? "iy" : "y"),
+    regex: new RegExp(
+      `(?:${names})\\b`,
+      traits[language].caseInsensitive ? "iy" : "y",
+    ),
   };
 };
 
@@ -418,7 +423,7 @@ const codeRegex =
   (language: Language): RegExp =>
     new RegExp(
       `(?:${names.map((name) => `${prefix}${name}`).join("|")})\\b`,
-      language === "Pascal" ? "iy" : "y",
+      traits[language].caseInsensitive ? "iy" : "y",
     );
 
 const INPUT_CODES = byLanguage(
@@ -558,7 +563,7 @@ const identifier = (
   if (content === null) {
     return null;
   }
-  const name = language === "Pascal" ? content.toLowerCase() : content;
+  const name = foldCase(language, content);
   return token(
     NAMES[language].get(name) ?? "identifier",
     content,

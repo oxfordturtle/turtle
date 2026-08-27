@@ -1,4 +1,4 @@
-import { PCode, pcodeArgs } from "@/core/constants.ts";
+import { PCode, pcodeArgs, traits } from "@/core/constants.ts";
 import { getAllSubroutines } from "../parser/definitions/routine.ts";
 import type { Program } from "../parser/definitions/routines/program.ts";
 import type { Subroutine } from "../parser/definitions/routines/subroutine.ts";
@@ -46,10 +46,11 @@ export default (
   // number changes from this point on
   resolveRelativeJumps(pcode);
 
-  if (program.language === "C" || program.language === "Java") {
-    // the first parser pass has already errored if there is no "main"
+  const { entryPoint } = traits[program.language];
+  if (entryPoint !== "top-level") {
+    // the first parser pass has already errored if there is no such routine
     const main = program.subroutines.find(
-      (x) => x.name === "main",
+      (x) => x.name === entryPoint,
     ) as Subroutine;
     pcode.push([PCode.subr, startLines.get(main) as number]);
   }

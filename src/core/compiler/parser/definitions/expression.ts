@@ -1,3 +1,4 @@
+import { traits } from "@/core/constants.ts";
 import type { Type } from "../../lexer/types.ts";
 import type { CastExpression } from "./expressions/castExpression.ts";
 import type { ColourValue } from "./expressions/colourValue.ts";
@@ -29,10 +30,9 @@ export type Expression =
   | ListLiteral;
 
 export const getType = (expression: Expression): Type => {
-  const languagesWithCharacterType = ["C", "Java", "Pascal"];
   switch (expression.kind) {
     case "constant":
-      if (languagesWithCharacterType.includes(expression.constant.language)) {
+      if (traits[expression.constant.language].characterType) {
         return expression.constant.type === "string" &&
           expression.indexes.length > 0
           ? "character"
@@ -56,9 +56,7 @@ export const getType = (expression: Expression): Type => {
             : expression.variable.listElementKind) ?? "boolint"
         );
       }
-      return languagesWithCharacterType.includes(
-        expression.variable.routine.language,
-      )
+      return traits[expression.variable.routine.language].characterType
         ? expression.variable.type === "string" &&
           expression.indexes.length > expression.variable.arrayDimensions.length
           ? "character"

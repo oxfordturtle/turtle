@@ -1,4 +1,4 @@
-import type { Language } from "@/core/constants.ts";
+import { foldCase, type Language } from "@/core/constants.ts";
 import type { Constant } from "./constant.ts";
 import type { Statement } from "./statement.ts";
 import { getLength, type Variable } from "./variable.ts";
@@ -19,7 +19,7 @@ export interface RoutineCommon {
 
 const makeRoutine = (language: Language, name: string): RoutineCommon => ({
   language,
-  name: language === "Pascal" ? name.toLowerCase() : name,
+  name: foldCase(language, name),
   index: 0,
   constants: [],
   variables: [],
