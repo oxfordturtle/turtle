@@ -1574,11 +1574,11 @@ describe("parse: Python", () => {
       );
     });
 
-    it("throws when indexing a non-array, non-string variable", () => {
+    it("throws when indexing a non-list, non-string variable", () => {
       assertThrows(
         () => parseProgram("Python", "x = 1\nx[0] = 1"),
         Error,
-        "is not a string or array variable",
+        "is not a string or list variable",
       );
     });
 

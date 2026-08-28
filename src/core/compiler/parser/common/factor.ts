@@ -335,7 +335,10 @@ const parseFactor = (lexemes: Lexemes, routine: Routine): Expression => {
             }
           } else {
             throw new CompilerError(
-              "{lex} is not a string or array variable.",
+              // Python has no arrays; its indexable non-strings are lists
+              routine.language === "Python"
+                ? "{lex} is not a string or list variable."
+                : "{lex} is not a string or array variable.",
               lexeme,
             );
           }

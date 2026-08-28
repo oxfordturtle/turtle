@@ -86,19 +86,6 @@ controls in the Compile submenu are rendered `disabled` for the same reason, and
 say so when clicked. Implementing any one of them means giving it a real test
 and updating the pin.
 
-### 1.8 Python's indexed-array-assignment arm is dead code
-
-Two regions in
-[src/core/compiler/parser/python/statements/variableAssignment.ts:28](src/core/compiler/parser/python/statements/variableAssignment.ts#L28)
-and
-[:100](src/core/compiler/parser/python/statements/variableAssignment.ts#L100),
-both under justified `deno-coverage-ignore` directives. No Python variable is
-ever an array: `python/type.ts` returns empty `arrayDimensions` on every path
-(Python has no array declaration syntax, and a `List[T]` hint sets `isList`
-instead), so `isArray()` is always false here and indexed assignment always goes
-through the string and list branches. Either Python grows arrays, or the arms
-go.
-
 ## 2. Smaller TODOs
 
 Individually cheap, listed so they can be swept up opportunistically.

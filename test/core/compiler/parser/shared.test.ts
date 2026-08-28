@@ -302,9 +302,19 @@ describe("parse: shared parser plumbing (common/ and definitions/)", () => {
       }
     });
 
-    it("throws when indexing a non-string, non-array variable as an expression value", () => {
+    it("throws when indexing a non-string, non-list variable as an expression value", () => {
       assertThrows(
         () => parseProgram("Python", "x = 1\ny = x[0]"),
+        Error,
+        "is not a string or list variable",
+      );
+    });
+
+    // the same throw, worded "array" for every language but Python, which
+    // has no arrays
+    it("throws when indexing a non-string, non-array variable as an expression value", () => {
+      assertThrows(
+        () => parseProgram("C", "void main () {\nint x = 1;\nint y = x[0];\n}"),
         Error,
         "is not a string or array variable",
       );

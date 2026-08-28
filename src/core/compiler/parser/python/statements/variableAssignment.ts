@@ -15,7 +15,7 @@ import type { PassStatement } from "../../definitions/statements/passStatement.t
 import makeVariableAssignment, {
   type VariableAssignment,
 } from "../../definitions/statements/variableAssignment.ts";
-import { isArray, type Variable } from "../../definitions/variable.ts";
+import { type Variable } from "../../definitions/variable.ts";
 
 export default (
   variableLexeme: IdentifierLexeme,
@@ -25,37 +25,7 @@ export default (
 ): VariableAssignment | PassStatement => {
   const indexes: Expression[] = [];
   if (lexemes.peek()?.content === "[") {
-    // deno-coverage-ignore-start -- the isArray branch is unreachable: no
-    // Python variable is ever an array - python/type.ts returns empty
-    // arrayDimensions on every path (Python has no array declaration syntax;
-    // a "List[T]" hint sets isList instead) - so isArray() is always false
-    // here and indexed assignment always goes through the string/list
-    // branches below (the stop marker sits just inside the string branch
-    // because the never-run block's zero count is recorded on both of its
-    // brace lines)
-    if (isArray(variable)) {
-      lexemes.advance();
-      while (!lexemes.atEnd() && lexemes.peek()?.content !== "]") {
-        let exp = parseExpression(lexemes, routine);
-        exp = typeCheck(routine.language, exp, variable);
-        indexes.push(exp);
-        if (
-          lexemes.peek()?.content === "]" &&
-          lexemes.peek(1)?.content === "["
-        ) {
-          lexemes.advance();
-          lexemes.advance();
-        }
-      }
-      if (lexemes.atEnd()) {
-        throw new CompilerError(
-          'Closing bracket "]" needed after array indexes.',
-          lexemes.peek(-1),
-        );
-      }
-      lexemes.advance();
-    } else if (variable.type === "string") {
-      // deno-coverage-ignore-stop
+    if (variable.type === "string") {
       lexemes.advance();
       let exp = parseExpression(lexemes, routine);
       exp = typeCheck(routine.language, exp, "integer");
@@ -88,27 +58,11 @@ export default (
       }
     } else {
       throw new CompilerError(
-        "{lex} is not a string or array variable.",
+        "{lex} is not a string or list variable.",
         variableLexeme,
       );
     }
   }
-
-  // deno-coverage-ignore-start -- unreachable: as above, python/type.ts never
-  // yields arrayDimensions, so isArray() is always false for Python variables
-  if (isArray(variable)) {
-    const allowedIndexes =
-      variable.type === "string"
-        ? variable.arrayDimensions.length + 1 // one more for characters within strings
-        : variable.arrayDimensions.length;
-    if (indexes.length > allowedIndexes) {
-      throw new CompilerError(
-        "Too many indexes for array variable {lex}.",
-        variableLexeme,
-      );
-    }
-  }
-  // deno-coverage-ignore-stop
 
   const assignmentLexeme = lexemes.peek();
   if (!assignmentLexeme) {
