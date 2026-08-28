@@ -281,7 +281,7 @@ describe("opening a file's content", () => {
     assertEquals(q("language-select select").value, "Pascal");
   });
 
-  // [known limitation] TODO.md 1.5: .tmj (pcode as JSON) and .tmb (pcode as
+  // [known limitation] TODO.md 1.4: .tmj (pcode as JSON) and .tmb (pcode as
   // binary) are both still to do, so they fall through to the same rejection
   // as an unknown extension.
   it("rejects a file type it cannot read, .tmj and .tmb included", () => {

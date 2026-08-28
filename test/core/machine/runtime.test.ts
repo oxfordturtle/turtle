@@ -1145,7 +1145,7 @@ describe("machine/runtime: execute()", () => {
       );
     });
 
-    // [known limitation] TODO.md 1.7 (recorded as 1.12 while it was thought
+    // [known limitation] TODO.md 1.6 (recorded as 1.12 while it was thought
     // to be a bug): `MachineOptions.traceOnRun` exists, and is threaded from
     // the Run menu through `program.ts` into the machine - and nothing in
     // `src/core/machine/` reads it, so turning tracing on changes nothing a

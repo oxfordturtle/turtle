@@ -111,12 +111,13 @@ const subroutineStartCode = (
       pcode.push([]);
       for (const parameter of parameters.reverse()) {
         const lastStartLine = pcode[pcode.length - 1]!; // pushed just above
-        if (isArray(parameter) && !parameter.isReferenceParameter) {
-          // TODO: copy the array
-        } else if (
+        if (
           parameter.type === "string" &&
+          !isArray(parameter) &&
           !parameter.isReferenceParameter
         ) {
+          // a by-value string is copied into the local buffer
+          // setupLocalVariable made for it
           lastStartLine.push(
             PCode.ldvv,
             subroutineAddress(subroutine),
@@ -124,7 +125,11 @@ const subroutineStartCode = (
             PCode.cstr,
           );
         } else {
-          // for booleans and integers, or longer reference parameters, just store the value/address
+          // for booleans and integers, or longer reference parameters, just
+          // store the value/address. An array parameter is an address either
+          // way: no language here declares the size of one (Pascal and BASIC
+          // give theirs dummy dimensions, and C, Java and TypeScript all take
+          // arrays by reference), so there is nothing to copy it into
           lastStartLine.push(
             PCode.stvv,
             subroutineAddress(subroutine),
@@ -142,7 +147,9 @@ const setupLocalVariable = (variable: Variable): number[][] => {
   const subroutine = variable.routine as Subroutine;
   const pcode: number[][] = [];
 
-  if (isArray(variable) && !variable.isReferenceParameter) {
+  // an array parameter of either kind holds the caller's address (getLength
+  // gives it the one word to hold it in), so there is no local block to set up
+  if (isArray(variable) && !variable.isParameter) {
     pcode.push([
       PCode.ldav,
       subroutineAddress(subroutine),

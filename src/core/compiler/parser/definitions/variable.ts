@@ -69,8 +69,16 @@ export const elementCount = (variable: Variable): number =>
 // deno-coverage-ignore-stop
 
 export const getLength = (variable: Variable): number => {
-  // these all simply hold an address
-  if (variable.isReferenceParameter || variable.isPointer || variable.isList) {
+  // these all simply hold an address - an array parameter included, whether it
+  // was declared by reference or by value: no language here declares the size
+  // of an array parameter, so the callee has nowhere to copy one into and takes
+  // the caller's array as it stands
+  if (
+    variable.isReferenceParameter ||
+    variable.isPointer ||
+    variable.isList ||
+    (variable.isParameter && isArray(variable))
+  ) {
     return 1;
   }
 

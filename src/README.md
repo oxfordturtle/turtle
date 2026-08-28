@@ -472,7 +472,7 @@ the compiler actually implements.
 - No filesystem adapter, so the file-processing opcodes have nothing real behind
   them in the browser.
 - `core/compiler/formatter/` is a stub — exported and pinned, but unimplemented
-  (see above, and `TODO.md` §1.2).
+  (see above, and `TODO.md` §1.1).
 - Undo, Redo, Cut, Copy and Paste in the Edit menu report "not implemented".
   They need either `document.execCommand`, which is deprecated and unspecified,
   or an undo stack that would have to replace the browser's rather than sit

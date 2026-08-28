@@ -159,7 +159,7 @@ describe("the Edit menu's commands", () => {
   });
 
   // Undo, Redo, Cut, Copy and Paste have never done anything in the browser -
-  // see src/islands/turtle-system/editing.ts and TODO.md 1.3. The keyboard
+  // see src/islands/turtle-system/editing.ts and TODO.md 1.2. The keyboard
   // shortcuts work on the textarea, so what the menu says is exactly that.
   it("sends the user to the keyboard shortcut for the five editing commands", async () => {
     const captured = captureErrors();

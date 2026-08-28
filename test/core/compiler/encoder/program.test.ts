@@ -320,17 +320,39 @@ describe("encoder/program", () => {
       assertEquals(countOf(withoutZeroing, PCode.zptr), 1); // just programStart's own
     });
 
-    it("stores nothing for an array-by-value parameter (the array copy is a documented TODO, unimplemented) [known limitation]", () => {
-      // C never sets isReferenceParameter, so a plain array parameter here
-      // is by-value syntax that's legal but has no copying logic yet -
-      // the parameter-storing loop pushes an (initially empty) line for
-      // it and leaves it empty
+    it("stores an array parameter's address with PCode.stvv, and sets up no local block for it", () => {
+      // an array parameter holds the caller's array address whether it was
+      // declared by reference or (as here, C never setting
+      // isReferenceParameter) by value: no language declares the size of an
+      // array parameter, so there is nowhere in the frame to copy one into.
+      // This line used to be left empty, which the machine halts on
       const pcode = compileAndEncode(
         "C",
         "int arr[3];\nvoid go (int a[3]) {\n}\nvoid main () {\ngo(arr);\n}",
       );
-      const emptyLines = pcode.filter((line) => line.length === 0);
-      assertEquals(emptyLines.length, 1);
+      assertEquals(
+        pcode.filter((line) => line.length === 0).length,
+        0,
+        "an empty pcode line would run the machine past the end of a line",
+      );
+      // [stvv, subroutineAddress, variableAddress] - the same store a scalar
+      // or a reference parameter gets
+      assert(pcode.some((line) => line.length === 3 && line[0] === PCode.stvv));
+      // setupLocalVariable's array branch (PCode.ldav, claiming a block within
+      // the frame and pointing the variable's slot at it) is skipped: there is
+      // no zeroing block here either, the parameter being the only variable
+      assertEquals(countOf(pcode, PCode.ldav), 0);
+    });
+
+    it("stores an array-of-strings parameter's address too, rather than copying it as a string", () => {
+      // isArray comes first: the string-copy branch below it must not claim an
+      // array whose *elements* are strings, whose slot holds an array address
+      const pcode = compileAndEncode(
+        "C",
+        "string words[3];\nvoid go (string w[3]) {\n}\nvoid main () {\ngo(words);\n}",
+      );
+      assertEquals(countOf(pcode, PCode.cstr), 0);
+      assert(pcode.some((line) => line.length === 3 && line[0] === PCode.stvv));
     });
 
     it("copies a by-value string parameter with a PCode.cstr string copy", () => {
