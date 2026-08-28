@@ -155,11 +155,10 @@ const subroutineStartCode = (
             PCode.cstr,
           );
         } else {
-          // for booleans and integers, or longer reference parameters, just
-          // store the value/address. An array parameter is an address either
-          // way: no language here declares the size of one (Pascal and BASIC
-          // give theirs dummy dimensions, and C, Java and TypeScript all take
-          // arrays by reference), so there is nothing to copy it into
+          // booleans and integers, and everything held as an address: a
+          // reference parameter of any type, and so an array parameter in
+          // every language but Pascal, whose value parameter is the copy
+          // above. The value or address is stored as it stands
           lastStartLine.push(
             PCode.stvv,
             subroutineAddress(subroutine),
@@ -176,6 +175,15 @@ const subroutineStartCode = (
 const setupLocalVariable = (variable: Variable): number[][] => {
   const subroutine = variable.routine as Subroutine;
   const pcode: number[][] = [];
+
+  if (getLength(variable) === 1) {
+    // Whatever holds an address rather than a block of its own - a reference
+    // parameter, a pointer, a list - has exactly the one word getLength gives
+    // it, as has a plain integer or boolean. There is nothing to set up, and
+    // no room to try: a string's two length bytes would go into the word after
+    // this variable's, which belongs to the one declared next.
+    return pcode;
+  }
 
   if (isArray(variable)) {
     pcode.push([
@@ -200,21 +208,22 @@ const setupLocalVariable = (variable: Variable): number[][] => {
     return pcode;
   }
 
-  if (variable.type === "string") {
-    pcode.push([
-      PCode.ldav,
-      subroutineAddress(subroutine),
-      lengthByteAddress(variable) + 1,
-      PCode.stvv,
-      subroutineAddress(subroutine),
-      variableAddress(variable),
-      PCode.ldin,
-      variable.stringLength + 1, // +1 for the actual length byte (??)
-      PCode.stvv,
-      subroutineAddress(subroutine),
-      lengthByteAddress(variable),
-    ]);
-  }
+  // a string is the only other thing with a block of its own: getLength gives a
+  // block to arrays, handled above, and to strings, and one word to everything
+  // else, returned above
+  pcode.push([
+    PCode.ldav,
+    subroutineAddress(subroutine),
+    lengthByteAddress(variable) + 1,
+    PCode.stvv,
+    subroutineAddress(subroutine),
+    variableAddress(variable),
+    PCode.ldin,
+    variable.stringLength + 1, // +1 for the actual length byte (??)
+    PCode.stvv,
+    subroutineAddress(subroutine),
+    lengthByteAddress(variable),
+  ]);
 
   return pcode;
 };

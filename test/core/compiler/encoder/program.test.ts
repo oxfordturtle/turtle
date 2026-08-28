@@ -3,6 +3,7 @@ import { assert, assertEquals, assertExists } from "@std/assert";
 import { PCode } from "@/core/constants.ts";
 import { defaultCompilerOptions } from "@/core/compiler.ts";
 import { compileAndEncode, countOf } from "./lib/helpers.ts";
+import { runSourceToText } from "../../machine/lib/helpers.ts";
 
 /**
  * Covers `encoder/encode.ts` (the parts not already exercised incidentally
@@ -420,6 +421,55 @@ describe("encoder/program", () => {
       );
       assert(pcode.some((line) => line.length === 3 && line[0] === PCode.stvv));
       assert(pcode.some((line) => line.includes(PCode.memr)));
+    });
+  });
+
+  describe("program/subroutines.ts - setupLocalVariable", () => {
+    // A string's setup points the variable's slot at its buffer and writes the
+    // buffer's maximum length into the word after the slot. That word is only
+    // the variable's own when it has a block: getLength gives a single word to
+    // whatever holds an address instead - a reference parameter, a pointer -
+    // and the word after that one belongs to the variable declared next.
+    const stringSetupLine = (line: number[]): boolean =>
+      line[0] === PCode.ldav && line.length === 11;
+
+    it("sets up a buffer for a by-value string parameter, which has a block to put one in", () => {
+      const pcode = compileAndEncode(
+        "Pascal",
+        "program Test;\nvar x: string;\nprocedure go(s: string);\nvar m: integer;\nbegin\nend;\nbegin\ngo(x);\nend.",
+      );
+      assert(pcode.some(stringSetupLine));
+    });
+
+    it("sets up none for a reference string parameter, which is one word holding the caller's address", () => {
+      const pcode = compileAndEncode(
+        "Pascal",
+        "program Test;\nvar x: string;\nprocedure go(var s: string);\nvar m: integer;\nbegin\nend;\nbegin\ngo(x);\nend.",
+      );
+      assertEquals(pcode.filter(stringSetupLine).length, 0);
+    });
+
+    it("leaves the variable declared after a reference string parameter reading zero [regression]", () => {
+      // the observable form of the bug: the maximum length byte (65, for a
+      // default 64-character string) was written into m's slot, which the
+      // zeroing block had just cleared
+      assertEquals(
+        runSourceToText(
+          "Pascal",
+          "program Test;\nvar x: string;\nprocedure go(var s: string);\nvar m: integer;\nbegin\nwriteln(str(m));\nwriteln(s)\nend;\nbegin\nx := 'hello';\ngo(x)\nend.",
+        ),
+        "0\nhello\n",
+      );
+    });
+
+    it("does the same for a string pointer, the other single-word string [regression]", () => {
+      assertEquals(
+        runSourceToText(
+          "C",
+          "void go () {\n  string *s;\n  int m;\n  print(itoa(m));\n}\nvoid main () {\n  go();\n}",
+        ),
+        "0\n",
+      );
     });
   });
 
