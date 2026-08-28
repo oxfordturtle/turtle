@@ -28,7 +28,7 @@ import timers from "@/client/adapters/timers.ts";
 import { load, save } from "@/client/state/storage.ts";
 import { showError, SystemError } from "@/client/tools/error.ts";
 import { store } from "@merivale/womble";
-import { syncLanguage } from "@/islands/settings.ts";
+import { getSettings, syncLanguage } from "@/islands/settings.ts";
 import { File, restoreFile, skeletons } from "./file.ts";
 
 /**
@@ -38,7 +38,9 @@ import { File, restoreFile, skeletons } from "./file.ts";
  * **No side effects at import time**: @/islands/settings.ts imports this module
  * for the file-level half of a language change, and that store is read on every
  * page of the site, including the ones with no system on them. `initialise()`
- * is what reads `sessionStorage`, and the client entry calls it.
+ * is what reads `localStorage`, and the client entry calls it - after
+ * `initialiseSettings`, so that `currentLanguage()` below already has the
+ * answer this page settled on.
  *
  * The import goes both ways - this module calls `syncLanguage` when opening a
  * file changes the language under the settings, and that module calls
@@ -49,9 +51,22 @@ import { File, restoreFile, skeletons } from "./file.ts";
 
 // ---------------------------------------------------------------- the state
 
+/**
+ * What `?x=` asked for, read off disk by the server and seeded into the page.
+ * Plain data, so it survives `storeSeeds()`'s `JSON.stringify` - which is why
+ * this is the source rather than a `File`, a class with getters.
+ */
+export type PendingExample = {
+  id: string;
+  language: Language;
+  name: string;
+  code: string;
+};
+
 type Program = {
   files: File[];
   currentFileIndex: number;
+  pendingExample: PendingExample | null;
   tokens: Token[];
   // comments are lexemes too, and the Comments tab wants exactly the ones the
   // Syntax tab filters out, so both are kept in one array and split on the way
@@ -76,9 +91,13 @@ type Program = {
  * Uncoalesced, unlike ./machine.ts's: the writers below are driven by the user,
  * so there is never a burst to batch.
  *
- * **Never seeded**: `storeSeeds()` serialises what was seeded rather than what a
- * store holds, so `pcode`, `tokens` and the `File` objects - a class with
- * getters, which is why `restoreFile` exists - never reach `JSON.stringify`.
+ * **One seeded field, and only when a link asked for it.** `storeSeeds()`
+ * serialises what was seeded rather than what a store holds, so `pcode`,
+ * `tokens` and the `File` objects - a class with getters, which is why
+ * `restoreFile` exists - never reach `JSON.stringify`. `pendingExample` is the
+ * exception: it is plain data, and seeding it is what lets a `/?x=Triangle`
+ * link open its example in the *same* render that restores the file memory,
+ * rather than rendering the restored file and then fetching over the top of it.
  *
  * **Actions never call other actions.** Where two transitions share work, the
  * shared part is a helper below that returns a partial and both actions spread
@@ -90,6 +109,7 @@ export const programStore = store("program", {
   state: {
     files: [],
     currentFileIndex: 0,
+    pendingExample: null,
     tokens: [],
     allLexemes: [],
     usage: [],
@@ -97,7 +117,7 @@ export const programStore = store("program", {
   } as Program,
   actions: {
     /**
-     * The file memory as `initialise` read it back out of `sessionStorage`,
+     * The file memory as `initialise` read it back out of `localStorage`,
      * resolved against what this page can actually show.
      */
     restore: (
@@ -318,13 +338,38 @@ export const getPcode = (): number[][] => programStore.get("pcode");
 
 // ------------------------------------------------------------------ set-up
 
-/** Reads the file memory back out of `sessionStorage`. Idempotent, and called once from the client entry. */
+/**
+ * Reads the file memory back out of `localStorage`, and opens whatever a
+ * `/?x=` link asked for. Idempotent, and called once from the client entry.
+ *
+ * **Both happen before the islands hydrate**, which is what makes the example a
+ * completion rather than a correction. Two dispatches here cost nothing - the
+ * components are queued on a microtask and have not rendered yet - but a *fetch*
+ * would land after them, so the restored file would appear and then be replaced.
+ * The server reads the example off disk and seeds it (src/pages/index.ts), so
+ * there is nothing to wait for.
+ */
 export const initialise = (): void => {
   if (programStore.get("files").length > 0) return;
   programStore.dispatch("restore", {
     restored: load("files").map(restoreFile),
     storedIndex: load("currentFileIndex"),
   });
+  const pending = programStore.get("pendingExample");
+  if (pending) openSeededExample(pending);
+};
+
+/**
+ * The `?x=` example the server seeded, as an open file. Everything an example
+ * needs is already here, so this is `addFile` and nothing else - no lookup, no
+ * network, and no chance of the "not available for Turtle X" error, since the
+ * server only seeds a file it managed to read.
+ */
+const openSeededExample = (pending: PendingExample): void => {
+  const file = new File(pending.language, pending.id);
+  file.name = pending.name;
+  file.code = pending.code;
+  addFile(file);
 };
 
 // ------------------------------------------------------------ file memory
@@ -400,10 +445,6 @@ export const openLocalFile = (): void => {
   fileInput.click();
 };
 
-export const openRemoteFile = (_url: string): void => {
-  showError(new SystemError("Feature not yet available."));
-};
-
 // What the example loaders below call instead of the global `fetch`: the jsdom
 // test layer has no network, so it installs a fetcher that serves
 // `assets/examples/` from disk. A wrapper rather than a bare alias, so the real
@@ -452,10 +493,6 @@ export const saveLocalFile = (): void => {
   const file = getCurrentFile();
   if (!file) return;
   download(file.code, file.filename);
-};
-
-export const saveRemoteFile = (): void => {
-  showError(new SystemError("Feature not yet available."));
 };
 
 // Notifies, because the backup is a field on a file the store owns: a mutation
@@ -536,7 +573,16 @@ export const playPauseMachine = (): void => {
 
 // ------------------------------------------------------------- internals
 
-const currentLanguage = (): Language => load("language") as Language;
+/**
+ * The language this page settled on, from the settings store rather than out of
+ * storage.
+ *
+ * The store is the right source now that the client entry initialises the
+ * settings *before* the file memory: it is what `resolveLanguage` decided, so a
+ * `/?l=BASIC` link with nothing yet stored gets a BASIC starter file, while the
+ * same link with work already open is correctly ignored.
+ */
+const currentLanguage = (): Language => getSettings().language as Language;
 
 // --- the two shared transitions, as partials rather than as commits ---------
 //

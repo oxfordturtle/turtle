@@ -5,7 +5,15 @@ import {
   storeSeeds,
   withStores,
 } from "@merivale/womble";
-import { languageFromUrl, settingsStore } from "@/islands/settings.ts";
+import {
+  asLanguage,
+  languageFromUrl,
+  resolveLanguage,
+  type Settings,
+  settingsStore,
+} from "@/islands/settings.ts";
+import { defaults } from "@/client/constants/properties.ts";
+import type { Language } from "@/core/constants.ts";
 import type { RequestParams } from "../types.ts";
 import "@/islands/site-menu.ts";
 
@@ -31,6 +39,13 @@ import "@/islands/site-menu.ts";
 // inert JSON script, which the store adopts on its first read in the browser, so
 // the first paint matches the markup the server sent.
 //
+// **`<body>` carries the two facts no component owns.** `data-language` is what
+// the stylesheet keys the documentation prose off, so the guides for the other
+// five languages arrive hidden rather than being hidden afterwards; and
+// `fullscreen` is a class on `<body>` because that is where the layout CSS
+// expects it. Both are re-asserted by src/client/passes.ts when a person changes
+// them, which is a change rather than a correction.
+//
 // The `<header>`/`<main>`/`<footer>` elements belong to the layout - every page
 // has exactly one of each, and the stylesheet expects them. A page supplies only
 // their *contents*, as named slots; naming them stops two same-typed arguments
@@ -40,13 +55,19 @@ export type Content = {
   // page with no header - supplies its absence
   header?: HtmlResult | null;
   main: HtmlResult;
+  /**
+   * Anything this route has to say to a store beyond the settings. Only the
+   * system page uses it, to hand the program store the example a `?x=` link
+   * asked for - see src/pages/index.ts.
+   */
+  seeds?: StoreSeed[];
 };
 
 export default (
   requestParams: RequestParams,
-  { header = null, main }: Content,
+  { header = null, main, seeds = [] }: Content,
 ): string =>
-  withStores(seedsFor(requestParams), () =>
+  withStores([...seedsFor(requestParams), ...seeds], () =>
     String(html`
       <html>
         <head>
@@ -70,7 +91,10 @@ export default (
           ${storeSeeds()}
           <script defer src="/build/index.js"></script>
         </head>
-        <body class="${requestParams.sections[0]}">
+        <body
+          class="${bodyClass(requestParams)}"
+          data-language="${seededSettings(requestParams).language}"
+        >
           <nav class="site-nav">
             <div class="site-nav-left">
               <site-menu
@@ -92,21 +116,58 @@ export default (
   );
 
 /**
- * The stores this request has something to say to, and what it says.
+ * The stores this request has something to say to, and what it says: the five
+ * settings the cookie carries, with the language resolved over the top of them.
  *
- * Exactly one, and one field of it: a link that named a language. Everything
- * else a page varies with - the mode, the fonts - is a `sessionStorage` fact
- * the server cannot see, so the store's own defaults are the honest answer and
- * `initialiseSettings` corrects them in the browser. A seed is a `Partial`
- * precisely so that a store can be told one field and keep the rest.
+ * That is everything a page's markup varies by. The ~19 machine and compiler
+ * options vary it too, but only inside a closed submenu or an inactive tab, so
+ * they are deliberately not in the cookie and the store's defaults are the
+ * honest answer for them - see `cookieFields`.
  *
- * An `?l=` naming a language this system doesn't have seeds nothing, and the
- * page is served in the default language - the same answer the browser reaches
- * for itself, because `languageFromUrl` is the one home for that rule.
+ * A seed is a `Partial`, so a request with no cookie at all seeds only the
+ * language and the store keeps its own defaults for the rest.
  */
-const seedsFor = (requestParams: RequestParams): StoreSeed[] => {
-  const language = languageFromUrl(requestParams.url.searchParams);
-  return language ? [settingsStore.seed({ language })] : [];
+const seedsFor = (requestParams: RequestParams): StoreSeed[] => [
+  settingsStore.seed(seededSettings(requestParams)),
+];
+
+/**
+ * The cookie's settings with `resolveLanguage`'s answer over them. Called twice
+ * per render - once for the seed, once for `<body data-language>` - and cheap
+ * enough that sharing it would cost more than it saved.
+ */
+const seededSettings = (
+  requestParams: RequestParams,
+): Partial<Settings> & { language: string } => ({
+  ...requestParams.settings,
+  language: resolveLanguage({
+    url: languageFromUrl(requestParams.url.searchParams),
+    stored: asLanguage(requestParams.settings.language),
+    // the system app is the index route; every other route is documentation or
+    // static prose, where `?l=` is a view parameter and wins outright
+    system: requestParams.sections[0] === "index",
+    example: requestParams.url.searchParams.get("x") !== null,
+  }),
+});
+
+/**
+ * The language this request settled on. Exported because the system route needs
+ * it before it can read an example off disk - the same example is a different
+ * file in each of the six languages.
+ */
+export const languageFor = (requestParams: RequestParams): Language =>
+  seededSettings(requestParams).language as Language;
+
+/**
+ * The route name, which the stylesheet scopes each page's rules by, plus
+ * `fullscreen` when that preference is set - the layout CSS is `.index
+ * .fullscreen`, so it is inert on every other route.
+ */
+const bodyClass = (requestParams: RequestParams): string => {
+  const fullscreen = requestParams.settings.fullscreen ?? defaults.fullscreen;
+  return fullscreen
+    ? `${requestParams.sections[0]} fullscreen`
+    : requestParams.sections[0];
 };
 
 const footer = html`

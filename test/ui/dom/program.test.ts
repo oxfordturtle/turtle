@@ -197,7 +197,7 @@ describe("the file memory", () => {
       program.getTokens().map((token) => token.content),
       ["x", " ", "=", " ", "1"],
     );
-    assertEquals(sessionStorage.getItem("currentFileIndex"), "0");
+    assertEquals(localStorage.getItem("currentFileIndex"), "0");
   });
 
   it("re-derives a compiled file's whole pipeline when it is selected again", () => {
@@ -281,7 +281,7 @@ describe("opening a file's content", () => {
     assertEquals(q("language-select select").value, "Pascal");
   });
 
-  // [known limitation] TODO.md 3.6: .tmj (pcode as JSON) and .tmb (pcode as
+  // [known limitation] TODO.md 1.5: .tmj (pcode as JSON) and .tmb (pcode as
   // binary) are both still to do, so they fall through to the same rejection
   // as an unknown extension.
   it("rejects a file type it cannot read, .tmj and .tmb included", () => {
@@ -354,13 +354,6 @@ describe("choosing a file from disk", () => {
     await settle();
     assertEquals(program.getFilename(), "");
   });
-
-  // Blocked on an account system that doesn't exist - see TODO.md 3.4.
-  it("reports that a remote file cannot be opened yet", () => {
-    const captured = captureErrors();
-    program.openRemoteFile("https://example.com/a.tpy");
-    assertEquals(messages(captured), ["Feature not yet available."]);
-  });
 });
 
 describe("saving a file", () => {
@@ -371,12 +364,6 @@ describe("saving a file", () => {
     assertEquals(downloads.length, 1);
     assertEquals(downloads[0]?.filename, "mine.tpy");
     assertEquals(await downloads[0]?.content, "x = 1");
-  });
-
-  it("reports that saving to an account is not available yet", () => {
-    const captured = captureErrors();
-    program.saveRemoteFile();
-    assertEquals(messages(captured), ["Feature not yet available."]);
   });
 });
 
@@ -560,7 +547,7 @@ describe("compiling and running", () => {
 
 describe("what the session restores on the next page load", () => {
   /** A second page load, finding what the first one stored. */
-  const reload = () => mountRoute("/", { keepSession: true });
+  const reload = () => mountRoute("/", { keepStorage: true });
 
   it("restores the open files and which one was current", async () => {
     program.setCode("first");

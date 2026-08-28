@@ -1,7 +1,12 @@
 /// <reference lib="dom" />
 import { define, html } from "@merivale/womble";
 import { attachOutput } from "@/client/adapters/output.ts";
-import { paneClasses, paneSources, paneAttributes } from "./tab-pane.ts";
+import {
+  paneAttributes,
+  paneClasses,
+  paneFontVariables,
+  paneSources,
+} from "./tab-pane.ts";
 
 // The Output tab: one `<pre>` a running program writes text into.
 //
@@ -16,7 +21,7 @@ define("output-tab", {
   sources: paneSources,
 
   render: ({ active }) => html`
-    <div class="${paneClasses(active, "")}">
+    <div class="${paneClasses(active, "")}" style="${paneFontVariables()}">
       <pre class="output"></pre>
     </div>
   `,

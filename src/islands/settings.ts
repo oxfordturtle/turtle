@@ -6,7 +6,7 @@ import {
   type Property,
   type PropertyValues,
 } from "@/client/constants/properties.ts";
-import { load, save } from "@/client/state/storage.ts";
+import { isStored, load, save, writeCookie } from "@/client/state/storage.ts";
 import { showError, SystemError } from "@/client/tools/error.ts";
 import { requestCloseMenu } from "./turtle-system/commands.ts";
 import { applyLanguage } from "./turtle-system/program.ts";
@@ -16,9 +16,14 @@ import { applyLanguage } from "./turtle-system/program.ts";
  * See src/README.md for how the three stores divide the state between them.
  *
  * **No side effects at import time**: the server imports this module, because
- * every page's markup varies with the language and the mode, and
- * `sessionStorage` is a browser fact. The store holds the defaults until
+ * every page's markup varies with the language and the mode. The store holds
+ * the defaults until either the layout seeds it from the request's cookie or
  * `initialiseSettings` runs in the browser.
+ *
+ * Five of these settings are mirrored into a cookie, because the server has to
+ * know them to render the page correctly the first time - see `cookieFields` in
+ * src/client/constants/properties.ts for which five and why. The rest are
+ * `localStorage` alone.
  */
 
 // ----------------------------------------------------------- what a setting is
@@ -29,11 +34,10 @@ import { applyLanguage } from "./turtle-system/program.ts";
  * as the Delphi version's own settings dialogue groups them.
  */
 export const settingNames = [
-  // whether the user's saved settings have been loaded in this session
-  "savedSettingsHaveBeenLoaded",
   // system settings
   "language",
   "mode",
+  "fullscreen",
   "editorFontFamily",
   "editorFontSize",
   "outputFontFamily",
@@ -45,7 +49,6 @@ export const settingNames = [
   "autoCompileOnLoad",
   "autoRunOnLoad",
   "autoFormatOnLoad",
-  "alwaysSaveSettings",
   // machine runtime options
   "showCanvasOnRun",
   "showOutputOnWrite",
@@ -88,10 +91,11 @@ export const isSettingName = (name: string): name is SettingName =>
 // ------------------------------------------------------------------ the store
 
 /**
- * The store starts at the defaults, which is what the server should render for
- * anything it cannot see. What it *can* see — a link's `?l=` — the layout seeds
- * per request, and the seed crosses into the browser in the page's markup, so
- * the first paint needs no correcting.
+ * The store starts at the defaults, and the layout seeds it per request with
+ * everything this request can actually say: the five cookie fields, with a
+ * link's `?l=` resolved over the top of them by `resolveLanguage` below. The
+ * seed crosses into the browser in the page's markup, so the first paint needs
+ * no correcting - which is the whole point of the cookie.
  *
  * Uncoalesced: a setting changes when a person changes one.
  */
@@ -103,12 +107,13 @@ export const settingsStore = store("settings", {
 
     /**
      * One setting, with its durable copy. Persisting inside the action is what
-     * keeps the in-memory value and `sessionStorage` from diverging.
+     * keeps the in-memory value and `localStorage` from diverging - and, for the
+     * five in `cookieFields`, the cookie with them.
      *
      * **No settings action may ever be dispatched during a server render.** Deno
-     * implements `sessionStorage` natively, so a `save()` on the server writes
-     * to a process-wide store - a cross-request leak that `withStores` cannot
-     * help with, since it scopes the value rather than the side effect.
+     * implements the Web Storage API natively, so a `save()` on the server
+     * writes to a process-wide store - a cross-request leak that `withStores`
+     * cannot help with, since it scopes the value rather than the side effect.
      */
     write: (
       _state,
@@ -119,14 +124,13 @@ export const settingsStore = store("settings", {
     },
 
     /**
-     * Every setting but `savedSettingsHaveBeenLoaded`, in one commit and one
-     * notification. `language` is included, but its *file-level* half is
-     * `resetDefaults`'s to run afterwards.
+     * Every setting, in one commit and one notification. `language` is
+     * included, but its *file-level* half is `resetDefaults`'s to run
+     * afterwards.
      */
     reset: () => {
       const next: Partial<Settings> = {};
       for (const name of settingNames) {
-        if (name === "savedSettingsHaveBeenLoaded") continue;
         const value = defaultSettings[name];
         save(name, value);
         write(next, name, value);
@@ -146,22 +150,23 @@ export const getSettings = (): Settings =>
   ) as Settings;
 
 /**
- * The session's copy over the defaults, then the `?l=` URL parameter over that.
- * The client entry calls this once, after the file memory has been restored and
- * before any island has rendered.
+ * The stored settings over the defaults, with `resolveLanguage` deciding the
+ * language. The client entry calls this once, before any island has rendered and
+ * before the file memory is restored - the file memory now takes its starting
+ * language from here rather than the other way round.
  *
- * **This, not the seed, is what decides the browser's settings.** The server's
- * seed reaches the store first and is overwritten here by a full re-read of the
- * same inputs, plus the session the server couldn't see - so the two agree by
- * construction, and a cached page with no seed behaves like one with it.
+ * **This and the seed agree by construction**, because they read the same rule
+ * over the same inputs: the server reads the cookie, the browser reads the
+ * `localStorage` the cookie mirrors. So a cached page served with a stale seed
+ * still settles on the same answer, and nothing is corrected on screen.
+ *
+ * The `writeCookie` is for the browser that has settings but no cookie - one
+ * that stored them before the cookie existed, or whose cookie has expired. It
+ * gets a correct one here, and its *next* page load is server-rendered right.
  */
 export const initialiseSettings = (): void => {
-  // read before `hydrate` writes a `?l=` language over it: the file memory was
-  // restored from this value, so a difference is exactly when it must be told
-  const restored = load("language");
   settingsStore.dispatch("hydrate");
-  const { language } = getSettings();
-  if (language !== restored) applyLanguage(language as Language);
+  writeCookie();
 };
 
 // ---------------------------------------------------------------- the setters
@@ -200,15 +205,6 @@ export const resetDefaults = (): void => {
   requestCloseMenu();
 };
 
-// Both stubs: the account persistence they need doesn't exist.
-export const saveSettings = (): void => {
-  showError(new SystemError("Not yet implemented."));
-};
-
-export const loadSavedSettings = (): void => {
-  showError(new SystemError("Not yet implemented."));
-};
-
 /**
  * Picks up a language change that originated in the file memory - opening a file
  * in another language adopts it - so the language <select> and the
@@ -224,9 +220,9 @@ export const syncLanguage = (): void => {
 
 /**
  * `"hidden"` unless the current mode is one of `modes`, a comma-separated list.
- * A component derives its own mode visibility this way rather than leaving it to
- * the page-wide `modeVisibility` pass (src/client/passes.ts), which runs before
- * the islands hydrate and would be wiped by a component's first render.
+ * Every component derives its own mode visibility this way, and the server
+ * renders the same answer because the mode is one of the cookie fields - so a
+ * pane that should be hidden arrives hidden rather than being hidden afterwards.
  */
 export const hiddenUnless = (mode: string, modes: string): string =>
   modes.split(",").includes(mode) ? "" : "hidden";
@@ -235,10 +231,8 @@ export const languageOf = (settings: Settings): Language =>
   settings.language as Language;
 
 /**
- * The language a link asked for, if it named one this system has. Two sides read
- * this rule - the layout seeds the store with it per request, and `readSettings`
- * re-derives it in the browser - so if they disagreed, `/?l=BASIC` would serve
- * one page and correct to another.
+ * The language a link asked for, if it named one this system has. An `?l=`
+ * naming something else is no language at all, and the caller falls back.
  */
 export const languageFromUrl = (search: URLSearchParams): Language | null => {
   const value = search.get("l");
@@ -246,6 +240,57 @@ export const languageFromUrl = (search: URLSearchParams): Language | null => {
     ? (value as Language)
     : null;
 };
+
+/**
+ * A language this system has, or `null`. What comes out of the cookie or out of
+ * `localStorage` is a bare string that no type vouches for, and an unknown one
+ * breaks `highlight` downstream, so both sides narrow it through here.
+ */
+export const asLanguage = (value: string | undefined): Language | null =>
+  value !== undefined && languages.includes(value as Language)
+    ? (value as Language)
+    : null;
+
+/** What `resolveLanguage` needs to know. Both sides fill this in from what they have. */
+export type LanguageContext = {
+  /** the `?l=` this request carried, if it named a language this system has */
+  url: Language | null;
+  /** what this browser has already stored, or `null` if it has stored nothing */
+  stored: Language | null;
+  /** whether this page is the system app, rather than documentation */
+  system: boolean;
+  /** whether the URL also names an example to open (`?x=`) */
+  example: boolean;
+};
+
+/**
+ * Which language a page is in. **The one home for this rule**, read by the
+ * layout to seed a request and by `readSettings` to hydrate the browser - if the
+ * two disagreed, a link would serve one page and then correct to another, which
+ * is precisely what the cookie exists to prevent.
+ *
+ * The rule differs by page, because the word means two different things:
+ *
+ * - **On a documentation page** it is a *view parameter* - which of the six
+ *   guides am I reading - so `?l=` wins outright. That is what makes "the Python
+ *   guide to loops" a thing a worksheet can link to.
+ * - **On the system page** it is a property of the open *file*, and the stored
+ *   value tracks it (opening a file adopts its language - see
+ *   `adoptFileLanguage` in ./turtle-system/program.ts). So the stored value wins,
+ *   and `?l=` speaks only for a file that is about to be opened: one named by
+ *   `?x=`, or the very first file of a browser that has stored nothing yet.
+ *
+ * That last clause is what stops `/?l=BASIC` silently re-languaging a program
+ * someone is in the middle of writing.
+ */
+export const resolveLanguage = ({
+  url,
+  stored,
+  system,
+  example,
+}: LanguageContext): Language =>
+  (!system || example ? (url ?? stored) : (stored ?? url)) ??
+  (defaultSettings.language as Language);
 
 // --------------------------------------------------------------- the internals
 
@@ -263,12 +308,19 @@ const setLanguage = (language: string): void => {
 };
 
 /**
- * Whatever the session holds, over the defaults, with the `?l=` URL parameter
- * over that. On the server there is neither, so this is the defaults.
+ * Whatever `localStorage` holds, over the defaults, with `resolveLanguage`
+ * deciding the language. On the server there is neither, so this is the
+ * defaults - but the server never reaches it, because the layout seeds the store
+ * rather than hydrating it.
+ *
+ * **Nothing here writes.** A link's `?l=` is a view override, not a preference:
+ * following "the BASIC guide" should not repoint the system you go back to
+ * afterwards. The stored language changes when a person changes it, or when
+ * opening a file brings its own.
  */
 const readSettings = (): Settings => {
   const settings = { ...defaultSettings };
-  // `document` rather than a bare `location` or `sessionStorage` global: the DOM
+  // `document` rather than a bare `location` or `localStorage` global: the DOM
   // shim test/ui/dom/ runs under installs `document` but no window globals
   // deno-coverage-ignore-start -- the early return is unreachable from the
   // tests and from a browser: Womble only calls `hydrate` when a store adopts
@@ -280,21 +332,15 @@ const readSettings = (): Settings => {
   for (const name of settingNames) {
     write(settings, name, load(name));
   }
-  // both are persisted but force-reset on every page load: the "save settings"
-  // feature needs a login that doesn't exist yet
-  settings.savedSettingsHaveBeenLoaded = false;
-  settings.alwaysSaveSettings = false;
-  save("savedSettingsHaveBeenLoaded", false);
-  save("alwaysSaveSettings", false);
-  // ?l=<language> beats the stored value, and is read straight off the URL
-  // rather than out of an attribute: it isn't state
-  const urlLanguage = languageFromUrl(
-    new URLSearchParams(document.location.search),
-  );
-  if (urlLanguage) {
-    settings.language = urlLanguage;
-    save("language", urlLanguage);
-  }
+  const search = new URLSearchParams(document.location.search);
+  settings.language = resolveLanguage({
+    url: languageFromUrl(search),
+    // "has stored nothing" is not the same as "stored the default", and only the
+    // first of the two lets a link's `?l=` speak for the file about to be made
+    stored: isStored("language") ? (load("language") as Language) : null,
+    system: document.querySelector("turtle-system") !== null,
+    example: search.get("x") !== null,
+  });
   return settings;
 };
 

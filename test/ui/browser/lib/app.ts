@@ -22,9 +22,22 @@ const PORT = 8321;
 
 const BUNDLE = "assets/build/index.js";
 
+/** What `@merivale/womble`'s default logger prints ahead of every report. */
+const WOMBLE_PREFIX = "[merivale/womble]";
+
 export type App = {
   url: (path: string) => string;
   page: Page;
+  /**
+   * Every report Womble has logged since the browser opened, newest last.
+   *
+   * Womble degrades rather than throwing - a hydration mismatch, a rejected
+   * attribute, a store whose seed would not serialise all leave the page
+   * standing and go to `console.error` instead. So none of them fails a test by
+   * itself, and the assertions below would happily pass on a page that rebuilt
+   * every island it was served. This is how the suite hears about them.
+   */
+  wombleErrors: () => string[];
   stop: () => Promise<void>;
 };
 
@@ -37,9 +50,23 @@ export const startApp = async (): Promise<App> => {
   // Long enough for a real page load and a compile, short enough that a
   // selector that will never match fails while you are still watching.
   page.setDefaultTimeout(10_000);
+  // Attached before the first navigation, and never detached: the collection is
+  // the whole session's, so a report from any test lands in it. Matched on the
+  // prefix `src/log.ts` puts on every entry, which is all twelve kinds rather
+  // than hydration alone.
+  const wombleErrors: string[] = [];
+  page.on("console", (message) => {
+    if (
+      message.type() === "error" &&
+      message.text().startsWith(WOMBLE_PREFIX)
+    ) {
+      wombleErrors.push(message.text());
+    }
+  });
   return {
     url: (path: string) => `http://localhost:${PORT}${path}`,
     page,
+    wombleErrors: () => [...wombleErrors],
     stop: async () => {
       await browser.close();
       await server.shutdown();

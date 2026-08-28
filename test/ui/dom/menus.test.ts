@@ -4,6 +4,7 @@ import {
   mountRoute,
   q,
   qa,
+  settings,
   settle,
 } from "../lib/setup.ts";
 import { assert, assertEquals, assertFalse } from "@std/assert";
@@ -89,22 +90,36 @@ describe("the root's own chrome", () => {
     assertEquals(openPanels(), 0);
   });
 
-  // `<body>` is outside this island, so its class is set imperatively while
-  // the button's own icon and title stay a function of state.
+  // Fullscreen is a *setting* rather than this island's own attribute: it is a
+  // preference someone expects to still hold tomorrow, and being one of the
+  // five cookie fields is what lets the server put the class on `<body>` in the
+  // first place, instead of the page being laid out twice. The button's icon
+  // and title stay a function of state; the `<body>` class is kept in step by
+  // `syncBodyState` (src/client/passes.ts), since no component owns `<body>`.
   it("puts the whole page into fullscreen and back from the header button", async () => {
     const button = qa("turtle-system .system-header button").at(-1);
     assertEquals(button.getAttribute("title"), "Maximize");
     assertEquals(qa("i", button)[0].className, "fa fa-expand");
 
     await click(button);
-    assert(system().fullscreen);
+    assert(settings.getSettings().fullscreen);
     assert(document.body.classList.contains("fullscreen"));
     assertEquals(button.getAttribute("title"), "Expand down");
     assertEquals(qa("i", button)[0].className, "fa fa-compress");
 
     await click(button);
-    assertFalse(system().fullscreen);
+    assertFalse(settings.getSettings().fullscreen);
     assertFalse(document.body.classList.contains("fullscreen"));
+  });
+
+  // and being a setting, it is remembered - which is the whole reason it moved
+  it("is still in force on the next page load", async () => {
+    await click(qa("turtle-system .system-header button").at(-1));
+    assert(settings.getSettings().fullscreen);
+
+    await mountRoute("/", { keepStorage: true });
+    assert(settings.getSettings().fullscreen);
+    assert(document.body.classList.contains("fullscreen"));
   });
 
   it("closes the menu when the work area is clicked", async () => {

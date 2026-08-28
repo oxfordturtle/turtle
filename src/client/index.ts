@@ -2,13 +2,8 @@
 import * as machine from "@/core/machine.ts";
 import { initialiseSettings, settingsStore } from "@/islands/settings.ts";
 import * as program from "@/islands/turtle-system/program.ts";
-import {
-  highlightCodeBlocks,
-  languageVisibility,
-  modeVisibility,
-} from "./passes.ts";
-import { load } from "./state/storage.ts";
-import { setErrorHandler, showError, SystemError } from "./tools/error.ts";
+import { highlightCodeBlocks, syncBodyState } from "./passes.ts";
+import { setErrorHandler } from "./tools/error.ts";
 
 // The machine's outbound ports. None touches the DOM as it loads:
 // `<canvas-tab>` and `<output-tab>` hand them their elements from their own
@@ -59,40 +54,31 @@ export const init = (): void => {
 
   // Both before the islands hydrate - they are queued on a microtask, after
   // this module's body - so the first render of every display already has the
-  // right program and settings in it. The order matters: the file memory is
-  // restored for the *stored* language, and initialising the settings is what
-  // notices that `?l=` has changed it.
-  program.initialise();
-  initialiseSettings();
-
-  // The three page-wide DOM passes (./passes.ts). Two of them follow the
-  // settings for as long as the page lives: the store notifies, the sweep runs.
-  highlightCodeBlocks();
-  languageVisibility();
-  modeVisibility();
-  settingsStore.subscribe(() => {
-    languageVisibility();
-    modeVisibility();
-  });
-
-  // A link into the system can carry an example (?x=) or a remote file (?f=)
-  // to open, and a language (?l=), which the settings store reads for itself
-  // above. None of the three is state, so all are taken straight off the URL.
+  // right program and settings in it.
   //
-  // This runs on every page, so the two file parameters are gated on the
-  // system app being present: without it, `/documentation/reference?x=Triangle`
-  // would quietly replace whatever file the user has open.
-  if (document.querySelector("turtle-system")) {
-    const parameters = new URLSearchParams(document.location.search);
-    const example = parameters.get("x");
-    const file = parameters.get("f");
-    if (example) program.openExampleFile(example);
-    if (file) program.openRemoteFile(file);
-  }
+  // **Settings first, then the file memory**, which is the other way round from
+  // how this used to run. The settings no longer need to be told what the files
+  // restored; the files need to know the language, because a browser with
+  // nothing stored is about to make its first file and a link's `?l=` is
+  // allowed to speak for that one (see `resolveLanguage`).
+  initialiseSettings();
+  // Deferred by one microtask, so it lands *after* the islands hydrate rather
+  // than before. `define` defers `customElements.define` by a microtask, and
+  // every island queued one as this module's imports evaluated - so this one,
+  // queued here, runs after the last of them.
+  //
+  // The file memory is the one piece of state the server cannot see: it lives
+  // in `localStorage`, and no cookie mirrors it (a program is far too big for
+  // one). So the server renders this store at its module value - no files - and
+  // the only way the first browser render can agree with that markup is to run
+  // before the restore. It adopts the served subtree, and the restore that
+  // follows arrives as an ordinary store notification, which patches.
+  queueMicrotask(() => program.initialise());
 
-  addEventListener("beforeunload", function () {
-    if (load("alwaysSaveSettings")) {
-      showError(new SystemError("Not yet implemented."));
-    }
-  });
+  // The two document-level jobs (./passes.ts). `syncBodyState` follows the
+  // settings for as long as the page lives; its call here writes back exactly
+  // what the server already rendered, so nothing on screen moves.
+  highlightCodeBlocks();
+  syncBodyState();
+  settingsStore.subscribe(syncBodyState);
 };

@@ -37,16 +37,6 @@ export const requestTab = (tab: string): void => {
   system()?.selectTab?.({ tab });
 };
 
-/**
- * Asks the system to check that the tab it is showing exists in the current
- * mode, and to fall back to the Canvas if it doesn't. Sent by the page-wide
- * mode-visibility pass, which cannot work it out itself: the panes are
- * components that derive their own visibility and carry no `data-mode`.
- */
-export const requestValidTab = (): void => {
-  system()?.validateTab?.();
-};
-
 /** Closes the system menu, for the settings store's `resetDefaults`. */
 export const requestCloseMenu = (): void => {
   system()?.closeMenu?.();

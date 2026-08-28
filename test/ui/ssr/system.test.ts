@@ -72,7 +72,7 @@ describe("the system page", () => {
     // is the one on show is the class it derived from that prop.
     assertStringIncludes(
       markup.slice(markup.indexOf("<canvas-tab")),
-      '<div class="system-tab-pane active">',
+      '<div class="system-tab-pane active" style="--output-font-family:',
     );
     assertStringIncludes(markup, '<canvas width="1000" height="1000">');
     assertEquals(
@@ -81,13 +81,13 @@ describe("the system page", () => {
     );
   });
 
-  // The `?l=`/`?x=`/`?f=` parameters are not rendered onto this tag: both
-  // readers take them off `document.location`. `?x=` and `?f=` are purely
-  // client facts (tested in test/ui/browser/); `?l=` is not, because the layout
-  // seeds the settings store from it per request.
+  // The `?l=`/`?x=` parameters are not rendered onto this tag: both readers
+  // take them off `document.location`. `?x=` is a purely client fact (tested
+  // in test/ui/browser/); `?l=` is not, because the layout seeds the settings
+  // store from it per request.
   it("sends the same markup whatever file the link asked to open", async () => {
     const plain = await renderRoute("/");
-    const linked = await renderRoute("/?x=hello&f=program.tpas");
+    const linked = await renderRoute("/?x=hello");
     assertEquals(linked.markup, plain.markup);
     const tag = linked.markup.slice(
       linked.markup.indexOf("<turtle-system"),
@@ -112,11 +112,12 @@ describe("the system page, seeded from the link's ?l=", () => {
     assertEquals(logs.length, 0);
   });
 
-  it("ignores a language this system doesn't have, seeding nothing", async () => {
+  it("ignores a language this system doesn't have, falling back", async () => {
     const { markup } = await renderRoute("/?l=Cobol");
     assertStringIncludes(
       markup,
-      '<script type="application/json" data-womble-stores>{}</script>',
+      '<script type="application/json" data-womble-stores>' +
+        '{"settings":{"language":"Python"}}</script>',
     );
     assertFalse(markup.includes('<option value="Cobol"'));
   });

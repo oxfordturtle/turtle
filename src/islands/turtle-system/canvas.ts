@@ -4,7 +4,12 @@ import { attachCanvas } from "@/client/adapters/canvas.ts";
 import { attachInput } from "@/client/adapters/input.ts";
 import { attachConsole } from "@/client/adapters/output.ts";
 import { coordinates, getVirtualCanvas, machineStore } from "./machine.ts";
-import { paneClasses, paneSources, paneAttributes } from "./tab-pane.ts";
+import {
+  paneAttributes,
+  paneClasses,
+  paneFontVariables,
+  paneSources,
+} from "./tab-pane.ts";
 
 // The Canvas & Console tab: the turtle's canvas, the coordinate labels down its
 // two edges, and the console the program prints to underneath.
@@ -26,7 +31,7 @@ define("canvas-tab", {
   render: ({ active }) => {
     const { startx, starty, sizex, sizey } = getVirtualCanvas();
     return html`
-      <div class="${paneClasses(active, "")}">
+      <div class="${paneClasses(active, "")}" style="${paneFontVariables()}">
         <div class="canvas">
           <div class="canvas-left">
             <div></div>

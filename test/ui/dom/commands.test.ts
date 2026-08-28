@@ -47,31 +47,6 @@ describe("requestTab", () => {
   });
 });
 
-describe("requestValidTab", () => {
-  // Sent by the page-wide mode-visibility pass, which can't work it out itself:
-  // the panes are components carrying no `data-mode` for it to find.
-  it("falls back to the canvas when the active tab isn't in this mode", async () => {
-    // The mode first, then the tab: changing the mode notifies the store, and
-    // the pass that follows it asks for this by itself. Doing it the other way
-    // round would leave nothing for the call below to do.
-    settings.setSetting("mode", "simple");
-    await settle();
-    system().tab = "syntax";
-    await settle();
-    commands.requestValidTab();
-    await settle();
-    assertEquals(system().tab, "canvas");
-  });
-
-  it("leaves a tab that is in this mode alone", async () => {
-    system().tab = "output";
-    await settle();
-    commands.requestValidTab();
-    await settle();
-    assertEquals(system().tab, "output");
-  });
-});
-
 describe("requestCloseMenu", () => {
   // The settings provider's `resetDefaults`, which is reached through the
   // system menu and so has to dismiss it. What "closed" means is the system's
@@ -112,26 +87,20 @@ describe("syncLanguage", () => {
   // under it - opening or switching to a file in another language stores the
   // new value and then asks the store to re-read it.
   it("makes the store adopt the stored language", async () => {
-    sessionStorage.setItem("language", JSON.stringify("Java"));
+    localStorage.setItem("language", JSON.stringify("Java"));
     settings.syncLanguage();
     await settle();
     assertEquals(settings.getSettings().language, "Java");
     assertEquals(q("language-select select").value, "Java");
   });
 
-  it("re-runs the language-visibility pass with it", async () => {
+  // and the body attribute the prose is keyed off follows, which is what makes
+  // opening a BASIC file change the documentation under it
+  it("moves the body's language attribute with it", async () => {
     await mountRoute("/documentation/reference");
-    sessionStorage.setItem("language", JSON.stringify("C"));
+    localStorage.setItem("language", JSON.stringify("C"));
     settings.syncLanguage();
     await settle();
-    const shown = qa("code[data-language]").filter(
-      (element: Element) => !element.classList.contains("hidden"),
-    );
-    assert(shown.length > 0);
-    assert(
-      shown.every(
-        (element: Element) => element.getAttribute("data-language") === "C",
-      ),
-    );
+    assertEquals(document.body.dataset.language, "C");
   });
 });

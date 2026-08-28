@@ -94,10 +94,12 @@ define("site-menu", {
     }),
   },
   effects: {
-    // The nav is the only page content outside `.wrapper`, so "click anywhere
-    // outside this island" and "click anywhere inside `.wrapper`" are the same
-    // set of clicks - which a delegated listener on this island's own root
-    // could never see.
+    // "Click anywhere outside this island", which a delegated listener on this
+    // island's own root could never see. In the nav that is every click on the
+    // page, the nav being the only content outside `.wrapper`; the copy the
+    // system header carries for fullscreen (src/islands/turtle-system.ts) is
+    // inside it, and `contains` is what tells the two apart - each instance
+    // closes for a click that missed *it*.
     clickOutside: ({ element }) => {
       const handler = (event: Event): void => {
         if (!element.contains(event.target as Node)) element.closeAll();

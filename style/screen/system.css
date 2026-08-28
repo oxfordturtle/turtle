@@ -53,4 +53,15 @@ turtle-system {
   display: grid;
   grid-template-rows: auto minmax(0, 1fr);
   background: var(--darkgray-transparent);
+  /*
+   * A stacking context of its own, so that the app's layers are the app's own
+   * business. The editor, the menu rail and the top bar all stack against each
+   * other (1 to 10, see the files below); without this they do it in the *root*
+   * context, where they are also stacking against the site nav - and the top
+   * bar, being later in the document, would take the site menu's dropdown out
+   * of the page's own chrome. Contained here, the whole system is one layer at
+   * `z-index: 0`, under the nav's 10, and what it does inside stays inside.
+   */
+  position: relative;
+  z-index: 0;
 }

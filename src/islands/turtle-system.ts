@@ -1,8 +1,14 @@
 /// <reference lib="dom" />
 import { type CustomElement, define, definition, html } from "@merivale/womble";
 import { classes } from "./lib.ts";
-import { getSettings, hiddenUnless, settingsStore } from "./settings.ts";
+import {
+  getSettings,
+  hiddenUnless,
+  setSetting,
+  settingsStore,
+} from "./settings.ts";
 import "./language-select.ts";
+import "./site-menu.ts";
 
 // The Turtle System's root component: its `render` *is* the structure of the
 // IDE, so this one file says what the app is made of.
@@ -15,9 +21,32 @@ import "./language-select.ts";
 // `<canvas-tab>` holds everything a program has drawn, and survives a re-render
 // of this component only because nothing here can move it.
 //
-// **Chrome state lives here** because more than one child needs it. Settings do
-// not: they are a store, because the language and mode are read on the
-// documentation pages too, where no system app exists. Nor does file state.
+// **Ephemeral chrome state lives here** because more than one child needs it and
+// nothing should remember it: which menu is open, and which tab was last chosen.
+// Settings do not: they are a store, because the language and mode are read on
+// the documentation pages too, where no system app exists. Nor does file state.
+//
+// `fullscreen` used to be an attribute here, and is now a setting - it is a
+// preference someone expects to still be in force tomorrow, and being a cookie
+// field is what lets the server put `fullscreen` on `<body>` in the first place,
+// rather than the whole page being laid out twice.
+//
+// **The header carries a second `<site-menu>`.** Fullscreen hides the real site
+// nav - the system is covering the space it occupied - so the same island is
+// rendered again inside the system's own top bar, and the stylesheet shows
+// whichever copy belongs to the current state (style/screen/system/header.css).
+// It is rendered unconditionally, like everything else here: a hole that came
+// and went would tear the island down and mount it again, losing the
+// click-outside listener it installs, so `display: none` is what keeps the copy
+// out of the page - and out of the accessibility tree - the rest of the time.
+// `section` is hardcoded because this component only ever renders on the index
+// route, and `page` is read only for the documentation sub-links, so its default
+// is already the right answer.
+//
+// **The menu button carries both of its icons** for the same reason, and the
+// stylesheet picks between them: in fullscreen the button is the top left corner
+// of the page - the place the site nav's logo would occupy - so it wears the
+// turtle there and the bars everywhere else.
 //
 // Written through `definition()` rather than passed straight to `define()` so
 // that its type can be named, which is what gives
@@ -30,18 +59,25 @@ const turtleSystem = definition({
     menu: false,
     submenu: "",
     tab: "canvas",
-    fullscreen: false,
   },
 
   sources: [settingsStore],
 
-  render: ({ menu, submenu, tab, fullscreen }) => {
-    const { mode } = getSettings();
+  render: ({ menu, submenu, tab }) => {
+    const { mode, fullscreen } = getSettings();
+    // what the user last chose, resolved against what this mode actually has
+    const shown = shownTab(tab, mode);
     return html`
       <header class="system-header">
-        <button aria-label="system menu" on-click="toggleMenu">
-          <i class="fa fa-bars" aria-hidden="true"></i>
-        </button>
+        <div class="system-header-left">
+          <button aria-label="system menu" on-click="toggleMenu">
+            <i class="fa fa-bars" aria-hidden="true"></i>
+            <img class="logo" src="/images/turtle.png" alt="" />
+          </button>
+          <div class="site-nav-left system-site-nav" on-click="closeMenu">
+            <site-menu section="index" />
+          </div>
+        </div>
         <div class="controls" on-click="closeMenu">
           <select aria-label="tab" on-change="chooseTab">
             ${tabs.map(
@@ -51,7 +87,7 @@ const turtleSystem = definition({
                   class="${candidate.modes === ""
                     ? ""
                     : hiddenUnless(mode, candidate.modes)}"
-                  .selected="${candidate.id === tab}"
+                  .selected="${candidate.id === shown}"
                 >
                   ${candidate.label}
                 </option>
@@ -124,15 +160,15 @@ const turtleSystem = definition({
           <section class="system-section right">
             <turtle-properties />
             <div class="system-tabs">
-              <canvas-tab active="${tab === "canvas"}" />
-              <output-tab active="${tab === "output"}" />
-              <usage-tab active="${tab === "usage"}" />
-              <comments-tab active="${tab === "comments"}" />
-              <syntax-tab active="${tab === "syntax"}" />
-              <variables-tab active="${tab === "variables"}" />
-              <pcode-tab active="${tab === "pcode"}" />
-              <memory-tab active="${tab === "memory"}" />
-              <options-tab active="${tab === "options"}" />
+              <canvas-tab active="${shown === "canvas"}" />
+              <output-tab active="${shown === "output"}" />
+              <usage-tab active="${shown === "usage"}" />
+              <comments-tab active="${shown === "comments"}" />
+              <syntax-tab active="${shown === "syntax"}" />
+              <variables-tab active="${shown === "variables"}" />
+              <pcode-tab active="${shown === "pcode"}" />
+              <memory-tab active="${shown === "memory"}" />
+              <options-tab active="${shown === "options"}" />
             </div>
           </section>
         </main>
@@ -178,26 +214,12 @@ const turtleSystem = definition({
     // us
     showRunSettings: () => ({ ...closed, tab: "options" }),
 
-    // `<body>` is outside this island, so its class is set imperatively; the
-    // button's own icon is a function of state
-    toggleFullscreen: (attributes) => {
-      document.body.classList.toggle("fullscreen", !attributes.fullscreen);
-      return { fullscreen: !attributes.fullscreen };
-    },
-
-    // Falls back to the Canvas if the mode has just changed to one the current
-    // tab doesn't belong to. Asked for by the page-wide mode-visibility pass,
-    // which can't work it out itself - see ./turtle-system/commands.ts.
-    validateTab: (attributes) => {
-      const { mode } = getSettings();
-      const current = tabs.find((candidate) => candidate.id === attributes.tab);
-      if (
-        current &&
-        (current.modes === "" || current.modes.split(",").includes(mode))
-      ) {
-        return undefined;
-      }
-      return { tab: "canvas" };
+    // A setting now, so this is the same call any other control makes. The
+    // `<body>` class follows from src/client/passes.ts, which is where the two
+    // settings that live on `<body>` are kept in step with the store.
+    toggleFullscreen: () => {
+      setSetting("fullscreen", !getSettings().fullscreen);
+      return undefined;
     },
   },
   // No effects. Everything commanded from outside this subtree is a plain
@@ -216,6 +238,24 @@ declare global {
 // Every chrome field at rest: what closing the menu means, and the base of what
 // selecting a tab from a menu link means.
 const closed = { menu: false, submenu: "" };
+
+/**
+ * Which tab is actually on show: the one last chosen, unless this mode hasn't
+ * got it, in which case the Canvas.
+ *
+ * **Derived rather than corrected.** The `tab` attribute keeps whatever was
+ * chosen even while a mode hides it, so leaving Expert mode and coming back
+ * brings the PCode tab back with it. It also means nothing outside this
+ * component has to notice a mode change on its behalf, which is what the old
+ * `validateTab` method and the page-wide mode sweep existed to do.
+ */
+const shownTab = (tab: string, mode: string): string => {
+  const current = tabs.find((candidate) => candidate.id === tab);
+  const allowed =
+    current !== undefined &&
+    (current.modes === "" || current.modes.split(",").includes(mode));
+  return allowed ? tab : "canvas";
+};
 
 // The tab <select>'s options, and with them the set of tab ids. An empty
 // `modes` means every mode.

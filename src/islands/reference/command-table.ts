@@ -5,20 +5,22 @@ import {
   type Language,
 } from "@/core/constants.ts";
 import { highlight } from "@/core/compiler.ts";
-import { load, save } from "@/client/state/storage.ts";
 import { getSettings, languageOf, settingsStore } from "@/islands/settings.ts";
 
-// The category/level filter is this island's own state rather than the settings
-// store's: it is the one settings group no other component on any page reads.
-// It persists to the same `sessionStorage` keys it always has
-// (`commandsCategoryIndex`, `showSimpleCommands`, …), which is why the attribute
-// names here are shorter than the keys they reconcile against. `language`, by
-// contrast, is shared, so it comes from the store.
+// The category/level filter is **ephemeral view state**: this island's own
+// attributes, persisted nowhere. It used to be four `localStorage` properties
+// with a mount effect to reconcile them, which meant every visit rendered the
+// table one way on the server and then corrected it in the browser. A filter on
+// a reference table is not worth that, so the table simply starts where the
+// server said it does and the correction has nothing left to do.
 //
-// The filter controls are written with `.checked`/`.selected` property bindings,
-// because `restoreFromStorage` changes them from outside the controls
-// themselves; the `<option>`'s plain `value` is its identity, which `setCategory`
-// reads back.
+// `language`, by contrast, is shared and persisted, so it comes from the store -
+// and the server renders the right one, because it is a cookie field.
+//
+// The filter controls keep their `.checked`/`.selected` property bindings: a
+// re-render for a *language* change still has to reassert them, and a plain
+// attribute would only set the control's reset default. The `<option>`'s plain
+// `value` is its identity, which `setCategory` reads back.
 //
 // Every boolean defaults to `false`, as Womble requires. `simple` is the one
 // that should start on, so the call site says so explicitly -
@@ -135,57 +137,20 @@ define("command-table", {
     `;
   },
   actions: {
-    setCategory: (_attributes, { event }) => {
-      const category = Number((event!.target as HTMLSelectElement).value);
-      save("commandsCategoryIndex", category);
-      return { category };
-    },
-    toggleSimple: (_attributes, { event }) => {
-      const simple = (event!.target as HTMLInputElement).checked;
-      save("showSimpleCommands", simple);
-      return { simple };
-    },
-    toggleIntermediate: (_attributes, { event }) => {
-      const intermediate = (event!.target as HTMLInputElement).checked;
-      save("showIntermediateCommands", intermediate);
-      return { intermediate };
-    },
-    toggleAdvanced: (_attributes, { event }) => {
-      const advanced = (event!.target as HTMLInputElement).checked;
-      save("showAdvancedCommands", advanced);
-      return { advanced };
-    },
-    // Called as a method by the `restoreFromStorage` effect below, never by a
-    // DOM event, so what it reads is its own declared parameters.
-    restore: {
-      params: {
-        category: 0,
-        simple: false,
-        intermediate: false,
-        advanced: false,
-      },
-      run: (_attributes, { params }) => ({
-        category: params.category as number,
-        simple: params.simple as boolean,
-        intermediate: params.intermediate as boolean,
-        advanced: params.advanced as boolean,
-      }),
-    },
+    setCategory: (_attributes, { event }) => ({
+      category: Number((event!.target as HTMLSelectElement).value),
+    }),
+    toggleSimple: (_attributes, { event }) => ({
+      simple: (event!.target as HTMLInputElement).checked,
+    }),
+    toggleIntermediate: (_attributes, { event }) => ({
+      intermediate: (event!.target as HTMLInputElement).checked,
+    }),
+    toggleAdvanced: (_attributes, { event }) => ({
+      advanced: (event!.target as HTMLInputElement).checked,
+    }),
   },
-  effects: {
-    // Runs once on mount, correcting the server-rendered defaults to whatever
-    // this browser last saved. The re-render reaches the controls' *live* state
-    // only because they are property bindings; a plain attribute would set only
-    // their reset default.
-    restoreFromStorage: ({ element }) => {
-      element.restore({
-        category: load("commandsCategoryIndex"),
-        simple: load("showSimpleCommands"),
-        intermediate: load("showIntermediateCommands"),
-        advanced: load("showAdvancedCommands"),
-      });
-    },
-  },
+  // No effects: with nothing persisted there is nothing to reconcile against.
 });
 
 const visibleCommands = (

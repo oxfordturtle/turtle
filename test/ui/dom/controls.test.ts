@@ -159,7 +159,7 @@ describe("the Edit menu's commands", () => {
   });
 
   // Undo, Redo, Cut, Copy and Paste have never done anything in the browser -
-  // see src/islands/turtle-system/editing.ts and TODO.md 3.3. The keyboard
+  // see src/islands/turtle-system/editing.ts and TODO.md 1.3. The keyboard
   // shortcuts work on the textarea, so what the menu says is exactly that.
   it("sends the user to the keyboard shortcut for the five editing commands", async () => {
     const captured = captureErrors();
@@ -219,15 +219,6 @@ describe("the Run menu's commands", () => {
     await run("run-menu", "Reset Canvas, Console and Output");
     assertEquals(consolePane.innerHTML, "");
     assertEquals(machine.getTurtle().x, 500);
-  });
-});
-
-describe("the Options menu's commands", () => {
-  // Blocked on an account system that doesn't exist - TODO.md 3.4.
-  it("reports that settings cannot be saved yet", async () => {
-    const captured = captureErrors();
-    await run("options-menu", "Save current settings");
-    assertEquals(captured, ["Not yet implemented."]);
   });
 });
 

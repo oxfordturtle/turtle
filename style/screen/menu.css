@@ -4,43 +4,66 @@
   top: 0;
   left: 0;
   right: 0;
-  height: 3em;
+  height: var(--bar-height);
   display: flex;
   justify-content: space-between;
   background: var(--blue);
   color: #fff;
 }
 
-.site-nav a {
+/*
+ * The links and icons are scoped to the island rather than to `.site-nav`,
+ * because the island is rendered in two places: the site nav above, and a copy
+ * inside the system's own top bar for when fullscreen covers the nav (see
+ * src/islands/turtle-system.ts). `.site-nav` keeps only what is the *bar's*
+ * own - where it sits, and how tall it is.
+ */
+site-menu a {
   display: flex;
-  padding: 0.75em 1em;
+  align-items: center;
+  /*
+   * A row of the bar, stated as such rather than arrived at from padding: the
+   * links sit in two bars of the same height (the site nav, and the system's
+   * top bar in fullscreen), and the rows of an open dropdown are the same
+   * height again.
+   */
+  height: var(--bar-height);
+  padding: 0 1em;
   white-space: nowrap;
   color: inherit;
 }
 
-.site-nav a:hover,
-.site-nav a.active,
-.site-nav a.open {
+site-menu a:hover,
+site-menu a.active,
+site-menu a.open {
   background: var(--blue-dark);
   text-decoration: none;
 }
 
-.site-nav .icon {
+/*
+ * Each icon centres what it holds - a caret, or the logo - now that the link is
+ * a row of the bar rather than a box the padding sized exactly. That is also
+ * what retires the logo's `margin-bottom: -5px`: it was there to lift an image
+ * that sat on the text's baseline, and a centred flex box has no baseline to
+ * fight.
+ */
+site-menu .icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
   width: 2em;
-  text-align: center;
 }
 
-.site-nav .icon:first-child {
+site-menu .icon:first-child {
   margin-left: -0.75em;
 }
 
-.site-nav .icon:last-child {
+site-menu .icon:last-child {
   margin-right: -0.75em;
 }
 
-.site-nav .logo img {
+site-menu .logo img {
   height: 22px;
-  margin-bottom: -5px;
 }
 
 .site-nav-right {
