@@ -2,8 +2,9 @@
   flex: 1;
   overflow: auto;
   padding: var(--system-padding);
-  font-family: var(--monospace);
-  font-size: 13px;
+  /* set by <output-tab>, from the outputFontFamily/outputFontSize settings */
+  font-family: var(--output-font-family, var(--monospace));
+  font-size: var(--output-font-size, 13px);
   margin: 0;
   background: #fff;
   border: 0;

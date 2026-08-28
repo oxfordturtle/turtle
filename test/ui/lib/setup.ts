@@ -60,11 +60,19 @@ import {
  *   recording, so the production handler stays under test rather than being
  *   swapped out for a test-only one.
  *
- * `sessionStorage` needs no stub at all: Deno implements the Web Storage API
+ * `localStorage` needs no stub at all: Deno implements the Web Storage API
  * natively, so `src/client/state/storage.ts` reads and writes a real one.
  * It's process-wide rather than per-window, so `mountRoute` clears it - which
  * is also what makes a mount reproducible, since the settings store and the
- * command table both reconcile against it.
+ * file memory both reconcile against it.
+ *
+ * `document.cookie` is the one piece jsdom does not join up for us. The five
+ * cookie fields are how the *server* learns what this browser has stored, and
+ * jsdom's document has no connection to the `Request` this harness builds - so
+ * `mountRoute` reads `localStorage` and sends the cookie the browser would have
+ * sent. Without that, a second page load would be server-rendered at the
+ * defaults and corrected on hydration, which is precisely what these tests exist
+ * to catch.
  */
 
 // `setupDom` hands back the document; the window it belongs to is what the
@@ -141,7 +149,7 @@ export const machine = await import("@/islands/turtle-system/machine.ts");
 /** the out-of-subtree command channels (src/islands/turtle-system/commands.ts) */
 export const commands = await import("@/islands/turtle-system/commands.ts");
 
-/** the page-wide DOM passes the client entry runs (src/client/passes.ts) */
+/** the two document-level jobs the client entry runs (src/client/passes.ts) */
 export const passes = await import("@/client/passes.ts");
 
 /**
@@ -153,8 +161,14 @@ export const passes = await import("@/client/passes.ts");
  */
 export const errors = await import("@/client/tools/error.ts");
 
-/** the sessionStorage load/save pair behind every persisted value (src/client/state/storage.ts) */
+/** the localStorage load/save pair behind every persisted value (src/client/state/storage.ts) */
 export const storage = await import("@/client/state/storage.ts");
+
+/** the cookie's format, shared by the browser that writes it and the server that reads it */
+export const cookie = await import("@/client/state/cookie.ts");
+
+/** the property list, its defaults, and which five of them the cookie carries */
+export const properties = await import("@/client/constants/properties.ts");
 
 /**
  * The machine barrel itself (src/core/machine.ts), for the one path a test
@@ -183,10 +197,11 @@ export const assertNoWombleLogs = (): void => assertNoLogs(logs);
  * as close to "load the page" as this layer gets: the same server output
  * layer 1 asserts against, parsed into the document the islands upgrade in.
  *
- * The `<body>`'s own attributes are dropped (only its contents are needed,
- * and jsdom's body is already there), the session is cleared so storage
- * reconciliation starts from the defaults, and `logs` is emptied so a test
- * asserts on its own interactions rather than on the mount before it.
+ * The `<body>`'s own attributes are dropped (only its contents are needed, and
+ * jsdom's body is already there) - `syncBodyState` in `init()` puts back the two
+ * that matter, and layer 1 is where the server's own are asserted. Storage is
+ * cleared so reconciliation starts from the defaults, and `logs` is emptied so a
+ * test asserts on its own interactions rather than on the mount before it.
  *
  * The document's own URL is set to `path` as well, so `mountRoute("/?l=Pascal")`
  * is a page loaded at that address and not just a page whose markup was
@@ -206,15 +221,15 @@ export const assertNoWombleLogs = (): void => assertNoLogs(logs);
  * is `logs` emptied, so a test asserts on its own interactions rather than on
  * the mount before it.
  *
- * `keepSession` is for the one thing clearing the session hides: a *second*
- * page load, which finds whatever the first one stored. Everything the settings
- * store and the command table reconcile against lives there.
+ * `keepStorage` is for the one thing clearing storage hides: a *second* page
+ * load, which finds whatever the first one stored - and which is served, as a
+ * browser would serve it, with the cookie that storage implies.
  */
 export const mountRoute = async (
   path: string,
-  { keepSession = false }: { keepSession?: boolean } = {},
+  { keepStorage = false }: { keepStorage?: boolean } = {},
 ): Promise<Document> => {
-  if (!keepSession) sessionStorage.clear();
+  if (!keepStorage) localStorage.clear();
   document.defaultView?.history.replaceState(null, "", path);
   // In a browser every page load is a fresh document served by a process whose
   // stores sit at their declared values, and every load adopts its own store
@@ -229,7 +244,9 @@ export const mountRoute = async (
   resetStore(settings.settingsStore);
   resetStore(program.programStore);
   resetStore(machine.machineStore);
-  const response = await route(new Request(`http://localhost${path}`));
+  const response = await route(
+    new Request(`http://localhost${path}`, { headers: browserCookie() }),
+  );
   const markup = await response.text();
   const body = markup.slice(
     markup.indexOf("<body"),
@@ -248,6 +265,20 @@ export const mountRoute = async (
   assertNoLogs(logs);
   logs.length = 0;
   return document;
+};
+
+/**
+ * The `cookie` header this browser would send, built from what `localStorage`
+ * holds - the same five fields `writeCookie` mirrors, through the same
+ * serialiser, so the header the server parses is the one a browser would send.
+ * Empty storage sends nothing, which is a first-ever visit.
+ */
+const browserCookie = (): HeadersInit => {
+  if (localStorage.length === 0) return {};
+  const values = Object.fromEntries(
+    properties.cookieFields.map((field) => [field, storage.load(field)]),
+  ) as Parameters<typeof cookie.serialiseCookie>[0];
+  return { cookie: `${cookie.COOKIE_NAME}=${cookie.serialiseCookie(values)}` };
 };
 
 /** Womble's `<script type="application/json" data-womble-stores>`, lifted out of the head. */

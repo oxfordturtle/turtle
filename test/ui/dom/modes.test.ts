@@ -9,21 +9,16 @@ import {
 import { assert, assertEquals, assertFalse } from "@std/assert";
 import { afterEach, beforeEach, describe, it } from "@std/testing/bdd";
 
-// Mode visibility is decided in two different ways at once, and they must not
-// fight.
+// Mode visibility is decided in exactly one way now: every component derives it
+// from the settings store through `hiddenUnless`, and the server derives the
+// same answer, because the mode is one of the five cookie fields. So a pane that
+// should be hidden arrives hidden rather than being hidden afterwards.
 //
-// - The page-wide `modeVisibility` pass (src/client/passes.ts) sweeps the
-//   document for `[data-mode]` and toggles `.hidden`. That's the right call for
-//   the elements it covers - static, server-rendered documentation prose that
-//   no island owns. It runs at startup and again on every settings change.
-// - Anything *inside* an island derives its own visibility from the mode
-//   instead, because the sweep runs before the islands hydrate and their first
-//   render would wipe whatever it had just set. The nine tab panes deliberately
-//   carry no `data-mode` for precisely that reason.
-//
-// The third piece is `validateTab`: a pane the mode change has just hidden
-// can't be the one on show, and the pass can't work that out for itself any
-// more, so it asks the system (see commands.test.ts).
+// There used to be a second mechanism - a page-wide `modeVisibility` sweep over
+// `[data-mode]`. It never did anything: the markup it was written for spells the
+// attribute `modes`, so it swept an empty list on every route, and the test that
+// appeared to cover it asserted `[].every(...)`, which is vacuously true. It is
+// gone, and so is `validateTab`, the command it used to send.
 
 // deno-lint-ignore no-explicit-any
 const system = (): any => q("turtle-system");
@@ -85,14 +80,34 @@ describe("changing the mode", () => {
     assertEquals(shown, ["canvas", "output"]);
   });
 
-  // The fallback: the tab on show was in a mode that has just gone away.
-  it("falls back to the canvas when the active tab goes away", async () => {
+  // The fallback, which is now *derived* rather than corrected: the chosen tab
+  // is kept, and simply isn't the one shown while this mode hasn't got it. That
+  // is better than the old behaviour, which overwrote the choice - so leaving
+  // Expert mode and coming back used to lose your PCode tab, and now doesn't.
+  it("shows the canvas instead when the active tab isn't in this mode", async () => {
+    // PCode belongs to Expert and Machine, so this is a mode that has it
+    await setMode("expert");
     system().tab = "pcode";
     await settle();
     assert(pane("pcode").includes("active"));
+
     await setMode("simple");
-    assertEquals(system().tab, "canvas");
     assert(pane("canvas").includes("active"));
+    assertFalse(pane("pcode").includes("active"));
+    // the choice itself survives, unoverwritten
+    assertEquals(system().tab, "pcode");
+  });
+
+  it("gives the tab back when the mode that has it returns", async () => {
+    await setMode("expert");
+    system().tab = "pcode";
+    await settle();
+    await setMode("simple");
+    assert(pane("canvas").includes("active"));
+
+    await setMode("expert");
+    assert(pane("pcode").includes("active"));
+    assertEquals(qa(".system-tab-pane.active").length, 1);
   });
 
   it("leaves the active tab alone when it survives the change", async () => {
@@ -102,19 +117,26 @@ describe("changing the mode", () => {
     assertEquals(system().tab, "output");
   });
 
-  // The two mechanisms, in one assertion: the sweep sets `.hidden` on the
-  // menu's own `[data-mode]` markup, the panes derive theirs, and neither
-  // undoes the other's work on the next render.
-  it("leaves the swept elements and the derived ones agreeing", async () => {
+  // The menu's own mode-conditional controls, which carry `modes` and derive
+  // `hidden` from it in their own render - the same mechanism the panes use.
+  // This is what the old vacuous `[data-mode]` assertion was reaching for.
+  it("hides the menu controls that don't belong to it", async () => {
     await setMode("simple");
     q("turtle-system").menu = true;
     await settle();
-    const swept = qa("[data-mode]").filter((element: Element) =>
-      (element.getAttribute("data-mode") ?? "").split(",").includes("simple"),
+    // an empty `modes` means every mode, so only the ones that name modes are
+    // making a decision here
+    const conditional = qa("setting-checkbox[modes]").filter(
+      (control: Element) => control.getAttribute("modes") !== "",
     );
-    assert(
-      swept.every((element: Element) => !element.classList.contains("hidden")),
-    );
+    assert(conditional.length > 0);
+    for (const control of conditional) {
+      const modes = (control.getAttribute("modes") ?? "").split(",");
+      assertEquals(
+        control.querySelector("label").classList.contains("hidden"),
+        !modes.includes("simple"),
+      );
+    }
     assert(pane("pcode").includes("hidden"));
   });
 });
@@ -122,10 +144,12 @@ describe("changing the mode", () => {
 describe("choosing a tab", () => {
   it("shows exactly one pane, from the header's select", async () => {
     const select = q("turtle-system .system-header select");
-    select.value = "memory";
+    // a tab the default (normal) mode actually offers, so what is asserted is
+    // the select, not the mode derivation above
+    select.value = "usage";
     await change(select);
-    assertEquals(system().tab, "memory");
+    assertEquals(system().tab, "usage");
     assertEquals(qa(".system-tab-pane.active").length, 1);
-    assert(pane("memory").includes("active"));
+    assert(pane("usage").includes("active"));
   });
 });

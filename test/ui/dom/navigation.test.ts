@@ -18,12 +18,19 @@ import { afterEach, describe, it } from "@std/testing/bdd";
 // site menu closes when a click lands anywhere else on the page, and the doc
 // tabs switch panes that are static prose no island owns.
 
-const logo = (): Element => q("site-menu > a");
+// Every query here is scoped to the site nav's *own* copy of the island: the
+// system page renders a second one inside the system header, which the
+// stylesheet shows in place of the nav while fullscreen covers it (see
+// src/islands/turtle-system.ts). A bare `site-menu` selector would find two on
+// `/`, and the two are independent islands with their own open state.
+const nav = ".site-nav site-menu";
 
-const documentationToggle = (): Element => q("site-menu .site-menu > a");
+const logo = (): Element => q(`${nav} > a`);
+
+const documentationToggle = (): Element => q(`${nav} .site-menu > a`);
 
 /** how many dropdown panels are showing, by the class each derives from its flag */
-const openPanels = (): number => qa("site-menu .site-sub-menu.open").length;
+const openPanels = (): number => qa(`${nav} .site-sub-menu.open`).length;
 
 // Rule 6: every test ends with Womble having reported nothing.
 afterEach(assertNoWombleLogs);
@@ -32,15 +39,15 @@ describe("the site menu", () => {
   it("opens and closes from the logo, turning its caret over", async () => {
     await mountRoute("/");
     assertEquals(openPanels(), 0);
-    assertEquals(q("site-menu > a i").className, "fa fa-caret-down");
+    assertEquals(q(`${nav} > a i`).className, "fa fa-caret-down");
 
     await click(logo());
-    assert(q("site-menu").site);
+    assert(q(nav).site);
     assertEquals(openPanels(), 1);
-    assertEquals(q("site-menu > a i").className, "fa fa-caret-up");
+    assertEquals(q(`${nav} > a i`).className, "fa fa-caret-up");
 
     await click(logo());
-    assertFalse(q("site-menu").site);
+    assertFalse(q(nav).site);
     assertEquals(openPanels(), 0);
   });
 
@@ -51,7 +58,7 @@ describe("the site menu", () => {
     await mountRoute("/");
     await click(logo());
     await click(documentationToggle());
-    assert(q("site-menu").documentation);
+    assert(q(nav).documentation);
     assertEquals(openPanels(), 2);
     // its own caret, the second of the two icons in the toggle, turns over too
     assertEquals(
@@ -61,8 +68,8 @@ describe("the site menu", () => {
 
     // closing the whole thing closes the nested one with it
     await click(logo());
-    assertFalse(q("site-menu").site);
-    assertFalse(q("site-menu").documentation);
+    assertFalse(q(nav).site);
+    assertFalse(q(nav).documentation);
     assertEquals(openPanels(), 0);
   });
 
@@ -71,7 +78,7 @@ describe("the site menu", () => {
     await click(logo());
     await click(documentationToggle());
     await click(documentationToggle());
-    assertFalse(q("site-menu").documentation);
+    assertFalse(q(nav).documentation);
     assertEquals(openPanels(), 1);
   });
 
@@ -83,44 +90,96 @@ describe("the site menu", () => {
     await click(logo());
     await click(documentationToggle());
     await click(q(".wrapper"));
-    assertFalse(q("site-menu").site);
-    assertFalse(q("site-menu").documentation);
+    assertFalse(q(nav).site);
+    assertFalse(q(nav).documentation);
     assertEquals(openPanels(), 0);
   });
 
   it("stays open for a click inside itself", async () => {
     await mountRoute("/");
     await click(logo());
-    await click(q("site-menu .site-sub-menu a"));
-    assert(q("site-menu").site);
+    await click(q(`${nav} .site-sub-menu a`));
+    assert(q(nav).site);
   });
 
   // Which page is showing is a prop from the layout, and marks its own link.
   it("marks the section and page the layout says is showing", async () => {
     await mountRoute("/");
     assertEquals(
-      qa("site-menu a.active").map((a: Element) => a.getAttribute("href")),
+      qa(`${nav} a.active`).map((a: Element) => a.getAttribute("href")),
       ["/"],
     );
 
     await mountRoute("/documentation/help");
     assertEquals(
-      qa("site-menu a.active").map((a: Element) => a.getAttribute("href")),
+      qa(`${nav} a.active`).map((a: Element) => a.getAttribute("href")),
       // the Documentation toggle has no href of its own
       [null, "/documentation/help"],
     );
 
     await mountRoute("/documentation/reference");
     assertEquals(
-      qa("site-menu a.active").map((a: Element) => a.getAttribute("href")),
+      qa(`${nav} a.active`).map((a: Element) => a.getAttribute("href")),
       [null, "/documentation/reference"],
     );
 
     await mountRoute("/contact");
     assertEquals(
-      qa("site-menu a.active").map((a: Element) => a.getAttribute("href")),
+      qa(`${nav} a.active`).map((a: Element) => a.getAttribute("href")),
       ["/contact"],
     );
+  });
+});
+
+// The same island a second time, in the system's own top bar. Fullscreen hides
+// the site nav - the system is filling the space it had - so without this there
+// is no way back to the rest of the site from there. Which of the two copies is
+// on screen is the stylesheet's answer (style/screen/system/header.css), and the
+// browser suite is where that is asserted; what this layer can say is that the
+// second copy is there, that it offers the same links, and that the two don't
+// interfere with each other.
+describe("the site menu's copy in the system header", () => {
+  const copy = ".system-site-nav site-menu";
+
+  const hrefs = (selector: string): Array<string | null> =>
+    qa(`${selector} a[href]`).map((a: Element) => a.getAttribute("href"));
+
+  it("offers the same links as the nav's, and only on the system page", async () => {
+    await mountRoute("/");
+    assertEquals(hrefs(copy), hrefs(nav));
+    // and it knows which page it is on, from the `section` its call site
+    // hardcodes - the system is only ever the index route
+    assertEquals(
+      qa(`${copy} a.active`).map((a: Element) => a.getAttribute("href")),
+      ["/"],
+    );
+
+    await mountRoute("/about");
+    assertEquals(qa(copy).length, 0);
+  });
+
+  // Two instances of one island, so each has its own state: the copy the person
+  // can see is the one that opens.
+  it("opens on its own, leaving the nav's copy closed", async () => {
+    await mountRoute("/");
+    await click(q(`${copy} > a`));
+    assert(q(copy).site);
+    assertFalse(q(nav).site);
+  });
+
+  // The wrapper it sits in carries the root's `closeMenu`, so the system menu
+  // doesn't stay up underneath a dropdown that has replaced it. Womble's
+  // delegation is what makes that safe: a click from inside a nested island is
+  // matched from the island's own tag upwards, so the root reads its own
+  // `on-click` and never the site menu's.
+  it("closes the system menu it shares its bar with", async () => {
+    await mountRoute("/");
+    await click(q('button[aria-label="system menu"]'));
+    assert(q("turtle-system").menu);
+
+    await click(q(`${copy} > a`));
+    assertFalse(q("turtle-system").menu);
+    assert(q(copy).site);
   });
 });
 

@@ -16,7 +16,7 @@ import {
 
 /**
  * The acceptance pass a human would otherwise do by hand. Deliberately small:
- * five tests, each covering something no other layer can see.
+ * six tests, each covering something no other layer can see.
  *
  * The canvas and the console are the reason this layer exists at all. Both are
  * written imperatively by the adapters rather than rendered by any component,
@@ -88,17 +88,49 @@ describe("running a program", () => {
   });
 });
 
-describe("a link into the system", () => {
+describe("a link that names a language", () => {
   // The seed's own test, and the only layer that can make it. `?l=` is decided
-  // twice - the layout seeds the settings store from it on the server, and
-  // `initialiseSettings` re-derives it in the browser - and what the seed buys
-  // is that the two agree, so nothing flips between the page arriving and the
-  // islands hydrating. Read before the bundle has run, and again after.
+  // twice - the layout resolves it on the server and seeds the settings store,
+  // and `initialiseSettings` re-derives it in the browser through the same
+  // `resolveLanguage` - and what that buys is that the two agree, so nothing
+  // flips between the page arriving and the islands hydrating. Read before the
+  // bundle has run, and again after.
+  //
+  // A *documentation* page, because that is where `?l=` wins outright: it is a
+  // view parameter there. On the system page the open file decides, which the
+  // test below is about.
   it("serves the language named by ?l= without a flip on hydration", async () => {
-    await page().goto(app.url("/?l=BASIC"), { waitUntil: "commit" });
-    const served = await page().locator("language-select select").inputValue();
-    assertEquals(served, "BASIC");
+    await page().goto(app.url("/documentation/help?l=BASIC"), {
+      waitUntil: "commit",
+    });
+    assertEquals(
+      await page().locator("language-select select").inputValue(),
+      "BASIC",
+    );
 
+    await page().waitForFunction(
+      () => document.body.dataset.language !== undefined,
+    );
+    assertEquals(
+      await page().locator("language-select select").inputValue(),
+      "BASIC",
+    );
+    assertEquals(
+      await page().evaluate(() => document.body.dataset.language),
+      "BASIC",
+    );
+  });
+
+  // The confirmed rule: on the system page the file decides, and the stored
+  // value tracks it, so a link must not re-language a program someone is in the
+  // middle of writing. By now this browser has a cookie (every load writes one),
+  // so the stored Python wins over the link's BASIC.
+  it("leaves the system's own language alone", async () => {
+    await page().goto(app.url("/?l=BASIC"), { waitUntil: "commit" });
+    assertEquals(
+      await page().locator("language-select select").inputValue(),
+      "Python",
+    );
     await page().waitForFunction(
       () =>
         (
@@ -107,36 +139,23 @@ describe("a link into the system", () => {
     );
     assertEquals(
       await page().locator("language-select select").inputValue(),
-      "BASIC",
-    );
-
-    // This layer shares one page and one session across the whole file, on
-    // purpose (the last test in it is about what survives a reload), so a test
-    // that changes a *persisted* setting has to put it back. `?l=` is the same
-    // mechanism in reverse.
-    await page().goto(app.url("/?l=Python"));
-    await page().waitForFunction(
-      () =>
-        (
-          document.querySelector(
-            "language-select select",
-          ) as HTMLSelectElement | null
-        )?.value === "Python",
+      "Python",
     );
   });
 });
 
-describe("the hidden class", () => {
-  // The jsdom layer asserts `.hidden` lands on the right elements; only a
-  // browser can say what the class *does*. This is the one `:visible` check
-  // for both page-wide sweeps: if `.hidden` were not `display: none`, the
-  // prose for every language would be on show at once.
-  it("really takes the other languages' prose off the screen", async () => {
-    await page().goto(app.url("/documentation/help"));
-    await page()
-      .locator("code[data-language].hidden")
-      .first()
-      .waitFor({ state: "attached" });
+describe("the language stylesheet", () => {
+  // The jsdom layer asserts that `<body data-language>` moves; only a browser
+  // can say what the attribute *does*, because jsdom applies no stylesheet.
+  // This is the one `:visible` check for the whole mechanism: if
+  // style/screen/language.css were wrong, the prose for all six languages would
+  // be on show at once.
+  //
+  // It also asserts what the rewrite was *for*: the prose is hidden by the
+  // markup the server sent, not by a script afterwards - so this is read at
+  // `commit`, before the bundle has run at all.
+  it("takes the other languages' prose off the screen, before any script runs", async () => {
+    await page().goto(app.url("/documentation/help"), { waitUntil: "commit" });
     const visible = await page()
       .locator("code[data-language]:visible")
       .evaluateAll((elements) =>
@@ -147,6 +166,56 @@ describe("the hidden class", () => {
     assertFalse(
       await page().locator('code[data-language="BASIC"]').first().isVisible(),
     );
+  });
+
+  // and it follows a language change, which is a change rather than a
+  // correction: one attribute write, and the stylesheet does the rest
+  it("follows the language select", async () => {
+    await page().goto(app.url("/documentation/help"));
+    await page().locator("language-select select").selectOption("BASIC");
+    await page()
+      .locator('code[data-language="BASIC"]')
+      .first()
+      .waitFor({ state: "visible" });
+    assertFalse(
+      await page().locator('code[data-language="Python"]').first().isVisible(),
+    );
+    // put the shared session back, as this layer's convention requires
+    await page().locator("language-select select").selectOption("Python");
+  });
+});
+
+describe("the site nav in fullscreen", () => {
+  // Fullscreen takes the site nav off the screen - the system fills the window
+  // - so the system's own top bar carries a second copy of the site menu
+  // (src/islands/turtle-system.ts). Both copies are in the markup on every
+  // system page, and which one a person sees is a stylesheet decision keyed off
+  // `<body class="fullscreen">`, so this is the only layer that can check it:
+  // jsdom renders the pair and applies no CSS at all.
+  it("hands the site menu over to the system's top bar, and takes it back", async () => {
+    await page().goto(app.url("/"));
+    const inNav = page().locator(".site-nav site-menu");
+    const inSystem = page().locator(".system-site-nav site-menu");
+    assert(await inNav.isVisible());
+    assertFalse(await inSystem.isVisible());
+
+    await page().locator('button[title="Maximize"]').click();
+    await inSystem.waitFor({ state: "visible" });
+    assertFalse(await inNav.isVisible());
+
+    // and it is a way back to the site rather than a picture of one - which is
+    // the whole point of it, since the nav it stands in for is gone
+    await page().locator('.system-site-nav a[href="/about"]').click();
+    await page().waitForURL(/\/about$/);
+    // fullscreen is still set, but it is the system's own affair: every other
+    // route has its nav
+    assert(await inNav.isVisible());
+
+    // put the shared session back, as this layer's convention requires
+    await page().goto(app.url("/"));
+    await page().locator('button[title="Expand down"]').click();
+    await inNav.waitFor({ state: "visible" });
+    assertFalse(await inSystem.isVisible());
   });
 });
 

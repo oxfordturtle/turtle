@@ -11,20 +11,20 @@ import {
   settle,
   storage,
 } from "../lib/setup.ts";
+import { diskFetcher, exampleFromDisk, requests } from "./lib/examples.ts";
 import {
-  diskFetcher,
-  eventually,
-  exampleFromDisk,
-  requests,
-} from "./lib/examples.ts";
-import { assert, assertEquals, assertStrictEquals } from "@std/assert";
+  assert,
+  assertEquals,
+  assertFalse,
+  assertStrictEquals,
+} from "@std/assert";
 import { afterEach, beforeEach, describe, it } from "@std/testing/bdd";
 
 // The client startup itself (src/client/index.ts): every `mountRoute` runs the
 // real `init()`, so these tests assert what a freshly loaded page can do that
-// unwired modules cannot - the machine draws through its ports, the passes have
-// swept the prose, the URL's example parameter opened something, and errors
-// reach the user.
+// unwired modules cannot - the machine draws through its ports, the code blocks
+// are highlighted, `<body>` carries the two facts no component owns, the URL's
+// example parameter opened something, and errors reach the user.
 
 // Rule 6: every test ends with Womble having reported nothing.
 afterEach(assertNoWombleLogs);
@@ -125,7 +125,7 @@ describe("init wires the machine's outbound ports", () => {
   });
 });
 
-describe("init runs the page-wide passes", () => {
+describe("init runs the two document-level jobs", () => {
   beforeEach(async () => {
     await mountRoute("/documentation/reference");
   });
@@ -140,66 +140,51 @@ describe("init runs the page-wide passes", () => {
     assert(basic.length > 0);
   });
 
-  it("applies language visibility for the stored language", () => {
-    // the default language is Python, so the Python spellings show and every
-    // other language's are hidden
-    const shown = qa("code[data-language]").filter(
-      (element: Element) => !element.classList.contains("hidden"),
-    );
-    assert(shown.length > 0);
-    assert(
-      shown.every(
-        (element: Element) =>
-          element.getAttribute("data-language") === "Python",
-      ),
-    );
-    assert(qa('code[data-language="C"].hidden').length > 0);
+  // Which prose is shown is CSS now (style/screen/language.css), keyed off this
+  // one attribute - so what the client has to get right is the attribute, and
+  // there is no sweep to assert on. The server renders it too, from the cookie:
+  // test/ui/ssr/pages.test.ts covers that half, which is the half that decides
+  // whether the *first* paint is right.
+  it("carries the language on the body, for the stylesheet", () => {
+    assertEquals(document.body.dataset.language, "Python");
   });
 
-  it("re-runs the visibility passes when a setting changes", async () => {
-    // the settings store notifies, the subscription init registered sweeps
+  // A change, not a correction: the store notifies and the subscription `init`
+  // registered writes the attribute again.
+  it("follows the settings store for as long as the page lives", async () => {
     settings.setSetting("language", "C");
     await settle();
-    const shown = qa("code[data-language]").filter(
-      (element: Element) => !element.classList.contains("hidden"),
-    );
-    assert(shown.length > 0);
-    assert(
-      shown.every(
-        (element: Element) => element.getAttribute("data-language") === "C",
-      ),
-    );
+    assertEquals(document.body.dataset.language, "C");
 
-    // the mode pass follows the same subscription: an element injected after
-    // the mount has never been swept, so only the re-run can set its class
-    const simpleOnly = document.createElement("div");
-    simpleOnly.setAttribute("data-mode", "simple");
-    const normalOnly = document.createElement("div");
-    normalOnly.setAttribute("data-mode", "normal");
-    document.body.append(simpleOnly, normalOnly);
-    settings.setSetting("mode", "simple");
+    settings.setSetting("fullscreen", true);
     await settle();
-    assert(!simpleOnly.classList.contains("hidden"));
-    assert(normalOnly.classList.contains("hidden"));
+    assert(document.body.classList.contains("fullscreen"));
+
+    settings.setSetting("fullscreen", false);
+    await settle();
+    assertFalse(document.body.classList.contains("fullscreen"));
   });
 });
 
+// The server reads the example off disk and seeds it (src/pages/index.ts), so
+// by the time the browser runs there is nothing to fetch and nothing to wait
+// for. That is what makes a `/?x=` link a completion rather than a correction:
+// the file memory and the example land in the same startup, before the islands
+// hydrate, so the restored file is never drawn and then replaced.
 describe("init opens the file the URL names", () => {
   beforeEach(() => {
     requests.length = 0;
     program.setFetcher(diskFetcher);
   });
 
-  it("?x= opens that example into the file memory", async () => {
+  it("?x= opens that example into the file memory, without fetching", async () => {
     await mountRoute("/?x=Triangle1");
-    await eventually(
-      () => program.getFilename() === "Triangle1",
-      "the example to open",
+    assertEquals(program.getFilename(), "Triangle1");
+    // the whole point: the content came with the page
+    assertEquals(requests, []);
+    const disk = await exampleFromDisk(
+      "/examples/Python/Procedures/Triangle1.tpy",
     );
-    // the URL shape the server really serves examples under
-    assertEquals(requests, ["/examples/Python/Procedures/Triangle1.tpy"]);
-    // the real example file's code, in the store, over the empty placeholder
-    const disk = await exampleFromDisk(requests[0]!);
     assertEquals(program.getCode(), disk.trim().replace(/\r\n/g, "\n"));
     assertEquals(program.getFiles().length, 1);
     assertEquals(program.getCurrentFile()?.example, "Triangle1");
@@ -207,15 +192,30 @@ describe("init opens the file the URL names", () => {
     await settle();
   });
 
-  it("?x= fetches the example for the ?l= language", async () => {
-    // the settings initialise before the URL's example parameter is read, so
-    // the example arrives in the language the same link asked for
+  // Not every example exists in every language. The server seeds nothing it
+  // couldn't read, so the browser is left showing the file memory - which is
+  // what it would have shown anyway.
+  it("?x= names an example this language hasn't got", async () => {
+    await mountRoute("/?l=TypeScript&x=Recolouring");
+    assertEquals(program.getFilename(), "");
+    assertEquals(program.getCode(), "");
+    assertEquals(requests, []);
+    await settle();
+  });
+
+  it("?x= names no example at all", async () => {
+    await mountRoute("/?x=NoSuchExample");
+    assertEquals(program.getFilename(), "");
+    assertEquals(requests, []);
+    await settle();
+  });
+
+  it("?x= opens the example in the ?l= language", async () => {
+    // `?l=` speaks for a file that is about to be opened, which is exactly what
+    // this is - so the server reads the BASIC copy and seeds that
     await mountRoute("/?l=BASIC&x=Triangle1");
-    await eventually(
-      () => program.getFilename() === "Triangle1",
-      "the example to open",
-    );
-    assertEquals(requests, ["/examples/BASIC/Procedures/Triangle1.tbas"]);
+    assertEquals(program.getFilename(), "Triangle1");
+    assertEquals(requests, []);
     assertEquals(program.getCurrentFile()?.language, "BASIC");
     await settle();
   });
@@ -265,7 +265,7 @@ describe("init's registered error handler", () => {
 
 describe("the storage behind it all (src/client/state/storage.ts)", () => {
   // what every settings read goes through
-  it("round-trips a value through the session, preserving its type", () => {
+  it("round-trips a value through storage, preserving its type", () => {
     storage.save("editorFontSize", 16);
     assertStrictEquals(storage.load("editorFontSize"), 16);
     storage.save("language", "Java");
@@ -273,7 +273,7 @@ describe("the storage behind it all (src/client/state/storage.ts)", () => {
   });
 
   it("falls back to the declared default when nothing is stored", () => {
-    sessionStorage.clear();
+    localStorage.clear();
     assertStrictEquals(storage.load("language"), "Python");
     assertStrictEquals(storage.load("autoRunOnLoad"), false);
   });

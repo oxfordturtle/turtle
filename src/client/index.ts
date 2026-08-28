@@ -2,11 +2,7 @@
 import * as machine from "@/core/machine.ts";
 import { initialiseSettings, settingsStore } from "@/islands/settings.ts";
 import * as program from "@/islands/turtle-system/program.ts";
-import {
-  highlightCodeBlocks,
-  languageVisibility,
-  modeVisibility,
-} from "./passes.ts";
+import { highlightCodeBlocks, syncBodyState } from "./passes.ts";
 import { setErrorHandler } from "./tools/error.ts";
 
 // The machine's outbound ports. None touches the DOM as it loads:
@@ -58,32 +54,20 @@ export const init = (): void => {
 
   // Both before the islands hydrate - they are queued on a microtask, after
   // this module's body - so the first render of every display already has the
-  // right program and settings in it. The order matters: the file memory is
-  // restored for the *stored* language, and initialising the settings is what
-  // notices that `?l=` has changed it.
-  program.initialise();
-  initialiseSettings();
-
-  // The three page-wide DOM passes (./passes.ts). Two of them follow the
-  // settings for as long as the page lives: the store notifies, the sweep runs.
-  highlightCodeBlocks();
-  languageVisibility();
-  modeVisibility();
-  settingsStore.subscribe(() => {
-    languageVisibility();
-    modeVisibility();
-  });
-
-  // A link into the system can carry an example (?x=) to open, and a language
-  // (?l=), which the settings store reads for itself above. Neither is state,
-  // so both are taken straight off the URL.
+  // right program and settings in it.
   //
-  // This runs on every page, so the example parameter is gated on the system
-  // app being present: without it, `/documentation/reference?x=Triangle` would
-  // quietly replace whatever file the user has open.
-  if (document.querySelector("turtle-system")) {
-    const parameters = new URLSearchParams(document.location.search);
-    const example = parameters.get("x");
-    if (example) program.openExampleFile(example);
-  }
+  // **Settings first, then the file memory**, which is the other way round from
+  // how this used to run. The settings no longer need to be told what the files
+  // restored; the files need to know the language, because a browser with
+  // nothing stored is about to make its first file and a link's `?l=` is
+  // allowed to speak for that one (see `resolveLanguage`).
+  initialiseSettings();
+  program.initialise();
+
+  // The two document-level jobs (./passes.ts). `syncBodyState` follows the
+  // settings for as long as the page lives; its call here writes back exactly
+  // what the server already rendered, so nothing on screen moves.
+  highlightCodeBlocks();
+  syncBodyState();
+  settingsStore.subscribe(syncBodyState);
 };

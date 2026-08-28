@@ -38,3 +38,22 @@ export const paneClasses = (active: boolean, modes: string): string =>
     active && "active",
     modes === "" ? "" : hiddenUnless(getSettings().mode, modes),
   );
+
+/**
+ * The output font, as two custom properties for the pane wrapper to carry. The
+ * Output tab's `<pre>` and the Canvas tab's console both consume them
+ * (style/screen/system/body/main/tabs/), the way `.editor` does for the editor
+ * font.
+ *
+ * **Custom properties on the wrapper, not `font-family` on the `<pre>`.** The
+ * two `<pre>`s are written to imperatively by the machine's output port, which
+ * sets `style.background` on them - and `<canvas-tab>` re-renders on every
+ * machine notification, so a `style` hole of our own on the same element would
+ * patch that background away mid-run. A custom property on the parent reaches
+ * them without ever touching their `style` attribute, and affects nothing else,
+ * since only these two rules consume it.
+ */
+export const paneFontVariables = (): string => {
+  const { outputFontFamily, outputFontSize } = getSettings();
+  return `--output-font-family: ${outputFontFamily}; --output-font-size: ${outputFontSize}px`;
+};

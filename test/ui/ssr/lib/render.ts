@@ -6,7 +6,10 @@ import {
   withStores,
 } from "@merivale/womble";
 import router from "@/pages/router.ts";
-import { settingsStore } from "@/islands/settings.ts";
+import { type Settings, settingsStore } from "@/islands/settings.ts";
+import type { CookieValues } from "@/client/constants/properties.ts";
+import { COOKIE_NAME, serialiseCookie } from "@/client/state/cookie.ts";
+import { defaults } from "@/client/constants/properties.ts";
 
 /**
  * Layer 1's whole harness: render markup exactly as the server would, with
@@ -21,9 +24,10 @@ import { settingsStore } from "@/islands/settings.ts";
  * **Every render goes through the real router**, which is a plain
  * `(Request) => Promise<Response>` with no server around it, so a route test
  * is one function call - `?l=` included, since the layout seeds the settings
- * store from it per request. `renderIslands` is the exception, for the one
- * thing no URL can reach: markup that varies by *mode*, which is a
- * `sessionStorage` fact the server never sees.
+ * store from it per request, and now the five cookie fields too, since
+ * `renderRoute` can send a cookie.
+ *
+ * `renderIslands` is what is left for a component rendered outside any route.
  */
 
 /** What a route sent, plus anything Womble reported while it was rendering. */
@@ -33,17 +37,38 @@ export type Rendered = {
   logs: LogEntry[];
 };
 
-/** Renders one route, capturing everything Womble reports on the way. */
-export const renderRoute = async (path: string): Promise<Rendered> => {
+/**
+ * Renders one route, capturing everything Womble reports on the way.
+ *
+ * `cookie` is what this browser has stored, as a partial - the five fields in
+ * `cookieFields` are the whole of what a request tells the server about who is
+ * asking. Anything left out takes its default, which is what a first-ever
+ * visitor sends. This is how layer 1 asks the question the whole cookie exists
+ * for: is the markup we *send* already right, or does it need correcting?
+ */
+export const renderRoute = async (
+  path: string,
+  { cookie }: { cookie?: Partial<CookieValues> } = {},
+): Promise<Rendered> => {
   const logs: LogEntry[] = [];
   const restore = setLogger((entry) => logs.push(entry));
   try {
-    const response = await router(new Request(`http://localhost${path}`));
+    const response = await router(
+      new Request(`http://localhost${path}`, { headers: cookieHeader(cookie) }),
+    );
     return { status: response.status, markup: await response.text(), logs };
   } finally {
     restore();
   }
 };
+
+/** The five fields as a `cookie` header, with anything unnamed at its default. */
+const cookieHeader = (values?: Partial<CookieValues>): HeadersInit =>
+  values === undefined
+    ? {}
+    : {
+        cookie: `${COOKIE_NAME}=${serialiseCookie({ ...defaults, ...values })}`,
+      };
 
 /**
  * Renders `content` with the settings store seeded to `language` and `mode` -
@@ -52,22 +77,17 @@ export const renderRoute = async (path: string): Promise<Rendered> => {
  * in the browser, so the result is what a page whose user had those settings
  * would have been sent.
  *
- * Those two are the only settings the server-rendered markup varies with, so
- * they're named parameters rather than an open bag: the rest are read on the
- * client (fonts, the machine options) or don't reach any render at all. Of the
- * two, only `language` can reach the *real* server, off a link's `?l=` - so
- * `renderRoute("/?l=Pascal")` is the more faithful way to ask that question, and
- * this is what's left for `mode`, which no URL carries.
+ * Both now reach the *real* server as well - `language` off a link's `?l=` or
+ * the cookie, `mode` off the cookie - so `renderRoute(path, { cookie })` is the
+ * more faithful way to ask either question. This is what is left for a component
+ * rendered on its own, outside any route.
  *
  * **`withStores` is the same scope the layout opens** (src/pages/_layout/page.ts),
  * not a stand-in for one: it unwinds in a `finally` of its own, so one render
  * cannot leak into the next even if this one throws.
  */
 export const renderIslands = (
-  {
-    language = "Python",
-    mode = "normal",
-  }: { language?: string; mode?: string },
+  settings: Partial<Settings>,
   content: HtmlResult,
 ): Rendered => {
   const logs: LogEntry[] = [];
@@ -75,8 +95,15 @@ export const renderIslands = (
   try {
     return {
       status: 200,
-      markup: withStores([settingsStore.seed({ language, mode })], () =>
-        String(html`${content}`),
+      markup: withStores(
+        [
+          settingsStore.seed({
+            language: "Python",
+            mode: "normal",
+            ...settings,
+          }),
+        ],
+        () => String(html`${content}`),
       ),
       logs,
     };

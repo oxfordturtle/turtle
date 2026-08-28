@@ -311,11 +311,27 @@ describe("the layout", () => {
   it("classes the body after the route's first section", async () => {
     assertStringIncludes(
       (await renderRoute("/")).markup,
-      '<body class="index">',
+      '<body class="index" data-language="Python">',
     );
     assertStringIncludes(
       (await renderRoute("/documentation/help")).markup,
-      '<body class="documentation">',
+      '<body class="documentation" data-language="Python">',
+    );
+  });
+
+  // The two facts no component owns. `data-language` is what
+  // style/screen/language.css keys the documentation prose off, so the five
+  // guides that aren't wanted arrive hidden rather than being hidden by a
+  // script afterwards; `fullscreen` is a class because the layout CSS is
+  // `.index.fullscreen`.
+  it("takes both body attributes from the request's cookie", async () => {
+    assertStringIncludes(
+      (await renderRoute("/", { cookie: { language: "BASIC" } })).markup,
+      '<body class="index" data-language="BASIC">',
+    );
+    assertStringIncludes(
+      (await renderRoute("/", { cookie: { fullscreen: true } })).markup,
+      '<body class="index fullscreen" data-language="Python">',
     );
   });
 

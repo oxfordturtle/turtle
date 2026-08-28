@@ -197,7 +197,7 @@ describe("the file memory", () => {
       program.getTokens().map((token) => token.content),
       ["x", " ", "=", " ", "1"],
     );
-    assertEquals(sessionStorage.getItem("currentFileIndex"), "0");
+    assertEquals(localStorage.getItem("currentFileIndex"), "0");
   });
 
   it("re-derives a compiled file's whole pipeline when it is selected again", () => {
@@ -547,7 +547,7 @@ describe("compiling and running", () => {
 
 describe("what the session restores on the next page load", () => {
   /** A second page load, finding what the first one stored. */
-  const reload = () => mountRoute("/", { keepSession: true });
+  const reload = () => mountRoute("/", { keepStorage: true });
 
   it("restores the open files and which one was current", async () => {
     program.setCode("first");

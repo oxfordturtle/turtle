@@ -1,21 +1,72 @@
 .system-header {
   display: flex;
   justify-content: space-between;
-  align-items: center;
+  /*
+   * A bar of the same height as the site nav, and `stretch` so that its two
+   * groups fill it - which is what lets a button be a whole row of it rather
+   * than a shorter box floating in the middle. Left to itself the bar had no
+   * height of its own and took the tallest thing in it, so adding the site
+   * menu's 3em links beside a 2.5em button made the two disagree.
+   */
+  align-items: stretch;
+  height: var(--bar-height);
   background: var(--blue);
+  /*
+   * The system body below stacks up to `z-index: 7` (the menu rail, and the
+   * editor's own layers), and the header has to beat all of it: the site menu's
+   * dropdown is absolutely positioned, so it hangs over the body, and anything
+   * it opened behind would take the clicks meant for it. 10 is what the real
+   * site nav uses.
+   */
+  position: relative;
+  z-index: 10;
 }
 
-.system-header button {
-  padding: 0.5em;
-  width: 3em;
-  text-align: center;
-}
-
+/*
+ * Inside each group it is `center` again, for the two `<select>`s, which are
+ * shorter than the bar and are meant to be.
+ */
+.system-header-left,
 .system-header .controls {
   display: flex;
   align-items: center;
 }
 
+/*
+ * A square cell of the bar: as wide as the menu rail the hamburger sits above
+ * (`--menu-closed-width`), and as tall as the bar itself, so its hover fills a
+ * whole row the way the site menu's links do. Centring is the flexbox's job now
+ * that the box is taller than its icon.
+ */
+.system-header button {
+  align-self: stretch;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  width: var(--menu-closed-width);
+}
+
 .system-header .controls select {
   margin-left: 0.25em;
+}
+
+/*
+ * The copy of the site nav that the system's own top bar carries (see
+ * src/islands/turtle-system.ts). Fullscreen hides the real nav, so this is the
+ * only way back to the rest of the site from there - and the only state in
+ * which it shows. It carries `.site-nav-left` as well, which is what gives it
+ * the same wide-screen behaviour as the real one: the dropdown expands into a
+ * row of links rather than staying behind the logo.
+ */
+.system-site-nav {
+  display: none;
+}
+
+.fullscreen .system-site-nav {
+  display: flex;
+  align-items: center;
+  /* the bar it is in is `--blue`, but nothing there says what colour text on it
+     is; the real nav sets this on `.site-nav` itself */
+  color: #fff;
 }

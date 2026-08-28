@@ -10,17 +10,17 @@ import {
 import { assert, assertEquals, assertFalse } from "@std/assert";
 import { afterEach, beforeEach, describe, it } from "@std/testing/bdd";
 
-const { commandCategories } = await import("@/core/constants.ts");
-
 // The commands table on /documentation/reference (src/islands/reference/
 // command-table.ts): a category `<select>` and three level checkboxes over a
 // table of every command in the current language.
 //
-// The filter is the one settings group no other component on any page reads,
-// so it is this island's own state rather than the shared store's - but it
-// still persists to the same `sessionStorage` keys it always has, and is
-// restored from them on mount. That round trip is what most of this covers:
-// a control whose live value is set from outside itself.
+// The filter is **ephemeral view state**: this island's own attributes,
+// persisted nowhere, so every visit starts where the server rendered it. It
+// used to be four stored properties reconciled by a mount effect, which meant
+// the table was rendered one way and then corrected - the thing the cookie work
+// set out to remove. Dropping the persistence removed the correction outright.
+//
+// The language, by contrast, is shared and persisted, so the table follows it.
 
 // deno-lint-ignore no-explicit-any
 const table = (): any => q("command-table");
@@ -67,7 +67,6 @@ describe("the commands table", () => {
     assertEquals(table().category, 1);
     assert(listed().length > 0);
     assertFalse(listed().every((name, index) => name === first[index]));
-    assertEquals(sessionStorage.getItem("commandsCategoryIndex"), "1");
   });
 
   it("adds and removes a level's commands as its box is ticked", async () => {
@@ -77,7 +76,6 @@ describe("the commands table", () => {
     await change(levelBox("Intermediate"));
     assert(table().intermediate);
     assert(listed().length > simpleOnly);
-    assertEquals(sessionStorage.getItem("showIntermediateCommands"), "true");
 
     levelBox("Advanced").checked = true;
     await change(levelBox("Advanced"));
@@ -87,7 +85,6 @@ describe("the commands table", () => {
     levelBox("Simple").checked = false;
     await change(levelBox("Simple"));
     assert(listed().length < everything);
-    assertEquals(sessionStorage.getItem("showSimpleCommands"), "false");
   });
 
   it("can be filtered down to nothing at all", async () => {
@@ -98,32 +95,40 @@ describe("the commands table", () => {
     assertEquals(qa("command-table label").length, 3);
   });
 
-  // The whole point of the property bindings: a second page load restores the
-  // filter from the session, which has to reach the controls' *live* state
-  // and not just their reset defaults.
-  it("comes back from the session on the next page load", async () => {
+  // Ephemeral means ephemeral: a second page load starts where the server
+  // rendered it, which is also the only state the server could have rendered.
+  // Nothing is stored, so nothing has to be reconciled, so nothing can be seen
+  // to change after the page arrives.
+  it("starts at the server's defaults again on the next page load", async () => {
     categorySelect().value = "2";
     await change(categorySelect());
     levelBox("Advanced").checked = true;
     await change(levelBox("Advanced"));
 
-    await mountRoute("/documentation/reference", { keepSession: true });
-    assertEquals(categorySelect().value, "2");
-    assert(levelBox("Advanced").checked);
-    assertEquals(table().category, 2);
+    await mountRoute("/documentation/reference", { keepStorage: true });
+    assertEquals(categorySelect().value, "0");
+    assertFalse(levelBox("Advanced").checked);
+    assert(levelBox("Simple").checked);
+    assertEquals(table().category, 0);
   });
 
-  // The stored index and the list of categories are independent, so a session
-  // written by an older build can name a category this one hasn't got.
-  it("falls back to the first category when the stored one is gone", async () => {
-    sessionStorage.setItem(
-      "commandsCategoryIndex",
-      String(commandCategories.length + 10),
-    );
-    await mountRoute("/documentation/reference", { keepSession: true });
-    // the select shows the first category, and the table lists its commands
-    assertEquals(categorySelect().value, "0");
+  // The category is an attribute, so anything outside can write one - a stale
+  // link, a hand-edited element, a future call site. An index the list hasn't
+  // got falls back to the first category rather than rendering nothing.
+  it("falls back to the first category when given one it hasn't got", async () => {
+    const first = listed();
+    table().category = 999;
+    await settle();
+    assertEquals(listed(), first);
     assert(listed().length > 0);
+  });
+
+  // `<command-table simple />` is the call site's own doing, and Womble forbids
+  // a boolean attribute defaulting to true - so this is the one filter value
+  // that arrives from the markup rather than from the definition.
+  it("takes its starting filter from the markup the server sent", () => {
+    assert(q("command-table").hasAttribute("simple"));
+    assert(levelBox("Simple").checked);
   });
 
   // The language is the shared setting, not this island's own, which is what

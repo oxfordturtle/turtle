@@ -16,7 +16,7 @@ src/
   core/      the compiler and the virtual machine. No UI, no DOM.
   islands/   the UI, as Womble components and stores. Isomorphic.
   pages/     server-only: the router, request parsing, whole-page assembly.
-  client/    the browser entry point, the machine's adapters, page-wide DOM passes.
+  client/    the browser entry point, the machine's adapters, what persists.
 ```
 
 `core/` knows nothing about the other three. `islands/` and `pages/` import
@@ -207,6 +207,12 @@ with its subcomponents in a directory named after it: `turtle-system.ts` plus
 `turtle-system/` is the IDE. A route is then mostly just "render this
 component".
 
+`site-menu.ts` is the one island rendered in two places: the site nav on every
+page, and again inside the system's own top bar, because fullscreen hides the
+nav and the way back to the rest of the site has to survive that. They are
+independent instances, and the stylesheet shows whichever belongs to the current
+state — see `style/screen/system/header.css`.
+
 ### The three stores
 
 State that several unrelated components read is a store, not a provider. There
@@ -254,10 +260,71 @@ Four rules those modules keep:
    thousands of times a second, and Womble re-renders inline on a notify.
 4. **A store is never written during a server render.** The value would be
    scoped and discarded, and `save()` writes to Deno's _process-wide_
-   `sessionStorage`, which no scope covers.
+   `localStorage`, which no scope covers.
 
-Ephemeral UI state — a menu open or closed, the active tab — stays on the
-component that owns it.
+Ephemeral UI state — a menu open or closed, the active tab, the reference
+table's filters — stays on the component that owns it.
+
+### What persists, what is addressed, and what the server has to know
+
+Three questions, answered separately for each piece of state. The default for
+all three is "no".
+
+**What persists** goes to `localStorage` through `client/state/storage.ts`:
+every setting, and the file memory. Nothing else. The command table's category
+and level filters used to persist and no longer do — they are a filter on a
+reference table, and the cost of remembering them was a second implementation of
+persisted settings plus a mount effect whose whole job was correcting the render
+the server had just sent.
+
+**What is addressed** goes in the URL, and is read but never written: `?l=` (a
+language), `?tab=` (a documentation tab) and `?x=` (an example to open). They
+exist so that a worksheet can link to a particular thing; refreshing that URL
+gives that page back. Browsing does not rewrite them, so nothing goes stale.
+
+`?l=` means different things on different pages, and `resolveLanguage` in
+`islands/settings.ts` is the one home for the rule: on a documentation page it
+is a view parameter and wins outright, while on the system page the open
+_file_ decides and `?l=` speaks only for a file about to be opened — one named
+by `?x=`, or the first file of a browser that has stored nothing. That last
+clause is what stops a link silently re-languaging a program someone is halfway
+through writing.
+
+**What the server has to know** is the five properties in `cookieFields`
+(`client/constants/properties.ts`): `language`, `mode`, `fullscreen`,
+`editorFontFamily`, `editorFontSize`. These are mirrored from `localStorage`
+into a cookie, which `pages/router/parseRequest.ts` reads and `_layout/page.ts`
+seeds the settings store with.
+
+The rule that decides membership is **persisted, and changes the markup the
+server sends** — because a persisted value that reaches the first render and
+_isn't_ server-visible is a guaranteed correction on screen. The ~19 machine and
+compiler options change the markup too, but only inside a submenu that starts
+closed or the Run Settings tab, which starts inactive: corrected where nobody is
+looking, and not worth a thirty-seven field cookie.
+
+That distinction would rot silently, so `test/ui/ssr/cookie.test.ts` holds it to
+account: it flips every persisted setting in turn, diffs the markup a visitor can
+actually see, and fails if one of them affects it without being a cookie field.
+
+### Corrections and completions
+
+The rule the whole of the above serves: **render the right answer, or a neutral
+one — never a wrong one.**
+
+- A **completion** is a neutral placeholder becoming specific: the empty editor
+  filling with the restored file, the empty `<pre>` taking a program's output.
+  The server never claimed otherwise, and no cookie could carry a 200-line
+  program. This is fine.
+- A **correction** is a committed, wrong value being replaced: the header saying
+  "Turtle Python" and then "Turtle BASIC". This is the bug, and the cookie is
+  what removes it.
+
+`/?x=` used to be a correction: the browser restored the file memory, rendered
+it, then fetched the example and replaced what it had drawn. The server reads
+the example off disk and seeds it (`pages/index.ts`), so `initialise()` places it
+synchronously, before the islands hydrate — two dispatches with no render between
+them.
 
 ### Womble
 
@@ -315,15 +382,24 @@ Nothing in this app declares `context` any more.
 ## `client/` — the browser
 
 `index.ts` exports `init()`, the one place where startup order matters: install
-the ports, restore the file memory, initialise the settings, run the page-wide
-passes, subscribe the last two to the settings store. The islands hydrate on a
-microtask after this module's body, so the first render of every display already
-has the right program and settings in it.
+the ports, initialise the settings, restore the file memory, highlight the code
+blocks, sync `<body>` and subscribe that to the settings store. The islands
+hydrate on a microtask after this module's body, so the first render of every
+display already has the right program and settings in it.
+
+**Settings before the file memory**, which is the other way round from how this
+once ran. The settings no longer need to be told what the files restored; the
+files need to know the language, because a browser with nothing stored is about
+to make its first file and a link's `?l=` is allowed to speak for that one.
 
 `main.ts` is the bundle entry (`build.ts` points at it) and does nothing but
 call `init()`. The split is what lets the jsdom test layer run the real startup
 — `mountRoute` calls the same `init()` after injecting a route's markup — rather
 than keeping a mirror of it that can drift.
+
+`state/` is what persists: `storage.ts` (the `load`/`save` pair every persisted
+value goes through, plus the cookie mirror) and `cookie.ts` (the cookie's
+format, which has no DOM in it so the server can read what the browser writes).
 
 `adapters/` implements the machine's outbound ports, plus keyboard and mouse
 input — which is a _driving_ port, the one that calls in rather than out. The
@@ -336,12 +412,28 @@ None of the adapters touches the DOM at import time. `<canvas-tab>` and
 `<output-tab>` hand them their elements from their own mount effects, which is
 what lets an isomorphic island module import them at all.
 
-`passes.ts` holds the three page-wide DOM passes, which have no component to
-hang off. All three sweep _static, server-rendered documentation prose_ —
-scattered across the help and reference pages, owned by no island. Anything
-inside an island derives its own visibility from the settings instead, because
-these run before the islands hydrate and a component's first render would wipe
-whatever they had just set. That is why the nine tab panes carry no `data-mode`.
+`passes.ts` holds the two jobs that belong to the document rather than to any
+component, because `<body>` and the static documentation prose are both outside
+every island:
+
+- `highlightCodeBlocks` colours the documentation's code samples. It
+  _completes_ rather than corrects — the server sends them as plain text, and
+  each block declares its own language, so there is no state for it to be wrong
+  about.
+- `syncBodyState` keeps `<body>`'s `data-language` attribute and `fullscreen`
+  class in step when someone changes either setting. It runs on a change, not on
+  load: the server has already rendered both from the cookie.
+
+It used to hold three _sweeps_, which ran after load and fixed up markup the
+server had committed to wrongly. `languageVisibility` is now three CSS rules
+keyed off `<body data-language>` (`style/screen/language.css`), which is why the
+help page's other five language guides arrive hidden rather than being hidden
+afterwards. `modeVisibility` turned out never to have done anything at all: it
+queried `[data-mode]`, and the markup it was written for spells the attribute
+`modes`, so it swept an empty list on every route — and the test that appeared to
+cover it asserted `[].every(...)`, which is vacuously true. Everything
+mode-conditional derives its own visibility through `hiddenUnless`, and the
+server derives the same answer, because the mode is a cookie field.
 
 ## `pages/` — the server
 
@@ -362,10 +454,13 @@ about its `withStores` scope are load-bearing:
 
 `${storeSeeds()}` in the `<head>` is the other half: the seeded fields as one
 inert JSON script, which the store adopts on its first read in the browser, so
-the first paint matches the markup the server sent. Exactly one field is ever
-seeded — a link's `?l=` language. Everything else a page varies with is a
-`sessionStorage` fact the server cannot see, so the defaults are the honest
-answer and `initialiseSettings` corrects them in the browser.
+the first paint matches the markup the server sent. What is seeded is the five
+`cookieFields`, with `resolveLanguage`'s answer over the top of them, plus — on
+the system route alone — the example a `?x=` link asked for, read off disk.
+
+`<body>` carries the two facts no component owns: `data-language`, which the
+stylesheet keys the documentation prose off, and a `fullscreen` class, which the
+layout CSS expects there.
 
 `documentation/` holds the help and reference pages, whose content is written
 per language and per topic. Much of it is generated from `core/constants/` —

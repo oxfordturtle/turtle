@@ -51,7 +51,7 @@ beforeEach(async () => {
 afterEach(assertNoWombleLogs);
 
 describe("a settings control", () => {
-  it("writes the provider and the session when the user changes it", async () => {
+  it("writes the store and the durable copy when the user changes it", async () => {
     const input = control("setting-checkbox", "showCanvasOnRun").querySelector(
       "input",
     );
@@ -59,8 +59,8 @@ describe("a settings control", () => {
     input.checked = false;
     await change(input);
     assertFalse(getSettings().showCanvasOnRun);
-    // sessionStorage is the durable copy, written as part of the same change.
-    assertEquals(sessionStorage.getItem("showCanvasOnRun"), "false");
+    // localStorage is the durable copy, written as part of the same change.
+    assertEquals(localStorage.getItem("showCanvasOnRun"), "false");
   });
 
   it("writes a number setting as a number", async () => {
@@ -70,7 +70,7 @@ describe("a settings control", () => {
     input.value = "20";
     await change(input);
     assertEquals(getSettings().editorFontSize, 20);
-    assertEquals(sessionStorage.getItem("editorFontSize"), "20");
+    assertEquals(localStorage.getItem("editorFontSize"), "20");
   });
 
   it("writes a select setting", async () => {
@@ -80,7 +80,7 @@ describe("a settings control", () => {
     select.value = "Consolas";
     await change(select);
     assertEquals(getSettings().editorFontFamily, "Consolas");
-    assertEquals(sessionStorage.getItem("editorFontFamily"), '"Consolas"');
+    assertEquals(localStorage.getItem("editorFontFamily"), '"Consolas"');
     // and the consumer follows: the editor takes its font from this setting
     assertEquals(
       q("system-editor .editor").getAttribute("style"),
@@ -142,7 +142,7 @@ describe("a control that isn't a plain value", () => {
     input.checked = true;
     await change(input);
     assertEquals(getSettings().canvasStartSize, 2000);
-    assertEquals(sessionStorage.getItem("canvasStartSize"), "2000");
+    assertEquals(localStorage.getItem("canvasStartSize"), "2000");
   });
 
   // A radio group reports the option just selected; the one it deselected
@@ -239,23 +239,49 @@ describe("the language, which every page shares", () => {
   });
 
   // `?l=` is the one query parameter with a visible effect this layer can
-  // reach. It is read off `document.location` as the settings store
-  // initialises; the precedence over the stored value is deliberate.
-  it("takes the language from ?l= when the page is linked with one", async () => {
+  // reach. What it *means* differs by page, and `resolveLanguage` is the one
+  // home for the rule - see src/islands/settings.ts.
+
+  // Nothing stored yet, so this browser's first file is still to be made and
+  // the link is allowed to speak for it.
+  it("takes the language from ?l= when nothing is stored yet", async () => {
     await mountRoute("/?l=Pascal");
     assertEquals(getSettings().language, "Pascal");
     assertEquals(q("language-select select").value, "Pascal");
   });
 
-  it("lets ?l= beat the language already in the session", async () => {
+  // The decision this pins: on the system page the *file* decides, and the
+  // stored value tracks it. A link must not re-language a program someone is
+  // in the middle of writing - which is what following `?l=` here would do,
+  // since adopting a language marks the file uncompiled and re-tokenizes it.
+  it("leaves work already open alone when a link names another language", async () => {
     const select = q("language-select select");
     select.value = "BASIC";
     await change(select);
     assertEquals(getSettings().language, "BASIC");
-    // A second page load in the same session: the stored BASIC is what this
-    // mount reconciles against, and ?l= has to win anyway.
-    await mountRoute("/?l=Pascal", { keepSession: true });
+    program.setCode("PRINT 1");
+
+    await mountRoute("/?l=Pascal", { keepStorage: true });
+    assertEquals(getSettings().language, "BASIC");
+    assertEquals(q("language-select select").value, "BASIC");
+  });
+
+  // A documentation page has no document of its own, so there `?l=` is a view
+  // parameter and wins outright - that is what makes "the Pascal guide" a
+  // thing a worksheet can link to.
+  it("lets ?l= beat the stored language on a documentation page", async () => {
+    const select = q("language-select select");
+    select.value = "BASIC";
+    await change(select);
+    assertEquals(getSettings().language, "BASIC");
+
+    await mountRoute("/documentation/reference?l=Pascal", {
+      keepStorage: true,
+    });
     assertEquals(getSettings().language, "Pascal");
+    // and it stays a view override: the stored preference is untouched, so
+    // going back to the system finds BASIC still open
+    assertEquals(storage.load("language"), "BASIC");
   });
 
   it("ignores a language it doesn't have", async () => {
@@ -305,20 +331,17 @@ describe("the language, which every page shares", () => {
     }
   });
 
-  it("hides the prose written for the other five languages", async () => {
+  // Which prose is on show is CSS keyed off `<body data-language>`
+  // (style/screen/language.css), so what a language change has to do here is
+  // move that one attribute - not sweep 544 elements. jsdom applies no
+  // stylesheet, so the attribute is the whole of what there is to assert.
+  it("moves the body's language attribute, which the prose is keyed off", async () => {
     await mountRoute("/documentation/reference");
+    assertEquals(document.body.dataset.language, "Python");
     const select = q("language-select select");
     select.value = "BASIC";
     await change(select);
     await settle();
-    const shown = qa("code[data-language]").filter(
-      (element: Element) => !element.classList.contains("hidden"),
-    );
-    assert(
-      shown.every(
-        (element: Element) => element.getAttribute("data-language") === "BASIC",
-      ),
-    );
-    assert(shown.length > 0);
+    assertEquals(document.body.dataset.language, "BASIC");
   });
 });

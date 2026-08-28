@@ -1,0 +1,25 @@
+/* Which language's documentation prose is on show.
+ *
+ * The help and reference pages carry the guides for all six languages at once,
+ * and this is what picks one. It is CSS rather than a script for one reason:
+ * the server puts `data-language` on `<body>` from the request's cookie, so the
+ * five guides that aren't wanted arrive hidden. A script sweeping the document
+ * after load would mean rendering all six visible first and then correcting -
+ * a flash of the wrong language on every documentation page.
+ *
+ * `src/client/passes.ts` keeps the attribute in step when someone changes the
+ * language while the page is open. That is a change, not a correction, and it
+ * is one attribute write rather than a sweep of 544 elements.
+ *
+ * One rule per language, because CSS cannot compare two attribute values. The
+ * list is `languages` in src/core/constants/languages.ts. */
+
+body[data-language="BASIC"] [data-language]:not([data-language="BASIC"]),
+body[data-language="C"] [data-language]:not([data-language="C"]),
+body[data-language="Java"] [data-language]:not([data-language="Java"]),
+body[data-language="Pascal"] [data-language]:not([data-language="Pascal"]),
+body[data-language="Python"] [data-language]:not([data-language="Python"]),
+body[data-language="TypeScript"]
+  [data-language]:not([data-language="TypeScript"]) {
+  display: none;
+}

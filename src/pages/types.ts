@@ -1,45 +1,20 @@
 // deno-coverage-ignore-file -- type declarations only: erased at compile time, so no
 // test can ever load this module at runtime.
 
+import type { CookieValues } from "@/client/constants/properties.ts";
+
 export type RequestParams = {
   method: string;
   url: URL;
   sections: [string, ...string[]];
   page: string;
   formData?: FormData;
-};
-
-export type SystemSettings = {
-  language: string;
-  mode: string;
-  editorFontFamily: string;
-  editorFontSize: number;
-  outputFontFamily: string;
-  outputFontSize: number;
-  includeCommentsInExamples: boolean;
-  loadCorrespondingExample: boolean;
-  assembler: boolean;
-  decimal: boolean;
-  autoCompileOnLoad: boolean;
-  autoRunOnLoad: boolean;
-  autoFormatOnLoad: boolean;
-  showCanvasOnRun: boolean;
-  showOutputOnWrite: boolean;
-  showMemoryOnDump: boolean;
-  drawCountMax: number;
-  codeCountMax: number;
-  smallSize: number;
-  stackSize: number;
-  traceOnRun: boolean;
-  activateHCLR: boolean;
-  preventStackCollision: boolean;
-  rangeCheckArrays: boolean;
-  canvasStartSize: number;
-  setupDefaultKeyBuffer: boolean;
-  turtleAttributesAsGlobals: boolean;
-  initialiseLocals: boolean;
-  allowCSTR: boolean;
-  separateReturnStack: boolean;
-  separateMemoryControlStack: boolean;
-  separateSubroutineRegisterStack: boolean;
+  /**
+   * The five settings this request's cookie could be read for, as a partial: a
+   * field the cookie didn't carry is one the layout falls back to a default for.
+   * This is the whole of what the server knows about who is asking, and it is
+   * what lets the first render be right rather than corrected - see
+   * `cookieFields` in src/client/constants/properties.ts.
+   */
+  settings: Partial<CookieValues>;
 };
