@@ -62,7 +62,18 @@ export const init = (): void => {
   // nothing stored is about to make its first file and a link's `?l=` is
   // allowed to speak for that one (see `resolveLanguage`).
   initialiseSettings();
-  program.initialise();
+  // Deferred by one microtask, so it lands *after* the islands hydrate rather
+  // than before. `define` defers `customElements.define` by a microtask, and
+  // every island queued one as this module's imports evaluated - so this one,
+  // queued here, runs after the last of them.
+  //
+  // The file memory is the one piece of state the server cannot see: it lives
+  // in `localStorage`, and no cookie mirrors it (a program is far too big for
+  // one). So the server renders this store at its module value - no files - and
+  // the only way the first browser render can agree with that markup is to run
+  // before the restore. It adopts the served subtree, and the restore that
+  // follows arrives as an ordinary store notification, which patches.
+  queueMicrotask(() => program.initialise());
 
   // The two document-level jobs (./passes.ts). `syncBodyState` follows the
   // settings for as long as the page lives; its call here writes back exactly

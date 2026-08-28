@@ -16,12 +16,20 @@ import {
 
 /**
  * The acceptance pass a human would otherwise do by hand. Deliberately small:
- * six tests, each covering something no other layer can see.
+ * seven tests, each covering something no other layer can see.
  *
  * The canvas and the console are the reason this layer exists at all. Both are
  * written imperatively by the adapters rather than rendered by any component,
  * so neither the SSR layer nor the jsdom layer reaches
  * them - jsdom has no canvas, and a pixel is a pixel.
+ *
+ * Hydration is the third. Adopting served markup takes a real custom-element
+ * registry upgrading real nodes, and Womble reports a mismatch to the console
+ * rather than throwing - so it is invisible both to the SSR layer, which never
+ * runs the browser half, and to any assertion that only reads the finished DOM,
+ * which looks the same whether it was adopted or rebuilt. `afterAll` sweeps the
+ * whole session for those reports; the last test makes the two navigations that
+ * used to produce them.
  */
 
 let app: App;
@@ -32,7 +40,16 @@ beforeAll(async () => {
 });
 
 afterAll(async () => {
-  await app.stop();
+  try {
+    // The session-wide sweep. Nothing Womble reports throws (see `wombleErrors`
+    // in ./lib/app.ts), so no assertion above would notice a page that rebuilt
+    // every island it was served instead of adopting it - every navigation any
+    // test made is accounted for here, once.
+    assertEquals(app.wombleErrors(), []);
+  } finally {
+    // in a `finally`, so a report above still closes the browser and the server
+    await app.stop();
+  }
 });
 
 describe("running a program", () => {
@@ -186,6 +203,9 @@ describe("the language stylesheet", () => {
 });
 
 describe("the site nav and the system", () => {
+  const systemNav = ".system-site-nav";
+  const menuButton = 'button[aria-label="system menu"]';
+
   // Fullscreen takes the site nav off the screen - the system fills the window
   // - so the system's own top bar carries a second copy of the site menu
   // (src/islands/turtle-system.ts). Both copies are in the markup on every
@@ -195,7 +215,7 @@ describe("the site nav and the system", () => {
   it("hands the site menu over to the system's top bar, and takes it back", async () => {
     await page().goto(app.url("/"));
     const inNav = page().locator(".site-nav site-menu");
-    const inSystem = page().locator(".system-site-nav site-menu");
+    const inSystem = page().locator(`${systemNav} site-menu`);
     assert(await inNav.isVisible());
     assertFalse(await inSystem.isVisible());
 
@@ -203,9 +223,18 @@ describe("the site nav and the system", () => {
     await inSystem.waitFor({ state: "visible" });
     assertFalse(await inNav.isVisible());
 
+    // The copy leaves its own link out - the system is the index route, so "The
+    // Turtle System" would point at the page it is already on - and the menu
+    // button beside it wears the turtle in its place. Both are the stylesheet's
+    // doing (style/screen/system/header.css), so again only this layer sees it.
+    assertFalse(await page().locator(`${systemNav} a[href="/"]`).isVisible());
+    assert(await page().locator(`${systemNav} a[href="/about"]`).isVisible());
+    assert(await page().locator(`${menuButton} .logo`).isVisible());
+    assertFalse(await page().locator(`${menuButton} .fa-bars`).isVisible());
+
     // and it is a way back to the site rather than a picture of one - which is
     // the whole point of it, since the nav it stands in for is gone
-    await page().locator('.system-site-nav a[href="/about"]').click();
+    await page().locator(`${systemNav} a[href="/about"]`).click();
     await page().waitForURL(/\/about$/);
     // fullscreen is still set, but it is the system's own affair: every other
     // route has its nav
@@ -216,6 +245,8 @@ describe("the site nav and the system", () => {
     await page().locator('button[title="Expand down"]').click();
     await inNav.waitFor({ state: "visible" });
     assertFalse(await inSystem.isVisible());
+    // the button is a plain menu button again, the nav above it having the logo
+    assert(await page().locator(`${menuButton} .fa-bars`).isVisible());
   });
 
   /** What is actually painted at the centre of `selector` - itself, or what covers it. */
@@ -298,5 +329,54 @@ describe("the session", () => {
         ),
       ["canvas", "output", "usage", "comments", "syntax", "pcode", "memory"],
     );
+  });
+});
+
+describe("hydration", () => {
+  // The file memory is the one piece of state the server cannot see: it lives
+  // in `localStorage`, and no cookie mirrors it, because a program is far too
+  // big for one. So the server renders the program store at its module value -
+  // no files at all - and the browser's first render has to agree with that
+  // markup in order to adopt it, which is why `init` defers
+  // `program.initialise()` past the islands' first render (src/client/index.ts).
+  //
+  // Only this layer can see it. Adoption is an upgrade of served markup by a
+  // real custom-element registry, and the mismatch is a console entry rather
+  // than a thrown error, so neither the SSR layer nor jsdom reaches it.
+  it("adopts the served markup, on a first visit and on a return", async () => {
+    // A first-ever visit. The cookie goes with the storage: it mirrors five
+    // settings the server renders differently for, and leaving a stale one
+    // behind would have the server render expert mode against a browser that
+    // had just forgotten it - a mismatch this test invented rather than found.
+    await page().goto(app.url("/"));
+    await page().context().clearCookies();
+    await page().evaluate(() => localStorage.clear());
+    await page().reload();
+    // `restore` always leaves at least one file, so a browser with nothing
+    // stored still renders one `<option>` against a server that rendered none.
+    // That is the case that used to mismatch on every single load.
+    // `attached` rather than the default `visible`: an `<option>` in a closed
+    // `<select>` is never visible to Playwright, however well it hydrated.
+    await page()
+      .locator("system-filename select option")
+      .first()
+      .waitFor({ state: "attached" });
+    assertEquals(app.wombleErrors(), []);
+
+    // and a return, where the restored file has content. The editor's line
+    // numbers are one `<li>` per line, which is what `<system-editor>` used to
+    // mismatch on once there was a program to bring back.
+    await writeProgram(page(), "circle(100)\ncircle(200)");
+    await page().reload();
+    await page().waitForFunction(
+      () =>
+        document.querySelectorAll("system-editor .line-numbers li").length ===
+        2,
+    );
+    assertEquals(
+      await page().locator("system-editor textarea").inputValue(),
+      "circle(100)\ncircle(200)",
+    );
+    assertEquals(app.wombleErrors(), []);
   });
 });

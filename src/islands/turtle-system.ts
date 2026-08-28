@@ -43,6 +43,11 @@ import "./site-menu.ts";
 // route, and `page` is read only for the documentation sub-links, so its default
 // is already the right answer.
 //
+// **The menu button carries both of its icons** for the same reason, and the
+// stylesheet picks between them: in fullscreen the button is the top left corner
+// of the page - the place the site nav's logo would occupy - so it wears the
+// turtle there and the bars everywhere else.
+//
 // Written through `definition()` rather than passed straight to `define()` so
 // that its type can be named, which is what gives
 // `document.querySelector("turtle-system")` the methods
@@ -67,6 +72,7 @@ const turtleSystem = definition({
         <div class="system-header-left">
           <button aria-label="system menu" on-click="toggleMenu">
             <i class="fa fa-bars" aria-hidden="true"></i>
+            <img class="logo" src="/images/turtle.png" alt="" />
           </button>
           <div class="site-nav-left system-site-nav" on-click="closeMenu">
             <site-menu section="index" />

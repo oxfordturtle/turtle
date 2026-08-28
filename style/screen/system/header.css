@@ -48,6 +48,27 @@
   width: var(--menu-closed-width);
 }
 
+/*
+ * Which icon that button wears is this file's answer, the render carrying both
+ * (src/islands/turtle-system.ts). Fullscreen puts the button in the top left
+ * corner of the page, where the site nav's logo sits the rest of the time, so
+ * there it is the turtle - matched to the logo in the site menu's own links
+ * (style/screen/menu.css) - and the bars everywhere else, where the nav above
+ * is already showing one.
+ */
+.system-header button .logo {
+  display: none;
+  height: 22px;
+}
+
+.fullscreen .system-header button .logo {
+  display: block;
+}
+
+.fullscreen .system-header button .fa-bars {
+  display: none;
+}
+
 .system-header .controls select {
   margin-left: 0.25em;
 }
@@ -70,4 +91,14 @@
   /* the bar it is in is `--blue`, but nothing there says what colour text on it
      is; the real nav sets this on `.site-nav` itself */
   color: #fff;
+}
+
+/*
+ * The one link the copy leaves out: its own. "The Turtle System" is the first
+ * row of the site menu everywhere else, but the system *is* the index route, so
+ * in the only state this copy shows in it points at the page it is on - and the
+ * button beside it is already wearing the turtle.
+ */
+.system-site-nav site-menu > .site-sub-menu > a:first-child {
+  display: none;
 }
