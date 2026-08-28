@@ -6,7 +6,10 @@ import makeSubroutine, {
   getProgram,
   type Subroutine,
 } from "../definitions/routines/subroutine.ts";
-import makeVariable, { type Variable } from "../definitions/variable.ts";
+import makeVariable, {
+  isArray,
+  type Variable,
+} from "../definitions/variable.ts";
 import identifier from "../cFamily/identifier.ts";
 import type from "./type.ts";
 import variable from "./variable.ts";
@@ -82,6 +85,11 @@ function parameters(lexemes: Lexemes, subroutine: Subroutine): Variable[] {
   while (lexemes.peek()?.content !== ")") {
     const parameter = variable(lexemes, subroutine, true);
     parameter.isParameter = true;
+    // an array parameter is the caller's array in this language, not a copy of
+    // it, which the encoder expresses as a reference parameter
+    if (isArray(parameter)) {
+      parameter.isReferenceParameter = true;
+    }
     parameters.push(parameter);
     lexemes.match(",");
   }

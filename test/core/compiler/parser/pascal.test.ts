@@ -900,21 +900,34 @@ describe("parse: Pascal", () => {
       assertEquals(program.subroutines[0]?.subroutines[0]?.name, "inner");
     });
 
-    it("parses an 'array of' parameter type", () => {
+    it("parses a dimensioned value array parameter, which is copied rather than shared", () => {
+      // a value parameter is copied into a block of its own, whose shape the
+      // encoder lays out from these dimensions - so it has to declare them
       const program = parseProgram(
         "Pascal",
-        "program Test;\nprocedure go(a: array of integer);\nbegin\nend;\nbegin\nend.",
+        "program Test;\nprocedure go(a: array[1..3] of integer);\nbegin\nend;\nbegin\nend.",
       );
-      assertEquals(
-        program.subroutines[0]?.variables[0]?.arrayDimensions.length,
-        1,
-      );
+      const parameter = program.subroutines[0]?.variables[0];
+      assertEquals(parameter?.arrayDimensions, [[1, 3]]);
+      assertEquals(parameter?.isReferenceParameter, false);
     });
 
-    it("parses a nested 'array of array of' parameter type", () => {
+    it("parses an 'array of' VAR parameter type, whose dimensions are dummies", () => {
       const program = parseProgram(
         "Pascal",
-        "program Test;\nprocedure go(a: array of array of integer);\nbegin\nend;\nbegin\nend.",
+        "program Test;\nprocedure go(var a: array of integer);\nbegin\nend;\nbegin\nend.",
+      );
+      const parameter = program.subroutines[0]?.variables[0];
+      // a reference parameter takes the caller's array whatever its size, so
+      // it states its depth and nothing else
+      assertEquals(parameter?.arrayDimensions, [[0, 0]]);
+      assertEquals(parameter?.isReferenceParameter, true);
+    });
+
+    it("parses a nested 'array of array of' VAR parameter type", () => {
+      const program = parseProgram(
+        "Pascal",
+        "program Test;\nprocedure go(var a: array of array of integer);\nbegin\nend;\nbegin\nend.",
       );
       assertEquals(
         program.subroutines[0]?.variables[0]?.arrayDimensions.length,
@@ -922,15 +935,39 @@ describe("parse: Pascal", () => {
       );
     });
 
-    it("throws if an array parameter's 'array' is not followed by 'of'", () => {
+    it("throws if a VAR array parameter's 'array' is not followed by 'of'", () => {
       assertThrows(
         () =>
           parseProgram(
             "Pascal",
-            "program Test;\nprocedure go(a: array integer);\nbegin\nend;\nbegin\nend.",
+            "program Test;\nprocedure go(var a: array integer);\nbegin\nend;\nbegin\nend.",
           ),
         Error,
         'Keyword "array" must be followed by "of"',
+      );
+    });
+
+    it("throws if a VAR array parameter specifies dimensions", () => {
+      assertThrows(
+        () =>
+          parseProgram(
+            "Pascal",
+            "program Test;\nprocedure go(var a: array[1..3] of integer);\nbegin\nend;\nbegin\nend.",
+          ),
+        Error,
+        'A "var" array parameter cannot specify its dimensions',
+      );
+    });
+
+    it("throws if a value array parameter omits its dimensions", () => {
+      assertThrows(
+        () =>
+          parseProgram(
+            "Pascal",
+            "program Test;\nprocedure go(a: array of integer);\nbegin\nend;\nbegin\nend.",
+          ),
+        Error,
+        'Keyword "array" must be followed by array dimensions',
       );
     });
 

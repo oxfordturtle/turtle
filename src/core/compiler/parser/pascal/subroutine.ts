@@ -217,7 +217,7 @@ function parameterSet(lexemes: Lexemes, subroutine: Subroutine): Variable[] {
   const [parameterType, stringLength, arrayDimensions] = type(
     lexemes,
     subroutine,
-    true,
+    isReferenceParameter,
   );
   for (const foo of parameters) {
     foo.type = parameterType;

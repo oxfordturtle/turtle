@@ -10,7 +10,7 @@ import type { Subroutine } from "../definitions/routines/subroutine.ts";
 export default function type(
   lexemes: Lexemes,
   routine: Program | Subroutine,
-  isParameter: boolean,
+  isReferenceParameter: boolean,
 ): [Type, number, [number, number][]] {
   if (lexemes.atEnd()) {
     throw new CompilerError(
@@ -22,11 +22,23 @@ export default function type(
 
   const arrayDimensions: [number, number][] = [];
   if (lexemes.peek()?.content === "array") {
-    if (isParameter) {
+    // A "var" parameter takes the caller's array as it stands, so it states
+    // its depth ("array of array of integer") and nothing else - its
+    // dimensions are dummies, and indexing it counts from 0 whatever bounds
+    // the caller declared. Everywhere else - a variable, and a value
+    // parameter, which is copied into a block of its own - the dimensions are
+    // real and must be declared
+    if (isReferenceParameter) {
       while (lexemes.peek()?.content === "array") {
         // give dummy array dimensions
         arrayDimensions.push([0, 0]);
         lexemes.advance();
+        if (lexemes.peek()?.content === "[") {
+          throw new CompilerError(
+            'A "var" array parameter cannot specify its dimensions (expected "array of <type>").',
+            lexemes.peek(),
+          );
+        }
         lexemes.expectAfter("of", 'Keyword "array" must be followed by "of".');
       }
     } else {

@@ -107,6 +107,9 @@ function parameters(lexemes: Lexemes, subroutine: Subroutine): Variable[] {
     // brackets here "()" means array parameter
     if (lexemes.peek()?.content === "(") {
       parameter.arrayDimensions.push([0, 0]); // give dummy array dimensions
+      // BASIC array parameters are undimensioned and always the caller's
+      // array, RETURN or no RETURN
+      parameter.isReferenceParameter = true;
       lexemes.advance();
       lexemes.expectAfter(
         ")",

@@ -320,12 +320,11 @@ describe("encoder/program", () => {
       assertEquals(countOf(withoutZeroing, PCode.zptr), 1); // just programStart's own
     });
 
-    it("stores an array parameter's address with PCode.stvv, and sets up no local block for it", () => {
-      // an array parameter holds the caller's array address whether it was
-      // declared by reference or (as here, C never setting
-      // isReferenceParameter) by value: no language declares the size of an
-      // array parameter, so there is nowhere in the frame to copy one into.
-      // This line used to be left empty, which the machine halts on
+    it("stores a reference array parameter's address with PCode.stvv, and sets up no local block for it", () => {
+      // C's arrays are references, so the parser marks an array parameter as a
+      // reference parameter and the callee works on the caller's array: the
+      // slot holds its address and there is nothing to set up. This line used
+      // to be left empty, which the machine halts on
       const pcode = compileAndEncode(
         "C",
         "int arr[3];\nvoid go (int a[3]) {\n}\nvoid main () {\ngo(arr);\n}",
@@ -352,6 +351,40 @@ describe("encoder/program", () => {
         "string words[3];\nvoid go (string w[3]) {\n}\nvoid main () {\ngo(words);\n}",
       );
       assertEquals(countOf(pcode, PCode.cstr), 0);
+      assert(pcode.some((line) => line.length === 3 && line[0] === PCode.stvv));
+    });
+
+    it("copies a by-value array parameter into its own block with a PCode.cptr, then rebuilds the block's pointers", () => {
+      // Pascal's value parameter, the one array parameter that is a copy: the
+      // block is laid out from the parameter's own declared dimensions, so the
+      // length is a compile-time constant - here 4, the length byte plus three
+      // integer elements
+      const pcode = compileAndEncode(
+        "Pascal",
+        "program Test;\nvar arr: array[1..3] of integer;\nprocedure go(a: array[1..3] of integer);\nbegin\nend;\nbegin\ngo(arr);\nend.",
+      );
+      const copyLine = pcode.find((line) => line.includes(PCode.cptr));
+      assertExists(copyLine);
+      // [ldav, subroutineAddress, lengthByteAddress, dupl, stvv,
+      // subroutineAddress, variableAddress, ldin, 4, cptr]
+      assertEquals(copyLine![0], PCode.ldav);
+      assertEquals(copyLine![3], PCode.dupl);
+      assertEquals(copyLine![4], PCode.stvv);
+      assertEquals(copyLine![7], PCode.ldin);
+      assertEquals(copyLine![8], 4);
+      assertEquals(copyLine![9], PCode.cptr);
+      // and the rebuild after it: setupLocalVariable's own PCode.ldav block,
+      // which the copy's arrival makes necessary rather than redundant
+      const copyLineIndex = pcode.indexOf(copyLine!);
+      assert(pcode[copyLineIndex + 1]?.includes(PCode.ldav));
+    });
+
+    it("emits no copy for a VAR array parameter, which is the caller's array", () => {
+      const pcode = compileAndEncode(
+        "Pascal",
+        "program Test;\nvar arr: array[1..3] of integer;\nprocedure go(var a: array of integer);\nbegin\nend;\nbegin\ngo(arr);\nend.",
+      );
+      assertEquals(countOf(pcode, PCode.cptr), 0);
       assert(pcode.some((line) => line.length === 3 && line[0] === PCode.stvv));
     });
 

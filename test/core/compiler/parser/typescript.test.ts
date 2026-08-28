@@ -358,6 +358,22 @@ describe("parse: TypeScript", () => {
       );
     });
 
+    it("marks an array parameter as a reference parameter", () => {
+      // an array is a reference in TypeScript, as in C and Java, so an array
+      // parameter is the caller's array rather than a copy of it - which the
+      // encoder expresses as a reference parameter. (Nothing can call this
+      // one yet: TypeScript has no way to declare an array *variable* to pass.)
+      const program = parseProgram(
+        "TypeScript",
+        "function go(a: number[3]): void { }",
+      );
+      const sub = program.subroutines[0] as Subroutine;
+      const parameter = sub.variables.find((v) => v.name === "a");
+      assertExists(parameter);
+      assertEquals(parameter.arrayDimensions, [[0, 2]]);
+      assertEquals(parameter.isReferenceParameter, true);
+    });
+
     it("hoists the function definition and leaves a passStatement in its place", () => {
       const program = parseProgram(
         "TypeScript",

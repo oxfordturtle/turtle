@@ -1,30 +1,35 @@
 import { describe, it } from "@std/testing/bdd";
 import { assertEquals } from "@std/assert";
-import { runSourceToText } from "../machine/lib/helpers.ts";
+import {
+  assertCompilerError,
+  runSourceToText,
+} from "../machine/lib/helpers.ts";
 
 /**
  * Passing an array to a subroutine, in the four languages that can say it:
- * BASIC's `a%()`, C's `int a[3]`, Java's `int[3] a` and Pascal's
- * `a: array of integer`. (Python has no arrays - a `List[T]` hint makes a
- * dynamic list instead - and TypeScript cannot declare an array *variable*
- * yet, so neither can pass one.)
+ * Pascal's `a: array[1..3] of integer`, BASIC's `a%()`, C's `int a[3]` and
+ * Java's `int[3] a`. (Python has no arrays - a `List[T]` hint makes a dynamic
+ * list instead - and TypeScript cannot declare an array *variable* yet, so
+ * neither can pass one.)
  *
- * The parameter holds the caller's array address, so the callee works on the
- * caller's array rather than on a copy of it. That is what C, Java and BASIC
- * mean by an array parameter anyway; for Pascal it means a value parameter
- * and a `var` parameter behave alike, which the third group below pins.
- * Copying is not open to the encoder: no language here lets a parameter
- * declare the size of its array (Pascal and BASIC give theirs dummy
- * dimensions, and C's and Java's declared size is not checked against the
- * argument), so the callee's frame has nowhere to copy one into.
+ * Pascal draws the distinction the Delphi Turtle System draws, and in the same
+ * two syntaxes:
  *
- * Reading and writing through the parameter is ordinary indexed access, which
- * `encoder/expressions/variableValue.ts` and
- * `encoder/statements/variableAssignment.ts` already routed through the slot's
- * address for reference parameters; what these check is the store that puts
- * the address in that slot (`encoder/program/subroutines.ts`), and the frame
- * layout around it - an array parameter's slot is one word, like any other
- * address, and gets no local block of its own.
+ * - a **value** parameter states its dimensions, and the caller's array is
+ *   copied into a block of that shape in the callee's own frame - one CPTR
+ *   over the whole block, so nested strings and arrays come with it, followed
+ *   by a rebuild of the block's internal pointers, which the copy brought over
+ *   still pointing into the caller's frame;
+ * - a **VAR** parameter states only its depth (`array of integer`), and holds
+ *   the caller's array address.
+ *
+ * The other three languages have no second form: an array parameter is the
+ * caller's array in all of them, which the parser marks as a reference
+ * parameter and the encoder then treats as one.
+ *
+ * Because the copy is one block-sized CPTR laid out from the declared
+ * dimensions, the argument's block must have exactly that shape - hence the
+ * call-site checks in the last group.
  */
 describe("compiler: array parameters", () => {
   /** These assertions never care about the trailing newline. */
@@ -33,92 +38,41 @@ describe("compiler: array parameters", () => {
     code: string,
   ): string => runSourceToText(language, code).replace(/\n$/, "");
 
-  describe("reading the caller's array", () => {
-    it("reads an element the caller wrote, in Pascal", () => {
+  describe("Pascal, whose value parameter is copied", () => {
+    it("reads what the caller wrote, then leaves the caller's array alone when it writes", () => {
       assertEquals(
         run(
           "Pascal",
           `program Test;
 var arr: array[1..3] of integer;
-procedure go(a: array of integer);
+procedure go(a: array[1..3] of integer);
 begin
-writeln(str(a[0]))
+writeln(str(a[1]));
+a[1] := 99;
+writeln(str(a[1]))
 end;
 begin
 arr[1] := 7;
-go(arr)
+go(arr);
+writeln(str(arr[1]))
 end.`,
         ),
-        "7",
+        "7\n99\n7",
       );
     });
 
-    it("reads an element the caller wrote, in C", () => {
-      assertEquals(
-        run(
-          "C",
-          `int arr[3];
-void go (int a[3]) {
-  print(itoa(a[0]));
-}
-void main () {
-  arr[0] = 7;
-  go(arr);
-}`,
-        ),
-        "7",
-      );
-    });
-
-    it("reads an element the caller wrote, in Java", () => {
-      assertEquals(
-        run(
-          "Java",
-          `class Test {
-  void go (int[3] a) {
-    print(toString(a[0]));
-  }
-  void main () {
-    int[3] arr;
-    arr[0] = 7;
-    go(arr);
-  }
-}`,
-        ),
-        "7",
-      );
-    });
-
-    it("reads an element the caller wrote, in BASIC", () => {
-      assertEquals(
-        run(
-          "BASIC",
-          `DIM arr%(3)
-arr%(0) = 7
-PROCgo(arr%())
-END
-DEF PROCgo(a%())
-  PRINT(STR$(a%(0)))
-ENDPROC`,
-        ),
-        "7",
-      );
-    });
-
-    it("indexes a Pascal array parameter from zero, whatever bounds the caller declared", () => {
-      // a Pascal parameter cannot state its bounds ("array of integer", never
-      // "array[1..3] of integer"), so the callee has no start index to
-      // subtract and counts from 0 where the caller counts from 1. The
-      // machine's own range check reads the caller's length byte, so the
-      // callee's legal indexes here are 0..2 for the caller's 1..3
+    it("indexes the copy by its own declared bounds, not from zero", () => {
+      // the callee's block is laid out from its own dimensions, so `a[1]` here
+      // is the caller's `arr[1]`. A VAR parameter has no bounds to state and
+      // counts from 0 instead - the group below pins that
       assertEquals(
         run(
           "Pascal",
           `program Test;
 var arr: array[1..3] of integer;
-procedure go(a: array of integer);
+procedure go(a: array[1..3] of integer);
 begin
-writeln(str(a[0]) + ' ' + str(a[2]))
+writeln(str(a[1]) + ' ' + str(a[3]))
 end;
 begin
 arr[1] := 10;
@@ -129,16 +83,118 @@ end.`,
         "10 30",
       );
     });
-  });
 
-  describe("writing through the parameter", () => {
-    it("writes to the caller's array in Pascal, a value parameter being an address like any other", () => {
+    it("copies an array of strings deeply, the copy's elements being its own", () => {
+      // the block copy brings the caller's string data with it but also the
+      // caller's pointers to it, so the rebuild after the CPTR is what stops
+      // "changed" reaching the caller's own buffer
+      assertEquals(
+        run(
+          "Pascal",
+          `program Test;
+var names: array[1..3] of string;
+procedure go(a: array[1..3] of string);
+begin
+writeln(a[1]);
+a[1] := 'changed';
+writeln(a[1])
+end;
+begin
+names[1] := 'original';
+go(names);
+writeln(names[1])
+end.`,
+        ),
+        "original\nchanged\noriginal",
+      );
+    });
+
+    it("passes a copied array on to another subroutine, which copies it again", () => {
       assertEquals(
         run(
           "Pascal",
           `program Test;
 var arr: array[1..3] of integer;
-procedure go(a: array of integer);
+procedure inner(a: array[1..3] of integer);
+begin
+writeln(str(a[1]));
+a[1] := 99
+end;
+procedure outer(a: array[1..3] of integer);
+begin
+inner(a);
+writeln(str(a[1]))
+end;
+begin
+arr[1] := 13;
+outer(arr);
+writeln(str(arr[1]))
+end.`,
+        ),
+        "13\n13\n13",
+      );
+    });
+
+    it("takes a row of a two-dimensional array, indexing having made it a shallower one", () => {
+      // the argument need not be a whole array: indexing an array of arrays
+      // yields an array one dimension shallower, whose block has exactly the
+      // shape this parameter declares
+      assertEquals(
+        run(
+          "Pascal",
+          `program Test;
+var grid: array[1..2,1..3] of integer;
+procedure go(a: array[1..3] of integer);
+begin
+writeln(str(a[2]));
+a[2] := 99
+end;
+begin
+grid[1,2] := 42;
+go(grid[1]);
+writeln(str(grid[1,2]))
+end.`,
+        ),
+        "42\n42",
+      );
+    });
+
+    it("addresses the locals declared after one correctly", () => {
+      // a value array parameter takes a whole block in the frame, where a
+      // reference one takes the single word an address needs. Everything
+      // declared after it is offset by that length, so a wrong one shows up as
+      // a neighbouring variable reading back something never written to it
+      assertEquals(
+        run(
+          "Pascal",
+          `program Test;
+var arr: array[1..3] of integer;
+procedure go(a: array[1..3] of integer; n: integer);
+var s: string;
+    m: integer;
+begin
+s := 'local';
+m := n * 2;
+writeln(str(a[1]) + ' ' + s + ' ' + str(m))
+end;
+begin
+arr[1] := 5;
+go(arr, 21)
+end.`,
+        ),
+        "5 local 42",
+      );
+    });
+  });
+
+  describe("Pascal's VAR parameter, which is the caller's array", () => {
+    it("writes through to the caller", () => {
+      assertEquals(
+        run(
+          "Pascal",
+          `program Test;
+var arr: array[1..3] of integer;
+procedure go(var a: array of integer);
 begin
 a[0] := 99
 end;
@@ -151,24 +207,90 @@ end.`,
       );
     });
 
+    it("indexes from zero, having no bounds of its own to count from", () => {
+      // `a[0]` above and here is the caller's `arr[1]`: a VAR parameter cannot
+      // state its dimensions, so there is no start index to subtract. The
+      // machine's range check reads the caller's length byte, so the legal
+      // indexes here are 0..2 for the caller's 1..3
+      assertEquals(
+        run(
+          "Pascal",
+          `program Test;
+var arr: array[1..3] of integer;
+procedure go(var a: array of integer);
+begin
+writeln(str(a[0]) + ' ' + str(a[2]))
+end;
+begin
+arr[1] := 10;
+arr[3] := 30;
+go(arr)
+end.`,
+        ),
+        "10 30",
+      );
+    });
+
+    it("takes an array of any size, its dimensions being dummies", () => {
+      assertEquals(
+        run(
+          "Pascal",
+          `program Test;
+var arr: array[1..9] of integer;
+procedure go(var a: array of integer);
+begin
+a[8] := 99
+end;
+begin
+go(arr);
+writeln(str(arr[9]))
+end.`,
+        ),
+        "99",
+      );
+    });
+  });
+
+  describe("the languages whose arrays are references", () => {
     it("writes to the caller's array in C", () => {
       assertEquals(
         run(
           "C",
           `int arr[3];
 void go (int a[3]) {
+  print(itoa(a[0]));
   a[0] = 99;
 }
 void main () {
+  arr[0] = 7;
   go(arr);
   print(itoa(arr[0]));
+}`,
+        ),
+        "7\n99",
+      );
+    });
+
+    it("writes to the caller's array in Java", () => {
+      assertEquals(
+        run(
+          "Java",
+          `class Test {
+  void go (int[3] a) {
+    a[0] = 99;
+  }
+  void main () {
+    int[3] arr;
+    go(arr);
+    print(toString(arr[0]));
+  }
 }`,
         ),
         "99",
       );
     });
 
-    it("writes to the caller's array in BASIC", () => {
+    it("writes to the caller's array in BASIC, RETURN or no RETURN", () => {
       assertEquals(
         run(
           "BASIC",
@@ -183,51 +305,8 @@ ENDPROC`,
         "99",
       );
     });
-  });
 
-  describe("Pascal's var parameter", () => {
-    it("behaves the same as a value parameter", () => {
-      // the two differ for every other type; for an array they cannot, both
-      // being the caller's address
-      const program = (varKeyword: string): string =>
-        `program Test;
-var arr: array[1..3] of integer;
-procedure go(${varKeyword}a: array of integer);
-begin
-a[0] := 99
-end;
-begin
-go(arr);
-writeln(str(arr[1]))
-end.`;
-      assertEquals(run("Pascal", program("var ")), "99");
-      assertEquals(run("Pascal", program("")), "99");
-    });
-  });
-
-  describe("arrays that are not one-dimensional integers", () => {
-    it("passes an array of strings, whose elements are the caller's strings", () => {
-      assertEquals(
-        run(
-          "Pascal",
-          `program Test;
-var names: array[1..3] of string;
-procedure go(a: array of string);
-begin
-writeln(a[0]);
-a[0] := 'written'
-end;
-begin
-names[1] := 'read';
-go(names);
-writeln(names[1])
-end.`,
-        ),
-        "read\nwritten",
-      );
-    });
-
-    it("passes a two-dimensional array, indexed as the caller indexes it", () => {
+    it("passes a two-dimensional array in C, indexed as the caller indexes it", () => {
       assertEquals(
         run(
           "C",
@@ -245,57 +324,102 @@ void main () {
         "8\n5",
       );
     });
-
-    it("passes an array parameter straight on to another subroutine", () => {
-      assertEquals(
-        run(
-          "Pascal",
-          `program Test;
-var arr: array[1..3] of integer;
-procedure inner(a: array of integer);
-begin
-writeln(str(a[0]))
-end;
-procedure outer(a: array of integer);
-begin
-inner(a)
-end;
-begin
-arr[1] := 13;
-outer(arr)
-end.`,
-        ),
-        "13",
-      );
-    });
   });
 
-  describe("the frame around an array parameter", () => {
-    it("addresses the locals declared after one correctly", () => {
-      // an array parameter takes a single word in the frame (it holds an
-      // address), where a local array takes a word per element plus its
-      // pointer and length byte. Everything declared after it is offset by
-      // that length, so a wrong one shows up as a neighbouring variable
-      // reading back something that was never written to it
+  describe("what the call site rejects", () => {
+    /** Everything here differs only in the argument, or in the parameter's type. */
+    const pascalCall = (
+      parameter: string,
+      declaration: string,
+      argument: string,
+    ): string =>
+      `program Test;
+var ${declaration};
+procedure go(${parameter});
+begin
+end;
+begin
+go(${argument})
+end.`;
+
+    it("rejects an array of the wrong size for a value parameter", () => {
+      assertCompilerError(
+        "Pascal",
+        pascalCall(
+          "a: array[1..3] of integer",
+          "arr: array[1..5] of integer",
+          "arr",
+        ),
+        "an array of size 3 was expected but one of size 5 was found",
+      );
+    });
+
+    it("accepts an array of any size for a VAR parameter", () => {
+      // the mirror of the case above: nothing is copied, so nothing has to fit
       assertEquals(
         run(
           "Pascal",
-          `program Test;
-var arr: array[1..3] of integer;
-procedure go(a: array of integer; n: integer);
-var s: string;
-    m: integer;
-begin
-s := 'local';
-m := n * 2;
-writeln(str(a[0]) + ' ' + s + ' ' + str(m))
-end;
-begin
-arr[1] := 5;
-go(arr, 21)
-end.`,
+          pascalCall(
+            "var a: array of integer",
+            "arr: array[1..5] of integer",
+            "arr",
+          ),
         ),
-        "5 local 42",
+        "",
+      );
+    });
+
+    it("rejects an array of the wrong depth", () => {
+      assertCompilerError(
+        "Pascal",
+        pascalCall(
+          "a: array[1..3,1..2] of integer",
+          "arr: array[1..3] of integer",
+          "arr",
+        ),
+        "an array of 2 dimensions was expected but one of 1 was found",
+      );
+    });
+
+    it("rejects an array whose strings have a different maximum length", () => {
+      // the copy is one block-sized CPTR, and a string's maximum length is
+      // part of that block's shape
+      assertCompilerError(
+        "Pascal",
+        pascalCall(
+          "a: array[1..3] of string[10]",
+          "arr: array[1..3] of string[20]",
+          "arr",
+        ),
+        "an array of strings of maximum length 10 was expected but one of maximum length 20 was found",
+      );
+    });
+
+    it("rejects a scalar variable where an array is expected", () => {
+      assertCompilerError(
+        "Pascal",
+        pascalCall("a: array[1..3] of integer", "n: integer", "n"),
+        "an array was expected",
+      );
+    });
+
+    it("rejects a literal where an array is expected", () => {
+      assertCompilerError(
+        "Pascal",
+        pascalCall("a: array[1..3] of integer", "n: integer", "1"),
+        "an array was expected",
+      );
+    });
+
+    it("rejects an element of an array where the array itself is expected", () => {
+      assertCompilerError(
+        "Pascal",
+        pascalCall(
+          "a: array[1..3] of integer",
+          "arr: array[1..3] of integer",
+          "arr[1]",
+        ),
+        "an array was expected",
       );
     });
   });

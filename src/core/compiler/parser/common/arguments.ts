@@ -233,6 +233,68 @@ const parseArgumentList = (
   );
 };
 
+/**
+ * A user subroutine's array parameter, checked against the argument given for
+ * it - the parser's own version of what the encoder then relies on.
+ *
+ * A reference parameter takes the caller's array as it stands, so only its
+ * depth has to match. A value parameter is copied into a block of its own,
+ * whose shape the encoder lays out from the *declared* dimensions: the copy is
+ * one block-sized CPTR, so the argument's block must have exactly that shape,
+ * down to the maximum length of any strings in it. Index starts may differ -
+ * each side counts from its own.
+ */
+const typeCheckArrayArgument = (
+  argument: Expression,
+  parameter: Variable,
+): void => {
+  // indexing an array of arrays yields a shallower array, but indexing one all
+  // the way down yields an element, which is not an array at all
+  if (
+    argument.kind !== "variable" ||
+    !isArray(argument.variable) ||
+    argument.variable.arrayDimensions.length <= argument.indexes.length
+  ) {
+    throw new CompilerError(
+      "Type error: an array was expected.",
+      argument.lexeme,
+    );
+  }
+  const dimensions = argument.variable.arrayDimensions.slice(
+    argument.indexes.length,
+  );
+  if (dimensions.length !== parameter.arrayDimensions.length) {
+    throw new CompilerError(
+      `Type error: an array of ${parameter.arrayDimensions.length.toString(10)} dimensions was expected but one of ${dimensions.length.toString(10)} was found.`,
+      argument.lexeme,
+    );
+  }
+  if (parameter.isReferenceParameter) {
+    return;
+  }
+  const size = (dimension: [number, number]): number =>
+    dimension[1] - dimension[0] + 1;
+  for (const [index, dimension] of parameter.arrayDimensions.entries()) {
+    // in range: the two have just been checked to be the same length
+    const found = size(dimensions[index]!);
+    if (size(dimension) !== found) {
+      throw new CompilerError(
+        `Type error: an array of size ${size(dimension).toString(10)} was expected but one of size ${found.toString(10)} was found.`,
+        argument.lexeme,
+      );
+    }
+  }
+  if (
+    parameter.type === "string" &&
+    parameter.stringLength !== argument.variable.stringLength
+  ) {
+    throw new CompilerError(
+      `Type error: an array of strings of maximum length ${parameter.stringLength.toString(10)} was expected but one of maximum length ${argument.variable.stringLength.toString(10)} was found.`,
+      argument.lexeme,
+    );
+  }
+};
+
 export const typeCheckArgument = (
   language: Language,
   command: Command | Subroutine,
@@ -353,6 +415,11 @@ export const typeCheckArgument = (
       }
     }
   } else {
+    // a subroutine's parameter is a Variable, and an array one has a shape the
+    // argument has to match
+    if (parameter.kind === "Variable" && isArray(parameter)) {
+      typeCheckArrayArgument(argument, parameter);
+    }
     return typeCheck(language, argument, parameter);
   }
 };

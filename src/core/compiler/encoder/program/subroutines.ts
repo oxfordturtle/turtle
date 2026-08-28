@@ -8,6 +8,7 @@ import {
 } from "../../parser/definitions/routines/subroutine.ts";
 import {
   elementCount,
+  getLength,
   getSubVariables,
   isArray,
   type Variable,
@@ -99,6 +100,12 @@ const subroutineStartCode = (
     }
 
     for (const variable of subroutine.variables) {
+      if (isArray(variable) && variable.isParameter) {
+        // an array parameter's block is the parameter loop's business below: a
+        // reference one has no block at all, and a by-value one's has to be
+        // built after the copy, which overwrites it
+        continue;
+      }
       const setup = setupLocalVariable(variable);
       if (setup.length > 0) {
         pcode.push(...setup);
@@ -111,9 +118,32 @@ const subroutineStartCode = (
       pcode.push([]);
       for (const parameter of parameters.reverse()) {
         const lastStartLine = pcode[pcode.length - 1]!; // pushed just above
-        if (
+        if (isArray(parameter) && !parameter.isReferenceParameter) {
+          // a by-value array is copied into the block this frame reserves for
+          // it: point the variable's slot at that block, then copy the
+          // caller's length byte and every element over it. The length is a
+          // compile-time constant because a value array parameter declares its
+          // dimensions, and the call site has checked the argument's against
+          // them - the two blocks have the same shape, so copying the whole of
+          // one over the other brings any nested strings and arrays with it
+          lastStartLine.push(
+            PCode.ldav,
+            subroutineAddress(subroutine),
+            lengthByteAddress(parameter),
+            PCode.dupl,
+            PCode.stvv,
+            subroutineAddress(subroutine),
+            variableAddress(parameter),
+            PCode.ldin,
+            getLength(parameter) - 1, // the block, less the pointer to it
+            PCode.cptr,
+          );
+          // what the copy brought with it includes the caller's own internal
+          // pointers, so the block's pointers and length bytes are rebuilt to
+          // point within this copy
+          pcode.push(...setupLocalVariable(parameter));
+        } else if (
           parameter.type === "string" &&
-          !isArray(parameter) &&
           !parameter.isReferenceParameter
         ) {
           // a by-value string is copied into the local buffer
@@ -147,9 +177,7 @@ const setupLocalVariable = (variable: Variable): number[][] => {
   const subroutine = variable.routine as Subroutine;
   const pcode: number[][] = [];
 
-  // an array parameter of either kind holds the caller's address (getLength
-  // gives it the one word to hold it in), so there is no local block to set up
-  if (isArray(variable) && !variable.isParameter) {
+  if (isArray(variable)) {
     pcode.push([
       PCode.ldav,
       subroutineAddress(subroutine),
