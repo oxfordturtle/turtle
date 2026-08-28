@@ -12,11 +12,12 @@
   height: var(--bar-height);
   background: var(--blue);
   /*
-   * The system body below stacks up to `z-index: 7` (the menu rail, and the
-   * editor's own layers), and the header has to beat all of it: the site menu's
-   * dropdown is absolutely positioned, so it hangs over the body, and anything
-   * it opened behind would take the clicks meant for it. 10 is what the real
-   * site nav uses.
+   * The body below stacks up to `z-index: 7` (the menu rail, and the editor's
+   * own layers) and the bar has to beat all of it: the site menu's dropdown is
+   * absolutely positioned, so it hangs over the body, and anything it opened
+   * behind would take the clicks meant for it. This competes only with the rest
+   * of the system, `turtle-system` being a stacking context of its own
+   * (style/screen/system.css) - the page's chrome is above the lot of it.
    */
   position: relative;
   z-index: 10;

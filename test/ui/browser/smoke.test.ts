@@ -185,7 +185,7 @@ describe("the language stylesheet", () => {
   });
 });
 
-describe("the site nav in fullscreen", () => {
+describe("the site nav and the system", () => {
   // Fullscreen takes the site nav off the screen - the system fills the window
   // - so the system's own top bar carries a second copy of the site menu
   // (src/islands/turtle-system.ts). Both copies are in the markup on every
@@ -216,6 +216,41 @@ describe("the site nav in fullscreen", () => {
     await page().locator('button[title="Expand down"]').click();
     await inNav.waitFor({ state: "visible" });
     assertFalse(await inSystem.isVisible());
+  });
+
+  /** What is actually painted at the centre of `selector` - itself, or what covers it. */
+  const covering = (selector: string): Promise<string> =>
+    page().evaluate((sel) => {
+      const element = document.querySelector(sel)!;
+      const box = element.getBoundingClientRect();
+      const top = document.elementFromPoint(
+        box.x + box.width / 2,
+        box.y + box.height / 2,
+      );
+      return element.contains(top)
+        ? "itself"
+        : `${top?.tagName.toLowerCase()}.${top?.className}`;
+    }, selector);
+
+  // Stacking, which nothing below this layer resolves. A dropdown hangs out of
+  // its bar and over whatever is beneath, and there are two of those to get
+  // right: the nav's, which falls across the system app, and the copy's, which
+  // falls across the editor. A hit test rather than a look: the row is only
+  // usable if the point in the middle of it belongs to the row.
+  it("opens its dropdown over the system, in either state", async () => {
+    await page().goto(app.url("/"));
+    const second = 'a[href="/documentation/reference"]';
+
+    await page().locator(".site-nav site-menu .site-menu > a").click();
+    assertEquals(await covering(`.site-nav ${second}`), "itself");
+
+    await page().locator('button[title="Maximize"]').click();
+    await page().locator(".system-site-nav site-menu .site-menu > a").click();
+    assertEquals(await covering(`.system-site-nav ${second}`), "itself");
+
+    // put the shared session back
+    await page().locator('button[title="Expand down"]').click();
+    await page().locator(".site-nav site-menu").waitFor({ state: "visible" });
   });
 });
 
